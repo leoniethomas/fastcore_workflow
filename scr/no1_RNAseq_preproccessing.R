@@ -1,15 +1,15 @@
 library(dplyr)
-library(Seurat)
+#library(Seurat)
 library(patchwork)
 library(R.matlab)
 library(tidyverse)
-library(DESeq2)
+#library(DESeq2)
 library(devtools)
 library(biomaRt) #BiocManager::install("biomaRt")
 require(gridExtra)
 library(grid)
 library(Biobase)
-library(sva)
+#library(sva)
 #library(ggpubr)
 library(tidyverse)
 library(tidyr)
@@ -30,131 +30,96 @@ counts_to_fpkm <- function(counts, lengths) {
   exp(log(counts) + log(1e9) - log(lengths) - log(sum(counts)) )
 }
 
+
+counts_to_tpm <- function(count_matrix, gene_lengths) {
+  # Convert gene lengths to kilobases
+  gene_lengths_kb <- gene_lengths / 1000
+  
+  # Calculate RPK for each sample
+  rpk_matrix <- sweep(count_matrix, 1, gene_lengths_kb, "/")
+  
+  # Calculate scaling factor for each sample
+  scaling_factors <- colSums(rpk_matrix) / 1e6
+  
+  # Calculate TPM for each sample
+  tpm_matrix <- sweep(rpk_matrix, 2, scaling_factors, "/")
+  
+  return(tpm_matrix)
+}
+
 #FPKM <- apply(count_df, 2, function(x) counts_to_fpkm(x, lengths ))
 
-calculate_FPKM<- function(count_df) { #  change in the code 
+get_gene_length <- function(count_df, identifier_gene_in_data = "hgnc_symbol" ) { #  change in the code 
   # ensembl_gene_id: based on the input gene format ensembl_gene_id/ hgnc_symbol
   # Name: colname of the gene ids
   df <- count_df
   geneSymbols <-  df$Name
 
   human <- useMart("ensembl", dataset="hsapiens_gene_ensembl") # hgnc_symbol
-  gene_coords=getBM(attributes=c("hgnc_symbol","ensembl_gene_id", "start_position","end_position"), 
-                    filters="hgnc_symbol", values=geneSymbols, mart=human)
+  gene_coords=getBM(attributes=c(identifier_gene_in_data,"ensembl_gene_id", "start_position","end_position"), 
+                    filters=identifier_gene_in_data, values=geneSymbols, mart=human)
+  colnames(gene_coords)[colnames(gene_coords) == identifier_gene_in_data] <- "Name"
   gene_coords$size=gene_coords$end_position - gene_coords$start_position
   # Taking the maximum length for dublicated lengths
-  gene_coords %>% group_by(hgnc_symbol) %>% summarise(size= max(size)) -> gene_coords
-  gene_coords <- gene_coords[gene_coords$hgnc_symbol %in% df$Name,]
+  gene_coords %>% group_by(Name) %>% summarise(size= max(size)) -> gene_coords
+  gene_coords <- gene_coords[gene_coords$Name %in% df$Name,]
   # Taking the maximim of count for dublicated genes
   df %>% group_by(Name) %>% summarize(across(everything(), list(max)) )-> df
   
-  df_knw_len <- df[df$Name %in% gene_coords$hgnc_symbol,]
-  df_len <- left_join(gene_coords,df_knw_len,by=c('hgnc_symbol'="Name"))
+  df_knw_len <- df[df$Name %in% gene_coords$Name,]
+  
+  df_len <- left_join(gene_coords,df_knw_len, by = "Name")
   df_len <- df_len[!is.na(df_len$size),]
-
-  df_fpkm <- apply(df_len[,3:ncol(df_len)], 2, function(x) counts_to_fpkm(x, df_len$size))
-  df_fpkm <- data.frame(df_fpkm)
-  rownames(df_fpkm) <- df_len$hgnc_symbol
-  df_fpkm
+  return(df_len)
 }
-
 
 ### parameters
 # is this data already normalized, these are no raw counts
 
-wd_path = "/Users/leonie.thomas/20241104_TNBC_wu_2021/"
+wd_path = "/Users/leonie.thomas/20250225_glynn_bulk_metabolic_model/"
+output_path = paste0(wd_path, "data/bulkRNAseq/")
 
-file_name = "data/GSE176078_Wu_etal_2021_bulkRNAseq_raw_counts"
-file_name_metadata = "data/GSE176078_Wu_etal_2021_bulkRNAseq_metadata"
+file_name = "data/bulkRNAseq/Merged_raw_counts.txt"
+#file_name_metadata = "data/GSE176078_Wu_etal_2021_bulkRNAseq_metadata"
 
-### investigate the counts
+### load counts and get gene length
 
-counts <- read.table(	paste0(wd_path, file_name, ".txt"), sep = "\t", #skip = 1,
+counts <- read.table(	paste0(wd_path, file_name), sep = "\t", #skip = 1,
 			header = TRUE, row.names = 1)
 
 counts$Name <- rownames(counts)
-df_fpkm <- calculate_FPKM(counts)
+counts <- get_gene_length(counts, identifier_gene_in_data = "hgnc_symbol" )
+write.table(counts, paste0(output_path , "raw_counts_with_genelengths.csv"), quote = FALSE, row.names = FALSE)
+## get the fpkm 
+
+df_fpkm <- as.data.frame(apply(counts[,3:ncol(counts)], 2, function(x) counts_to_fpkm(x, counts$size)))
+rownames(df_fpkm) <- counts$Name
+
 colnames(df_fpkm) <- gsub("_1$", "", colnames(df_fpkm))
-write.table(df_fpkm, paste0("./", file_name, "_fpkm.csv"), quote = FALSE)
+write.table(df_fpkm, paste0(output_path , "data_fpkm.csv"), quote = FALSE)
 
 
-####
 
-#meta_data <- read.table(paste0(wd_path, file_name_metadata, ".txt"), sep = "\t",
-#			header = TRUE, row.names = 1) %>%
-#			tibble::rownames_to_column("CaseID") %>%
-#			dplyr::mutate(CaseID = gsub("-", "",paste0("CID",CaseID)))
-#
-#common_caseids = intersect(meta_data$CaseID,colnames(counts))			
+### calculate tpm 
 
+df_tpm <- counts_to_tpm(counts[,3:ncol(counts)],counts$size)
 
-#counts <- counts[,common_caseids]
-#rownames(meta_data) <- meta_data$CaseID
-#meta_data <- meta_data[common_caseids,]
-
-#counts <- counts[rowSums(is.na(counts)) == 0,]
+colSums(df_tpm)
+colnames(df_tpm) <- gsub("_1$", "", colnames(df_tpm))
+write.table(df_tpm, paste0(output_path , "data_tpm.csv"), quote = FALSE)
 
 
-#####
-# hugues code
-
-#library(DESeq2)
-
-# Create the DESeq2 object
-#dds <- DESeqDataSetFromMatrix(countData = round(counts, digits = 0), 
-#                              colData   = meta_data,
-#			      design = ~ Subtype.by.IHC) 
-
-#dds <- estimateSizeFactors(dds)
-#dds <- dds[rowSums(counts(dds, normalized = FALSE)) > 100, ]
-#dds <- DESeq(dds, parallel = TRUE)
-
-# Normalized counts
-#vst <- vst(dds, blind = FALSE)
+### perform pca on the samples
 
 
-#write.table(counts(dds, normalized = TRUE), paste0("./", file_name, "_normalized_DeSeq.csv"), quote = FALSE)
+results <- prcomp(t(df_fpkm))
+
+results$rotation <- -1*results$rotation
+
+results$x %>%
+  ggplot( aes(x=PC1, y=PC2)) +
+  geom_point(size = 4) +
+  labs(x = paste0("PC1 (expl. Var: ",as.character(summary(results)$importance[2,1])," )"),
+       y = paste0("PC2 (expl. Var: ",as.character(summary(results)$importance[2,2])," )"))
 
 
-###
-
-#tnbc_bulk <- CreateSeuratObject(counts = counts,
-#				project = "tnbc_bulk",
-#				min.cells = 2)
-
-#tnbc_bulk <- NormalizeData(tnbc_bulk,
-#				normalization.method = "LogNormalize",
-#				scale.factor = 10000)
-
-#pbmc <- ScaleData(pbmc, features = all.genes) #??? do this too ? 
-
-#mat <- GetAssayData(object = tnbc_bulk, assay = "RNA", slot = "data")
-
-#write.table(mat, paste0("./", file_name, "_normalized.csv"), quote = FALSE)
-#writeMat(paste0("./", file_name, "_normalized.mat"), labpcexport = mat)
-
-
-### counts to FPKM
-
-#library(countToFPKM)
-
-#file.readcounts <- system.file("extdata", file_name, package="countToFPKM")
-#file.annotations <- system.file("extdata", "Biomart.annotations.hg38.txt", package="countToFPKM")
-#file.sample.metrics <- system.file("extdata", "RNA-seq.samples.metrics.txt", package="countToFPKM")
-
-# Import the read count matrix data into R.
-#counts <- as.matrix(read.csv(file.readcounts))
-
-
-# Import feature annotations. 
-# Assign feature lenght into a numeric vector.
-#gene.annotations <- read.table(file.annotations, sep="\t", header=TRUE)
-#featureLength <- gene.annotations$length
-
-# Import sample metrics. 
-# Assign mean fragment length into a numeric vector.
-#samples.metrics <- read.table(file.sample.metrics, sep="\t", header=TRUE)
-#meanFragmentLength <- samples.metrics$meanFragmentLength
-
-# Return FPKM into a numeric matrix.
-#fpkm_matrix <- fpkm(counts, featureLength, meanFragmentLength)

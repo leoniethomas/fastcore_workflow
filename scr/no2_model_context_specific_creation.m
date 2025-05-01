@@ -70,14 +70,15 @@ count_data.pseudo_log2 = log2(count_data.data+1);
 clear sample_metadata idx idy
 %% PCA plot
 
-mapcaplot(expression_data.data',expression_data.sample_names);
+mapcaplot( count_data.data',expression_data.sample_names);
 
 %% perform QC
-
+% 
 disp("###----- perform QC -----###") 
 disp("###----- PCA")
 
-[coeff,score,latent,tsquared,explained] = pca(count_data.pseudo_count');
+[coeff,score,latent,tsquared,explained] = pca(expression_data.data');
+count_data.metadata.cluster =num2cell(num2str(kmeans(expression_data.data',9)));
 figure
 hold on 
 scatter(score(:,1),score(:,2) )
@@ -97,7 +98,25 @@ ylabel([num2str(2), ' component: ', num2str(explained(2))])
 legend(unique(count_data.metadata.(scr_para.columns_to_define_model_samples_on))' ,'location','best')
 hold off
 saveas(gcf, [scr_para.QC_figures_path date '/' date  '_pseudocount_PCA_.png']);
+
+
+figure
+hold on
+for x = unique(count_data.metadata.cluster)'
+    disp(x);
+    idx = contains(count_data.metadata.cluster,x{:});
+    scatter(score(idx,1),score(idx,2))
+end   
+
+title('PCA')
+xlabel([num2str(1), ' component: ', num2str(explained(1))])
+ylabel([num2str(2), ' component: ', num2str(explained(2))])
+legend(unique(count_data.metadata.cluster)' ,'location','best')
+hold off
+saveas(gcf, [scr_para.QC_figures_path date '/' date  '_pseudocount_PCA_cluster.png']);
 clear score latent tsquared explained coeff
+
+
 
 %%
 
@@ -200,21 +219,26 @@ saveas(gcf, [scr_para.QC_figures_path date '/' date   '_density_dist_normalized_
 clear fpkm probility_estimate xi
 
 %% save all the figures to a separate folder 
-copyfile('Figures/QC', ['Figures/QC/' date])
+%copyfile('Figures/QC', ['Figures/QC/' date])
 %% Load medium
 
-[NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
-medium_RPMI=TXT(2:end,2);
-medium_RPMI_EX=cellfun(@(x)['EX_' x],medium_RPMI,'uni',false);
-
-% LOAD MODEL: Recon and remove unwanted export and take up reactions
 load(scr_para.model_used) 
-model.medium=table(medium_RPMI_EX,medium_RPMI,NUM(:,3));
-clear TXT RAW NUM x idx i medium_RPMI medium_RPMI_EX probability_estimate
 
-% find the intersection of reactions in the flux file, model & the medium                            
-[~,idx, idx_fluxes_in_model] = intersect(model.medium.medium_RPMI_EX,model.rxns);                         
-model.lb(idx_fluxes_in_model) = -model.medium{idx,"Var3"};
+
+if contains(scr_para.medium_used_file, ".xlsx")
+    [NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
+    medium_RPMI=TXT(2:end,2);
+    medium_RPMI_EX=cellfun(@(x)['EX_' x],medium_RPMI,'uni',false);
+    model.medium=table(medium_RPMI_EX,medium_RPMI,NUM(:,3));
+    [~,idx, idx_fluxes_in_model] = intersect(model.medium.medium_RPMI_EX,model.rxns);                         
+    model.lb(idx_fluxes_in_model) = -model.medium{idx,"Var3"};
+    clear TXT RAW NUM x idx i medium_RPMI medium_RPMI_EX 
+else
+    model.medium = readtable(scr_para.medium_used_file, 'Delimiter','\t');
+    [~,idx, idx_fluxes_in_model] = intersect(model.medium.Reaction,model.rxns);                         
+    model.lb(idx_fluxes_in_model) = -model.medium{idx,"FluxValue"};
+    clear idx idx_fluxes_in_model
+end
 
 % set the rxns lower and upper bound, rxns that we set that we do not want
 % to have, are those also reasonable in my case, for my data ? 
@@ -239,8 +263,8 @@ A = fastcc_4_rfastcormics(model, 1e-4, 1);
 clear A model
 %% DISCRETIZE expresssion data 
 
-expression_data.discretized = discretize_FPKM(expression_data.data, expression_data.sample_names,1); % in cases where the left distribution is higher than the right one
-movefile('Figures/Discretization', ['Figures/QC/Discretization/' date])
+expression_data.discretized = discretize_FPKM(expression_data.data, expression_data.sample_names,1);
+% movefile('Figures/Discretization', ['Figures/QC/Discretization/' date])
 
 %discretized = discretize_FPKM(expression_data.data, expression_data.colnames,1); %with figures, will save figures in Figures folder
 num_disc = hist(expression_data.discretized,3);
