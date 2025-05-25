@@ -1,10 +1,10 @@
 library(dplyr)
 #library(Seurat)
-library(patchwork)
-library(R.matlab)
-library(tidyverse)
+#library(patchwork)
+#library(R.matlab)
+#library(tidyverse)
 #library(DESeq2)
-library(devtools)
+#library(devtools)
 library(biomaRt) #BiocManager::install("biomaRt")
 require(gridExtra)
 library(grid)
@@ -102,24 +102,24 @@ write.table(df_fpkm, paste0(output_path , "data_fpkm.csv"), quote = FALSE)
 
 ### calculate tpm 
 
-df_tpm <- counts_to_tpm(counts[,3:ncol(counts)],counts$size)
+#df_tpm <- counts_to_tpm(counts[,3:ncol(counts)],counts$size)
 
-colSums(df_tpm)
-colnames(df_tpm) <- gsub("_1$", "", colnames(df_tpm))
-write.table(df_tpm, paste0(output_path , "data_tpm.csv"), quote = FALSE)
-
-
-### perform pca on the samples
-
-
-results <- prcomp(t(df_fpkm))
-
-results$rotation <- -1*results$rotation
-
-results$x %>%
-  ggplot( aes(x=PC1, y=PC2)) +
-  geom_point(size = 4) +
-  labs(x = paste0("PC1 (expl. Var: ",as.character(summary(results)$importance[2,1])," )"),
-       y = paste0("PC2 (expl. Var: ",as.character(summary(results)$importance[2,2])," )"))
-
-
+# %colSums(df_tpm)
+# %colnames(df_tpm) <- gsub("_1$", "", colnames(df_tpm))
+# %write.table(df_tpm, paste0(output_path , "data_tpm.csv"), quote = FALSE)
+# 
+# 
+# ### perform pca on the samples
+# 
+# 
+# %results <- prcomp(t(df_fpkm))
+# 
+# %results$rotation <- -1*results$rotation
+# 
+# %results$x %>%
+# %%  ggplot( aes(x=PC1, y=PC2)) +
+# %%  geom_point(size = 4) +
+# %%  labs(x = paste0("PC1 (expl. Var: ",as.character(summary(results)$importance[2,1])," )"),
+# %%       y = paste0("PC2 (expl. Var: ",as.character(summary(results)$importance[2,2])," )"))
+# 
+# 

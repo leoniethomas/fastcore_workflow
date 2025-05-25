@@ -14,7 +14,7 @@ path_to_sampling_data = "." +filesep + "analysis" + filesep +model_id + filesep 
 cd (project_path)
 addpath(genpath(project_path))
 sampling_files = string(ls(path_to_sampling_data));
-sampling_files = sampling_files(contains(sampling_files, "samplingR"));
+sampling_files = sampling_files(contains(sampling_files, "samplingResults_M"));
 sampling_files = regexprep(sampling_files, " ", "")
 
 
@@ -66,61 +66,61 @@ samples_joined_ordered = cell2mat(samples_ordered');
                
 %% perform PCA
 visualize_sampling(string(fieldnames(models))', ...
-                   regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
+                   regexprep(string(fieldnames(models))',"samplingResults_MDA_MB231_",""), ...
                    samples_joined_ordered',...
                    numel(string(fieldnames(models))'),...
-                   2,3,...
+                   1,2,...
                    1)
                
 %% PCA subsystem specific 
-
-subsystems = unique(arrayfun(@(x) x{:},model_orig.subSystems));
-sil = [];
-homo = []; 
-
-for subsys_id = 1:numel(subsystems)
-    % subsys = subsystems{16};
-    subsys = subsystems{subsys_id}
-    subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-    samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-    if length(subsys_rxn_idx) > 3
-        [s,h] = visualize_sampling(string(fieldnames(models))', ...
-                           regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-                           samples_subsys_rxns',...
-                           numel(string(fieldnames(models))'),...
-                           2,3,...
-                           0);
-    else 
-        s = NaN;
-        h = NaN;
-    end
-    sil = [sil, s];
-    homo = [homo, h];              
-end
-
-%% 
-subsys_id = 64;
-subsys = subsystems{subsys_id};
-subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-[s,h] = visualize_sampling(string(fieldnames(models))', ...
-                           regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-                           samples_subsys_rxns',...
-                           numel(string(fieldnames(models))'),...
-                           1,2,...
-                           1);
-                       
-%% 
-subsys_id = 24;
-subsys = subsystems{subsys_id};
-subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-[s,h] = visualize_sampling(string(fieldnames(models))', ...
-                           regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-                           samples_subsys_rxns',...
-                           numel(string(fieldnames(models))'),...
-                           1,2,...
-                           1);                       
+% 
+% subsystems = unique(arrayfun(@(x) x{:},model_orig.subSystems));
+% sil = [];
+% homo = []; 
+% 
+% for subsys_id = 1:numel(subsystems)
+%     % subsys = subsystems{16};
+%     subsys = subsystems{subsys_id}
+%     subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
+%     samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
+%     if length(subsys_rxn_idx) > 3
+%         [s,h] = visualize_sampling(string(fieldnames(models))', ...
+%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
+%                            samples_subsys_rxns',...
+%                            numel(string(fieldnames(models))'),...
+%                            2,3,...
+%                            0);
+%     else 
+%         s = NaN;
+%         h = NaN;
+%     end
+%     sil = [sil, s];
+%     homo = [homo, h];              
+% end
+% 
+% %% 
+% subsys_id = 64;
+% subsys = subsystems{subsys_id};
+% subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
+% samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
+% [s,h] = visualize_sampling(string(fieldnames(models))', ...
+%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
+%                            samples_subsys_rxns',...
+%                            numel(string(fieldnames(models))'),...
+%                            1,2,...
+%                            1);
+%                        
+% %% 
+% subsys_id = 24;
+% subsys = subsystems{subsys_id};
+% subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
+% samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
+% [s,h] = visualize_sampling(string(fieldnames(models))', ...
+%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
+%                            samples_subsys_rxns',...
+%                            numel(string(fieldnames(models))'),...
+%                            1,2,...
+%                            1);                       
                
 %% visualize the distributions for rxns
 
@@ -141,6 +141,72 @@ xlabel("rxn flux value")
 ylabel("probability of obtaining x [%]")
 title("Probability distributions between different models given the performed sampling - rxn: " +  model_orig.rxnNames{rxn_id} + " (idx: " + num2str(rxn_id) + " )" )
 hold off
+
+
+%% perform differential testing - wilcoxon rank
+
+stats=[];
+model1 = "MDA_MB231_Cont_NO";
+model2 = "MDA_MB231_HERVK_D_NO";
+samples_model1 = samples_ordered{find(matches(fieldnames(condition_models)', model1))};
+samples_model2 = samples_ordered{find(matches(fieldnames(condition_models)',model2))};
+
+for counter=1:length(model_orig.rxns)
+    rxn_sample_value_model1 = samples_model1(counter,:);
+    rxn_sample_value_model2 = samples_model2(counter,:);
+
+    P=ranksum(rxn_sample_value_model1,rxn_sample_value_model2 );
+    
+    stats=[stats; P];
+end
+
+stats = [stats,fdrBHadjustment(stats)];
+
+%% compute signal to noise ration 
+% + adding 1000 to all samples flux values, so that we are only dealing on
+% a positive scale 
+% + we are doing the snr ratio -> deviding through the std of both
+% distributions -> normally only the noise std 
+% + but here we do not really have a baseline and a noise distribution 
+
+
+mean_model1 = mean(samples_model1 + 1000, 2);  % mean of each row (observation)
+std_model1 = std(samples_model1 + 1000, 0, 2);  % std of each row (observation)
+
+mean_model2 = mean(samples_model2 + 1000, 2);  % mean of each row (observation)
+std_model2 = std(samples_model2 + 1000, 0, 2);  % std of each row (observation)
+
+snr = (mean_model2 - mean_model1) ./ (std_model1 + std_model2);
+
+
+log2FC=log2(abs(mean_model2./mean_model1));
+stats =[mean_model1, mean_model2, std_model1, std_model2, ...
+              mean_model1 - mean_model2, log2FC, snr, ...
+              stats,;];
+        
+stats_tab=array2table(stats,'RowNames',model_orig.rxns,'VariableNames',{'mean_model1','mean_model2','std_model1','std_model2','diff','log2FC','SNR','pValue','p_adj'});
+
+  
+%%  
+figure
+histogram(-log2(stats(:,9)))
+%title('P values (-log10)')
+title( 'P adj values (-log2)')
+    
+figure
+%hist(log10(stats(:,4)))
+histogram(stats(:,6))
+%title('log10 foldchange (mean(B)/mean(A))')
+title('log2 foldchange mean_model2/mean_model1))')
+    
+figure
+% plot(log10(stats(:,4)),stats(:,6),'*')
+% title('vulcano: log10 foldchange vs -log10(P)')
+plot(stats(:,6),-log2(stats(:,9)),'.')
+hold on 
+
+title('vulcano: log2 foldchange vs -log2(P_adj)')
+   
 
 
 

@@ -9,242 +9,95 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
-
-def_run_file = "C:\Users\leonie.thomas\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+vis_only_met_genes = 1;
+def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
 input_paramters = readtable(def_run_file, 'Delimiter','\t');
 
 % Define your array of field names
 scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
 
-
+addpath(genpath(scr_para.set_working_directory));
 cd(scr_para.set_working_directory);
 date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output 
 mkdir((scr_para.save_models_to), date)
 mkdir((scr_para.QC_figures_path), date)
 
+copyfile(def_run_file, ...
+         string(scr_para.save_models_to) + date+ filesep + date + "_def_run_paramters.txt")
 
-%% load metadata
-disp("###----- Load metadata -----###") 
+clear def_run_file input_paramters 
 
+%% load metadata, and expression data
 
-sample_metadata = readtable(scr_para.expression_data_metadata_file, 'Delimiter','\t');
-
-%% load normalized counts
-disp("###----- Load expression data -----###") 
-
-expression_data.data = readcell(scr_para.expression_data_expr_file); 
-expression_data.sample_names = expression_data.data(1,:);
-expression_data.feature_name = expression_data.data(2:end,1);
-expression_data.data = cell2mat(expression_data.data(2:end,2:end));
-
-% bring the metadata in the same order and then add it to object 
-[~, idx, idy] = intersect(expression_data.sample_names(arrayfun(@(x) isstr(x{:}),expression_data.sample_names)),...
-                          sample_metadata.SampleID);
-expression_data.sample_names = expression_data.sample_names(idx);
-expression_data.data = expression_data.data(:,idx);
-expression_data.metadata = sample_metadata(idy,:);
-
-clear idx idy 
-
-%% load count data
-
-
-count_data.data = readcell(scr_para.count_data);
-
-count_data.sample_names = count_data.data(1,:);
-count_data.feature_name = count_data.data(2:end,1);
-
-count_data.data = cell2mat(count_data.data(2:end,2:end));
-
-% bring the metadata in the same order and then add it to object 
-[~, idx, idy] = intersect(count_data.sample_names(arrayfun(@(x) isstr(x{:}),count_data.sample_names)),...
-                          sample_metadata.SampleID);
-count_data.sample_names =count_data.sample_names(idx);
-count_data.data = count_data.data(:,idx);
-count_data.metadata = sample_metadata(idy,:);
-
-count_data.pseudo_count = count_data.data + 1;
-count_data.pseudo_log2 = log2(count_data.data+1);
-
-
-clear sample_metadata idx idy
-%% PCA plot
-
-mapcaplot( count_data.data',expression_data.sample_names);
-
-%% perform QC
-% 
-disp("###----- perform QC -----###") 
-disp("###----- PCA")
-
-[coeff,score,latent,tsquared,explained] = pca(expression_data.data');
-count_data.metadata.cluster =num2cell(num2str(kmeans(expression_data.data',9)));
-figure
-hold on 
-scatter(score(:,1),score(:,2) )
-hold off 
-
-figure
-hold on
-for x = unique(count_data.metadata.(scr_para.columns_to_define_model_samples_on))'
-    disp(x);
-    idx = contains(count_data.metadata.(scr_para.columns_to_define_model_samples_on),x{:});
-    scatter(score(idx,1),score(idx,2))
-end   
-
-title('PCA')
-xlabel([num2str(1), ' component: ', num2str(explained(1))])
-ylabel([num2str(2), ' component: ', num2str(explained(2))])
-legend(unique(count_data.metadata.(scr_para.columns_to_define_model_samples_on))' ,'location','best')
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date  '_pseudocount_PCA_.png']);
-
-
-figure
-hold on
-for x = unique(count_data.metadata.cluster)'
-    disp(x);
-    idx = contains(count_data.metadata.cluster,x{:});
-    scatter(score(idx,1),score(idx,2))
-end   
-
-title('PCA')
-xlabel([num2str(1), ' component: ', num2str(explained(1))])
-ylabel([num2str(2), ' component: ', num2str(explained(2))])
-legend(unique(count_data.metadata.cluster)' ,'location','best')
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date  '_pseudocount_PCA_cluster.png']);
-clear score latent tsquared explained coeff
-
-
-
+data = expression_data(scr_para.count_data,... % the raw counts
+                       scr_para.expression_data_metadata_file, ... % the metadata characterizing the samples, if available
+                       "SampleID"); % column defining the samle names 
+                   
+%% discretize expression data
+data = data.get_normalized_data(scr_para.expression_data_expr_file); 
 %%
+data = data.get_discretized_data(1,...
+                                 string(scr_para.QC_figures_path) + date + filesep);
 
-disp("###----- barplot expression per sample")
-bar(sum(count_data.data))
-title('Number of reads per sample: ')
-xlabel("samples")
-ylabel("# of reads")
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf,[scr_para.QC_figures_path date '/'  date  '_expression_read_counts_barplot.png']);
+%% load model and define metabolic genes for visualization 
 
-bar(sum(count_data.data == 0,1))
-title('Number of 0 per sample')
-xlabel("samples")
-ylabel("# of zeros")
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date  '_expression_zero_counts_barplot.png']);
-
-disp("###----- boxplot expression per sample")
-
-figure
-boxplot(count_data.data)
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date  '_expression_unnormalized_boxplots.png']);
-
-figure
-boxplot(expression_data.data)
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date   '_expression_normalized_boxplots.png']);
-
-disp("###----- boxplot expression per sample - zeros")
-
-% without zeros
-data2=expression_data.data;
-data2(data2==0)=NaN;
-figure
-boxplot(data2)
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date   '_expression_normalized_boxplots_nozeros.png']);
-
-clear data2
-
-% without zeros
-data2=count_data.data;
-data2(data2==0)=NaN;
-figure
-boxplot(data2)
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date  '_expression_unnormalized_boxplots_nozeros.png']);
-
-clear data2
+load(scr_para.model_used) 
+load(scr_para.gene_dic_file)
+metabolic_genes_entrez = string(regexprep(model.genes,".1",""));
+metabolic_genes_mapped_dico = string(dico.SYMBOL(find(matches(dico.ENTREZ,metabolic_genes_entrez))));
+metabolic_gene_idx = find(matches(metabolic_genes_mapped_dico, data.feature_names_norm));
 
 
-disp("###----- density plots of normalized data per sample")
+%% QC - data exploration
 
-figure
-hold on
-fpkm = count_data.data;
-fpkm(fpkm==0)=NaN; %remove zeros for densityplot
-fpkm=log2(fpkm); %log2 scaling
-for i=1:size(fpkm,2)
-    [probability_estimate,xi] = ksdensity(fpkm(:,i));
-    plot(xi,probability_estimate,':k','LineWidth',1);
-end
-title('Distribution per sample unnormalized raw counts')
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date   '_density_dist_unnormalized_data.png']);
 
-figure
-hold on
-fpkm = expression_data.data;
-fpkm(fpkm==0)=NaN; %remove zeros for densityplot
-fpkm=log2(fpkm); %log2 scaling
-for i=1:size(fpkm,2)
-    [probability_estimate,xi] = ksdensity(fpkm(:,i));
-    plot(xi,probability_estimate,':k','LineWidth',1);
-end
-title('Distribution per sample fpkm')
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date   '_density_dist_normalized_fpkmdata.png']);
+[coeff,score,latent,...
+ tsquared,explained,cluster] = data.QC_pca_kmeans("normalized_counts", scr_para.columns_to_define_model_samples_on, ...
+                                                  [1 2],6, metabolic_gene_idx, ...
+                                                  [scr_para.QC_figures_path date '/' date  'normalized_counts_PCA_.png'],...
+                                                  ["MDA-MB231-" ""]);
+                                              
+[coeff,score,latent,...
+ tsquared,explained,cluster] = data.QC_pca_kmeans("raw_counts", scr_para.columns_to_define_model_samples_on, ...
+                                                  [1 2],6, 1:length(data.feature_names_raw), ...
+                                                  [scr_para.QC_figures_path date '/' date  '_raw_counts_PCA_.png'],...
+                                                  ["MDA-MB231-" ""]);                                          
 
-clear fpkm probility_estimate xi
+
+data.get_QC_plots("raw_counts","SampleID",string(scr_para.QC_figures_path) + date + filesep)
+
+data.get_QC_plots("normalized_counts","SampleID",string(scr_para.QC_figures_path) + date + filesep)
+
+
 
 %% save all the figures to a separate folder 
 %copyfile('Figures/QC', ['Figures/QC/' date])
 %% Load medium
+% + set lower boundaries to values in input file
+% + set the rest of the exchange reactions to 0
+% I should still fix this part -> cause this is only applying for my input
+% files 
+% -> make a function out of it 
 
-load(scr_para.model_used) 
+[NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
+met_name = RAW(2:end,find(matches(RAW(1,:),scr_para.medium_used_naming_colum)));
+flux = cell2mat(RAW(2:end,find(matches(RAW(1,:),scr_para.medium_used_concentration_column))));
+rxn=cellfun(@(x)['EX_' x],met_name,'uni',false);
+model.medium = table(met_name,rxn, flux);
+[~,idx, idx_fluxes_in_model] = intersect(model.medium.rxn,model.rxns);   
+model.lb(idx_fluxes_in_model) = -model.medium{idx,"flux"};
 
-
-if contains(scr_para.medium_used_file, ".xlsx")
-    [NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
-    medium_RPMI=TXT(2:end,2);
-    medium_RPMI_EX=cellfun(@(x)['EX_' x],medium_RPMI,'uni',false);
-    model.medium=table(medium_RPMI_EX,medium_RPMI,NUM(:,3));
-    [~,idx, idx_fluxes_in_model] = intersect(model.medium.medium_RPMI_EX,model.rxns);                         
-    model.lb(idx_fluxes_in_model) = -model.medium{idx,"Var3"};
-    clear TXT RAW NUM x idx i medium_RPMI medium_RPMI_EX 
-else
-    model.medium = readtable(scr_para.medium_used_file, 'Delimiter','\t');
-    [~,idx, idx_fluxes_in_model] = intersect(model.medium.Reaction,model.rxns);                         
-    model.lb(idx_fluxes_in_model) = -model.medium{idx,"FluxValue"};
-    clear idx idx_fluxes_in_model
-end
+[EX, UPT] = findExcRxns(model);
+needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
+Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
+                                 [model.medium.rxn; findRxnsFromMets(model, needed_mets)]);
 
 % set the rxns lower and upper bound, rxns that we set that we do not want
 % to have, are those also reasonable in my case, for my data ? 
 model.ub(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_ub, ";"))))=0; 
 model.lb(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_lb, ";"))))=0; 
 
+model.lb(findRxnIDs(model, Ex_to_close))=0; 
 
 clear idx_fluxes_in_model idx
 %% BUILD generic CONSISTENT model - fast consistency check (fastcc)
@@ -267,17 +120,44 @@ expression_data.discretized = discretize_FPKM(expression_data.data, expression_d
 % movefile('Figures/Discretization', ['Figures/QC/Discretization/' date])
 
 %discretized = discretize_FPKM(expression_data.data, expression_data.colnames,1); %with figures, will save figures in Figures folder
-num_disc = hist(expression_data.discretized,3);
-figure
-%bar(perc_disc','stacked')
-bar(num_disc','stacked')
-xticks(1:length(expression_data.sample_names))
-xticklabels(expression_data.sample_names)
-xtickangle(90); 
-hold off
-saveas(gcf, [scr_para.QC_figures_path date '/' date   '_discretized_count.png']);
+
 
 clear num_disc perc_disc 
+
+%% check the discretized data for the grouping
+
+[coeff,score,latent,tsquared,explained] = pca(expression_data.discretized(vis_genes_idx,:)');
+
+count_data.metadata.cluster =num2cell(num2str(kmeans(expression_data.discretized(vis_genes_idx,:)',6)));
+
+
+[count_data.metadata.sil,~] = silhouette(expression_data.discretized(vis_genes_idx,:)',...
+                                         count_data.metadata.cluster,'Euclidean');
+                                     
+disp("###----- silhoutte value: " + num2str(mean(count_data.metadata.sil)) + " -----###")
+
+disp("###----- number of samples sil <0 : " + num2str(sum(count_data.metadata.sil<0)) + " -----###") 
+
+if mean(count_data.metadata.sil)>0.1 
+    %count_data.metadata.cluster_dis = regexprep(count_data.metadata.Groups, "MDA-MB231-", "") + "_" + count_data.metadata.cluster_dis;
+
+    figure
+    hold on
+    for x = unique(count_data.metadata.cluster)'
+        disp(x);
+        idx = contains(count_data.metadata.cluster,x{:});
+        scatter(score(idx,1),score(idx,2))
+        %text(score(idx,1),score(idx,2), count_data.metadata.SampleID(idx), ...
+        %             'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+    end   
+    title('PCA on discretized data - fpkm')
+
+    legend(unique(count_data.metadata.cluster)' ,'location','best')
+else
+    disp("###----- silhoutte value is below 0.1 - therefore the clusters are overlapping, does not really make sense to visualize them! ----###")
+end
+
+
 %% BUILT CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
 
 load(scr_para.gene_dic_file)
@@ -286,9 +166,16 @@ subSys=vertcat(model_orig.subSystems{:});
  
 optional_settings.unpenalized = model_orig.rxns(ismember(subSys, ...
                                                          strsplit(scr_para.unpenalizedSystems,";")));
-optional_settings.func = {'DM_atp_c_', 'biomass_reaction'}; %, medium.medium_RPMI_EX{:}}; %biomass_maintenance %-> c
+
+% you need to input the exchange rxns names, to force the model exchange
+% rxns in, after check f
+optional_settings.func = {'DM_atp_c_', 'biomass_reaction',model_orig.medium.rxn{:}}; %biomass_maintenance %-> c
+
+% these two things need to be set like this otherwise the model will not be
+% medium constrained!
+optional_settings.medium = model_orig.medium.met_name; %(add media instead)
 optional_settings.not_medium_constrained = scr_para.not_medium_constrained;
-%optional_settings.medium = medium.medium_RPMI; %(add media instead)
+
 biomass_rxn = {'biomass_reaction'} 
 
                         
