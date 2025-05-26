@@ -11,8 +11,8 @@ feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
 vis_only_met_genes = 1;
-def_run_file = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0615\20250525_0615_def_run_paramters.txt";
-disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0615\20250525_0615_disc_data.mat";
+def_run_file = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_def_run_paramters.txt";
+disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_disc_data.mat";
 
 input_paramters = readtable(def_run_file, 'Delimiter','\t');
 
@@ -106,23 +106,23 @@ condition_models = struct();
 
 condition_column = scr_para.columns_to_define_model_samples_on;
 % get the index of the samples in every defined group
-for cond = unique(expression_data.metadata.(condition_column))'
+for cond = unique(data.metadata.(condition_column))'
          % transform the array, the for loop loops over the rows, so if the elements over which you want to loop over are defined in cells in one row /not column then the for loop will concat all elements instead of looping over them
-        idx = contains(expression_data.metadata.(condition_column),cond);
+        idx = contains(data.metadata.(condition_column),cond);
 
         disp("condition for which the samples are filtered: " + cond + newline + " ----------------####################### ------------------------");
         
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        [model_cond,AA] = fastcormics_RNAseq(model_orig,expression_data.discretized(:,idx), ...
-                                             expression_data.feature_name, dico, biomass_rxn, str2double(scr_para.already_mapped_tag),...
+        [model_cond,AA] = fastcormics_RNAseq(model_orig,data.discretized(:,idx), ...
+                                             data.feature_names_norm, dico, biomass_rxn, str2double(scr_para.already_mapped_tag),...
                                                 str2double(scr_para.consensus_proportion), str2double(scr_para.epsilon), optional_settings);
         model_cond.running_time = toc;
-        model_cond.used_data = expression_data.discretized(:,idx); % add the data used for the model to the resulting model
-        model_cond.sample_metadata = expression_data.metadata(idx,:); % add metadta of the samples used to compute the model!
+        model_cond.used_data = data.discretized(:,idx); % add the data used for the model to the resulting model
+        model_cond.sample_metadata = data.metadata(idx,:); % add metadta of the samples used to compute the model!
         model_cond.AA = AA;
         condition_models.(strrep(cond{:},"-","_")) = model_cond;
-        disp("number of samples for which this condition was modelled on: " + size(expression_data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
+        disp("number of samples for which this condition was modelled on: " + size(data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
 end
 
 
