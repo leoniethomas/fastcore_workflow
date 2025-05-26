@@ -69,7 +69,7 @@ classdef expression_data
             feature_column = find(sum(find_numeric_entries)==0);
             obj.feature_names_norm = rmmissing(string(obj.normalized_counts(:,feature_column)));
             sample_names = rmmissing(string(obj.normalized_counts(sample_row,:)));
-            obj.feature_names_norm(find(matches(obj.feature_names_raw,sample_names))) = [];
+            obj.feature_names_norm(find(matches(obj.feature_names_norm,sample_names))) = [];
             obj.normalized_counts(sample_row,:) = [];
             obj.normalized_counts(:,feature_column) = [];
             % we extracted the feature and sample column
