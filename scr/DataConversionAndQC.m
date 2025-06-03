@@ -61,7 +61,17 @@ TPM=1000000*temp./repmat(nansum(temp),size(temp,1),1); %scaling
 % The sum of TPM for each sample should be 1e6
 sum(TPM,1)
 
+
 mapcaplot(TPM');
+
+
+TPM_table = counts;
+TPM_table(:,2) = [];
+TPM_table{:,2:end} = TPM;
+TPM_table.Properties.VariableNames = regexprep(TPM_table.Properties.VariableNames,"_1","");
+
+writetable(TPM_table,'TPM.csv','Delimiter',',')  
+
 
 %% count to FPKM conversion
 lengths=counts{:,2};

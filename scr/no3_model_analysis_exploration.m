@@ -13,7 +13,7 @@ feature astheightlimit 2000 % enable long file names
 
 
 %% define script parameters
-model_id = "20250513_0815";
+model_id = "20250525_0950";
 project_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
 cd (project_path)

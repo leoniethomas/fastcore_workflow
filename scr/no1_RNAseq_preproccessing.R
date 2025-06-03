@@ -1,3 +1,4 @@
+# this is the sc_fastcormics local conda environment
 library(dplyr)
 #library(Seurat)
 #library(patchwork)
@@ -76,7 +77,7 @@ get_gene_length <- function(count_df, identifier_gene_in_data = "hgnc_symbol" ) 
 ### parameters
 # is this data already normalized, these are no raw counts
 
-wd_path = "/Users/leonie.thomas/20250225_glynn_bulk_metabolic_model/"
+wd_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20241104_TNBC_wu_2021"
 output_path = paste0(wd_path, "data/bulkRNAseq/")
 
 file_name = "data/bulkRNAseq/Merged_raw_counts.txt"
@@ -99,6 +100,7 @@ colnames(df_fpkm) <- gsub("_1$", "", colnames(df_fpkm))
 write.table(df_fpkm, paste0(output_path , "data_fpkm.csv"), quote = FALSE)
 
 
+counts_to_tpm(count_matrix, gene_lengths) {
 
 ### calculate tpm 
 
