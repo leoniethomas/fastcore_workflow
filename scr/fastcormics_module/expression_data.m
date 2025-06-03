@@ -5,18 +5,21 @@ classdef expression_data
     %    -> expression_data initializting function -> reads in all the
     %       needed data 
     %       
+    %
     
     properties
-        sample_names 
-        feature_names_raw
-        feature_names_norm
-        features_metabolic_genes
-        raw_counts
-        metadata
-        FPKM
-        vst_normalized_counts
-        TPM
-        discretized
+        sample_names % names of all samples/cells in the gene expression file read in
+        metadata % metadata defining the properties of the different samples/cells
+        feature_names_raw % defining the gene names used in the raw count data stored in the raw_counts slot
+        raw_counts % raw unnormalized counts
+        feature_names_norm % defining the gene names used for the normalized data slots 
+        FPKM % Fragments Per Kilobase Million data
+        TPM %  Transcripts Per Kilobase Million data
+        vst_normalized_counts % variance stabilized data from Deseq2
+        discretized % discretized data - generated useing fastcormics discretize_FPKM function
+        features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
+        rxn_names % rxn names from the metabolic model
+        mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
     end
     
     methods
@@ -93,7 +96,7 @@ classdef expression_data
             % (vst_normalized counts)
             
             arguments
-               obj (1,1) expression_data 
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                file_path (1,1) string {mustBeFileType(file_path,"csv")}
                slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
             end
@@ -151,11 +154,32 @@ classdef expression_data
 
         end
         
+        function obj = map_expression_2_rxns(obj,model_used,dic_gene_ids_entrez_used)
+           % this function executes the mapping of the gene expression to the rnx in the model
+            arguments
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+               model_used (1,1) struct
+               dic_gene_ids_entrez_used (:,:) table
+            end
+            
+            if exist("map_expression_2_data_rFASTCORMICS",'file') == 0
+               error("Fastcormics is not installed or the installation was not added to the path variable! The function used for mapping can not be found! map_expression_2_data_rFASTCORMICS function is needed to execute this task!") 
+            end
+           
+            mapping = map_expression_2_data_rFASTCORMICS(model_used, ...
+                                                         obj.discretized,...
+                                                         dic_gene_ids_entrez_used,...
+                                                         obj.feature_names_norm);
+            mapping = sparse(mapping);
+            obj.mapping_exp_2_rxns = mapping;
+            obj.rxn_names = string(model_used.rxns);
+        end
+        
         function obj = get_discretized_data(obj,figflag,file_path_results,slot)
             % This function executes the discretize function of fastcormics
             % and saves the output to a folder
             arguments
-               obj (1,1) expression_data 
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                figflag (1,1) double {mustBeMember(figflag,[1,0])}
                file_path_results (1,1) string
                slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
@@ -182,7 +206,7 @@ classdef expression_data
             % 
             
             arguments
-               obj (1,1) expression_data 
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                model_used (1,1) struct
                dic_gene_ids_entrez_used table
             end        
@@ -262,9 +286,10 @@ classdef expression_data
             
             data = obj.(data_slot);
             sample_name = string(obj.metadata.(group_column));
+            data = full(data(vis_genes_idx,:));
             
-            [coeff,score,latent,tsquared,explained] = pca(data(vis_genes_idx,:)');
-            cluster =num2cell(num2str(kmeans(data(vis_genes_idx,:)',num_k)));
+            [coeff,score,latent,tsquared,explained] = pca(data');
+            cluster =num2cell(num2str(kmeans(data',num_k)));
 
             figure
             hold on
@@ -309,16 +334,45 @@ function mustBeFileType(file_path,needed_file_format_ending)
         file_path (1,1) string
         needed_file_format_ending (1,1) string
     end
-            assert(exist(file_path) ==2 , "Does the file exist ? Check again!")
+            assert(exist(file_path,'file') ==2 , "Does the file exist ? Check again!")
             assert(~isempty(regexp(file_path,needed_file_format_ending + "$")),...
                    "Input must be a " + needed_file_format_ending + " file!!")
 end
 
 
-
-
-
-
+function mustBeValid_expression_data_object(object)
+    
+    % check the number of samples in the different slots of the expression
+    % object!
+    assert(length(object.sample_names) == size(object.metadata,1), ...
+           "Your sample_names slot and the metadata do not hold the same number of samples! Check your object before supplying it to the function!")
+    
+    data_slots_to_be_checked = ["FPKM" "TPM" "vst_normalized_counts" "raw_counts" "discretized" "mapping_exp_2_rxns"];
+    data_slot_size = arrayfun(@(x) size(object.(x),2),...
+                              data_slots_to_be_checked);
+    correct_size = data_slot_size == 0 | data_slot_size == length(object.sample_names);
+    
+    assert(all(correct_size),...
+           "At least one of your slots of the expression_data does not have as much samples as there are listed in the samples slot! Check these slots: " + strjoin(data_slots_to_be_checked(find(~correct_size)), ", "));
+    
+    % check that the dimension of rxn names and mapping data matrix aggree
+    assert(size(object.mapping_exp_2_rxns,1) == length(object.rxn_names) | isempty(object.mapping_exp_2_rxns), ...
+          "The rxns names specified in the rxn_names slot does not correspond to the number of rows in the mapping_exp_2_rxns slot! Check your object!!")
+    
+    % check that the raw counts rows aggree with the dimension the raw data matrix has!
+    assert(size(object.raw_counts,1) == length(object.feature_names_raw) ,...
+           "The gene names saved in the fature_names_raw slot do not have the same length compared to the matrix that is stored in the raw_counts slot! Check! These two must aggree!")
+    
+    % check the aggreement of the features stored in the
+    % features_names_norm slot 
+    data_norm_features_count = ["FPKM" "TPM" "discretized" "vst_normalized_counts"];
+    data_slot_size = arrayfun(@(x) size(object.(x),1),...
+                              data_norm_features_count);
+    correct_feature_count = data_slot_size == 0 | data_slot_size == length(object.feature_names_norm);
+    assert(all(correct_feature_count),...
+           "At least one of your slots of the expression_data does not have as much genes as there are listed in the feature_names_norm slot! Check these slots: " + strjoin(data_norm_features_count(find(~correct_feature_count)), ", "));
+    
+end
 
 
     
