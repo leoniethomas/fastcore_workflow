@@ -1,22 +1,52 @@
 classdef expression_data
-    %expressiond data -> performs the dscretization and enables visualization of the input sequencing data
-    %   Detailed explanation goes here
+    % expression_data is a class defined to perform all the QC and
+    % preprocessing steps needed to perform an analysis with fastcormics
+    % The expression_data class provides a set of methods 
+    %    -> expression_data initializting function -> reads in all the
+    %       needed data 
+    %       
     
     properties
         sample_names 
         feature_names_raw
         feature_names_norm
+        features_metabolic_genes
         raw_counts
         metadata
-        normalized_counts
+        FPKM
+        vst_normalized_counts
+        TPM
         discretized
     end
     
     methods
         function obj = expression_data(path_raw_counts,path_metadata,sample_label_column)
-            if nargin ==3
+                % this function reads in the needed expression data to
+                % perform the preprocessing & QC for fastcormics.
+                %   path_raw_counts:     full path to the file storing the
+                %                        counts
+                %   path_metadata:       full path to the metadata file, defining
+                %                        the characteristics of the samples/cells
+                %                        in the expression data 
+                %   sample_label_column: give the column after which the
+                %                        samples are defined, this is
+                %                        used later when visualizing the
+                %                        data
+                arguments
+                   path_raw_counts (1,1) string {mustBeFileType(path_raw_counts,"txt")}
+                   path_metadata (1,1) string {mustBeFileType(path_metadata,"txt")}
+                   sample_label_column (1,1) string
+                end
+            
+                
                 % read in sample names 
                 obj.metadata = readtable(path_metadata, 'Delimiter','\t');
+                
+                if ~any(contains(obj.metadata.Properties.VariableNames,sample_label_column))
+                    disp("These are the columnnames in the metadata file:")
+                    obj.metadata.Properties.VariableNames
+                    error("The sample label column does not exist in the metadata! Check please which column you want to use to label the samples!")
+                end
                 obj.sample_names = string(obj.metadata.(sample_label_column))';
                 obj.raw_counts = readcell(path_raw_counts);
                 
@@ -52,52 +82,89 @@ classdef expression_data
                     obj.metadata= obj.metadata(b,:);
                     obj.raw_counts = obj.raw_counts(:,c);
                 end
-                
-            end
-        end
-        function obj = get_normalized_data(obj, file_path)
-            if nargin ==2
-                obj.normalized_counts = readcell(file_path); 
-            else
-                error("fpkm normalization to be added to this function!")
-            end
+                disp("expression data object created:")
+                obj
+                disp("expression data entails " + string(length(obj.sample_names)) + " samples!")
             
+        end
+        function obj = get_normalized_data(obj, file_path, slot)
+            % This function reads in the normalized data 
+            % normalized data referres here to TPM and/or FPKM
+            % (vst_normalized counts)
+            
+            arguments
+               obj (1,1) expression_data 
+               file_path (1,1) string {mustBeFileType(file_path,"csv")}
+               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
+            end
+
+            obj.(slot) = readcell(file_path);          
             % get sample and feature names 
             % bring the raw data into the right format
-            find_numeric_entries = cellfun(@(x) isnumeric(x), obj.normalized_counts);
+            find_numeric_entries = cellfun(@(x) isnumeric(x), obj.(slot));
             sample_row = find(sum(find_numeric_entries,2)==0);
             feature_column = find(sum(find_numeric_entries)==0);
-            obj.feature_names_norm = rmmissing(string(obj.normalized_counts(:,feature_column)));
-            sample_names = rmmissing(string(obj.normalized_counts(sample_row,:)));
-            obj.feature_names_norm(find(matches(obj.feature_names_norm,sample_names))) = [];
-            obj.normalized_counts(sample_row,:) = [];
-            obj.normalized_counts(:,feature_column) = [];
+            features_in_data = rmmissing(string(obj.(slot)(:,feature_column)));
+            sample_names = rmmissing(string(obj.(slot)(sample_row,:)));
+            obj.(slot)(sample_row,:) = [];
+            obj.(slot)(:,feature_column) = [];
+            
+            features_in_data(find(matches(features_in_data,sample_names))) = [];
+            if ~isempty(obj.feature_names_norm)
+                % in case there has been normalized data already read in
+                % the new data is filtered according what is already stored
+                % in the feature_name_norm 
+                [~,idx_in_feature_names_norm] = ismember(obj.feature_names_norm, features_in_data);
+                obj.(slot) = obj.(slot)(idx_in_feature_names_norm,:);
+                if length(idx_in_feature_names_norm) < length(features_in_data)
+                   disp("You lost some of your features in the " + slot + " data slot since it was indexed based on the features in the .feature_names_norm slot of the expression_data object!") 
+                end
+            else
+                obj.feature_names_norm = features_in_data;
+            end
+            
+            
+            
             % we extracted the feature and sample column
             % now check if the rest of the matrix is all numeric
-            % then transfert to matrix
-            if ~sum(sum(cellfun(@(x) ~isnumeric(x), obj.normalized_counts)) ~= 0)
-                obj.normalized_counts =cell2mat(obj.normalized_counts);
+            % then transfer to matrix
+            if ~sum(sum(cellfun(@(x) ~isnumeric(x), obj.(slot))) ~= 0)
+                obj.(slot) =cell2mat(obj.(slot));
             else
             end
             
             
             % check that the samples are in the corresponding order in
-            % the metadata as well as in the expresion data           
-            [a,b,c] = intersect(obj.sample_names, sample_names);
-            if length(obj.sample_names) ~= length(a) | sum(c ~= b) > 0
-                % if the number of samples is not equal or if the samples are not in the same order                    
-                obj.sample_names = obj.sample_names(b);
-                sample_names = sample_names(c);
-                obj.metadata= obj.metadata(b,:);
-                obj.raw_counts = obj.raw_counts(:,b);
-                obj.normalized_counts = obj.normalized_counts(:,c);
+            % the metadata as well as in the expresion data   
+            if length(sample_names) ~= size(obj.(slot),2)
+                error("There are more entries in the sample row than there are data in the data, check which of the entries you need to get rid of.")
             end
+            [~,b] = intersect(obj.sample_names, sample_names);
+            obj.(slot) = obj.(slot)(:,b);
+            if length(b) ~= length(obj.sample_names)
+               error("Not all the samples from the metadata could be found in the data!") 
+            end
+            
+            disp("expression data object created:")
+            obj
+            disp("expression data entails " + string(length(obj.sample_names)) + " samples!")
 
         end
         
-        function obj = get_discretized_data(obj,figflag,file_path)
-            mkdir(file_path + "Discretization" )
-            obj.discretized = discretize_FPKM(obj.normalized_counts, obj.sample_names,figflag,char(file_path + "Discretization" + filesep));
+        function obj = get_discretized_data(obj,figflag,file_path_results,slot)
+            % This function executes the discretize function of fastcormics
+            % and saves the output to a folder
+            arguments
+               obj (1,1) expression_data 
+               figflag (1,1) double {mustBeMember(figflag,[1,0])}
+               file_path_results (1,1) string
+               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
+            end
+
+            mkdir(file_path_results + "Discretization" )
+            obj.discretized = discretize_FPKM(obj.(slot), ...
+                                              obj.sample_names,figflag,...
+                                              char(file_path_results + "Discretization" + filesep));
             
             num_disc = hist(obj.discretized,3);
             figure
@@ -107,7 +174,22 @@ classdef expression_data
             xticklabels(obj.sample_names)
             xtickangle(90); 
             hold off
-            saveas(gcf, file_path +  "discretized_count.png");
+            saveas(gcf,file_path_results +  "discretized_count.png");
+            
+        end
+        
+        function obj = get_metabolic_genes(obj,model_used,dic_gene_ids_entrez_used)
+            % 
+            
+            arguments
+               obj (1,1) expression_data 
+               model_used (1,1) struct
+               dic_gene_ids_entrez_used table
+            end        
+            
+            metabolic_genes_entrez = string(regexprep(model_used.model.genes,".1",""));
+            obj.features_metabolic_genes = string(dic_gene_ids_entrez_used.Var1.dico.SYMBOL(find(matches(dic_gene_ids_entrez_used.Var1.dico.ENTREZ,...
+                                                                   metabolic_genes_entrez))));
             
         end
         
@@ -198,7 +280,7 @@ classdef expression_data
             legend(regexprep(unique(sample_name)', pat_rep_label(1), pat_rep_label(2)) , ...
                    'location','best')
             hold off
-            saveas(gcf, save_fig);
+            saveas(gcf, regexprep(save_fig,"PCA.png","PCA_label.png"));
 
             figure
             hold on
@@ -214,9 +296,22 @@ classdef expression_data
             legend(unique(cluster), ...
                    'location','best')
             hold off
-            saveas(gcf, save_fig);
+            saveas(gcf, regexprep(save_fig,"PCA.png","PCA_clustering.png"));
         end
+
     end
+end
+
+
+
+function mustBeFileType(file_path,needed_file_format_ending)
+    arguments
+        file_path (1,1) string
+        needed_file_format_ending (1,1) string
+    end
+            assert(exist(file_path) ==2 , "Does the file exist ? Check again!")
+            assert(~isempty(regexp(file_path,needed_file_format_ending + "$")),...
+                   "Input must be a " + needed_file_format_ending + " file!!")
 end
 
 
@@ -226,12 +321,7 @@ end
 
 
 
-
-
-
-
-
-
+    
 
 
 

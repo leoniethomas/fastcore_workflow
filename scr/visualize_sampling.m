@@ -10,12 +10,18 @@
 
     %%
 
-    sample_labels = arrayfun(@(x) repmat(x,1,1000),model_names, ...
+    sample_labels = arrayfun(@(x) repmat(x,1,2000),model_names, ...
                              'UniformOutput',false);
-    model_labels_all =  arrayfun(@(x) repmat(x,1,1000),model_labels, ...
+    model_labels_all =  arrayfun(@(x) repmat(x,1,2000),model_labels, ...
                              'UniformOutput',false);                     
     sample_labels = [sample_labels{:}];
     model_labels_all = [model_labels_all{:}];
+   
+%     biomass_idx = 3625;
+%     
+%     sample_labels = sample_labels(find(samples(:,biomass_idx) > 0.25));
+%     model_labels_all = model_labels_all(find(samples(:,biomass_idx) > 0.25));
+%     samples = samples(find(samples(:,biomass_idx) > 0.25),:);
     %%
     [coeff,score,latent,tsquared,explained] = pca(samples);
     km = kmeans(samples,num_clusters_kmeans);
@@ -42,8 +48,9 @@
         xtickangle(45)  
         %%
         figure
+        %id_biomass_ordered = 3625;
+        %scatter(score(:,pc_x),score(:,pc_y),5,samples(:,id_biomass_ordered))
         scatter(score(:,pc_x),score(:,pc_y),5,categorical(sample_labels))
-
 
         unique_labels = categories(categorical(sample_labels));
         for i = 1:numel(unique_labels)

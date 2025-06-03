@@ -38,6 +38,7 @@ load(scr_para.model_used)
 load(scr_para.gene_dic_file)
 load(disc_data)
 
+
 %% Load medium
 % + set lower boundaries to values in input file
 % + set the rest of the exchange reactions to 0
@@ -63,18 +64,25 @@ Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
 model.ub(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_ub, ";"))))=0; 
 model.lb(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_lb, ";"))))=0; 
 
-model.lb(findRxnIDs(model, Ex_to_close))=0; 
+% close all the exchange rxns which are not in the medium, 
+% but this results in losing the biomass when running fastcc 
+% also the constrain_model_rFASTCORMICS can force in the medium 
+% by putting it into the optional_settings.func
+%model.lb(findRxnIDs(model, Ex_to_close))=0; 
 
 clear idx_fluxes_in_model idx
-%% BUILD generic CONSISTENT model - fast consistency check (fastcc)
 
+
+%% BUILD generic CONSISTENT model - fast consistency check (fastcc)
+model_orig=model;
 A = fastcc_4_rfastcormics(model, 1e-4, 1);
 
 % remove non consistent reactions from model
 model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
 % check if the biomass reactions are still there
-model.rxns(find(contains(model.rxns,'biomass')))
-
+if isempty(model.rxns(find(contains(model.rxns,'biomass'))))
+    error("You lost your objective function, when running fastcc! - your medium might not be sufficient!")
+end
 model_orig=model;
 % check if the created model is now really consistent
 A = fastcc_4_rfastcormics(model, 1e-4, 1);

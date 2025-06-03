@@ -13,7 +13,7 @@ feature astheightlimit 2000 % enable long file names
 
 
 %% define script parameters
-model_id = "20250525_0950";
+model_id = "20250526_0717";
 project_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
 cd (project_path)
@@ -40,10 +40,10 @@ scr_para.gene_drug_relation_file = './data/GeneDrugRelations.mat';
 altcolor= [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;...
                        255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; %shorter 10% = 1 bar
                    
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
 
                    
                    
@@ -73,10 +73,10 @@ results.model_size
 
 
 load(path_to_model_to_analyse + "\" + scr_para.model_to_load) % load context specific models again, to have all the genes in them, needed for later comparison
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
+% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
 
 %% Rxn occurence similarity - HOW SIMILAR IS THE CONTENT OF THE MODELS AT HAND ? 
 
@@ -143,7 +143,8 @@ for x=fieldnames(condition_models)'
     disp("----------" + string(x) + " ---- Ex reactions flux < 0 --------------------")
     exc_reactions(exc_reactions.flux < 0,:)
     AA_mets_imp(:,find(matches(fieldnames(condition_models),x))) = matches(model_orig.rxns,string(exc_reactions{exc_reactions.flux < 0,'ex_rxns'}));
-    writetable(exc_reactions(exc_reactions.flux < 0,:),scr_para.results_path + filesep +  filename,'Sheet',string(x) + "_consumption")
+    exc_reactions(exc_reactions.flux < 0,:),scr_para.results_path + filesep +  filename,'Sheet',string(x) + "_consumption"
+    writetable(exc_reactions(exc_reactions.flux < 0,:),scr_para.results_path + filesep +  filename,'Sheet',regexprep(string(x), "HERVK", "HERV") + "_consumption") % writetable has a problem with the K for some reason...dont know why...
     disp("----------" + string(x) + " ---- Ex reactions flux > 0 --------------------")
     exc_reactions(exc_reactions.flux > 0,:)
     writetable(exc_reactions(exc_reactions.flux > 0,:),scr_para.results_path + filesep + filename,'Sheet',string(x) + "_export")
