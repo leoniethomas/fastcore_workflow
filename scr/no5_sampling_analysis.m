@@ -45,192 +45,55 @@ scr_para.gene_drug_relation_file = './data/GeneDrugRelations.mat';
 altcolor= [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;...
                        255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; %shorter 10% = 1 bar
                    
-                   
+%%
+exp = fastcore_experiment(sampling_files,1);
 
-
-%% load sampling data 
-
-sample_data = cell2struct(arrayfun(@(x) load(fullfile(x)), sampling_files','UniformOutput', false),...
-                          regexprep(sampling_files, ".mat", ""),...
-                          2)
-models =  structfun(@(y) y.x.modelSampling,sample_data,'UniformOutput', false);
-samples =  structfun(@(y) y.x.samples,sample_data,'UniformOutput', false);
-
-
+exp = exp.join_fluxsum_output();
+exp = exp.join_sampling_output();
 
 %%
+exp = exp.change_model_labels(["samplingResults_MDA_MB231_Cont_NO_model_20250602_090252",...
+                               "samplingResults_MDA_MB231_Cont_NO_model_20250602_090543",...
+                               "samplingResults_MDA_MB231_Cont_VC_model_20250602_090916",...
+                               "samplingResults_MDA_MB231_Cont_VC_model_20250602_091221",...
+                               "samplingResults_MDA_MB231_HERVK_C_NO_model_20250602_091549",...
+                               "samplingResults_MDA_MB231_HERVK_C_NO_model_20250602_091904",...
+                               "samplingResults_MDA_MB231_HERVK_C_VC_model_20250602_092222",...
+                               "samplingResults_MDA_MB231_HERVK_C_VC_model_20250602_092545"],...
+                              ["Cont_NO", "Cont_NO","CTR", "CTR", "HERVK_NO", "HERVK_NO", "HERVK", "HERVK"]);
 
-
-all_rxns = cellfun(@(x) models.(x).rxns, string(fieldnames(models)),'UniformOutput',false);
-all_rxns = unique(vertcat(all_rxns{:}));
-
-samples_ordered = arrayfun(@(x) get_sampling_orig_order(models.(x),samples.(x),all_rxns), ...
-                                  string(fieldnames(models)),...
-                                  'UniformOutput',false);
-biomass_idx = find(ismember(all_rxns, "biomass_reaction"))
-                              
-samples_joined_ordered = cell2mat(samples_ordered');
-%this helps the PCA, cause less dimensions, but in the downstream we lose
-%th
-% samples_joined_ordered( ~any(samples_joined_ordered,2), : ) = [];
-
-min(samples_joined_ordered(biomass_idx,:))
-max(samples_joined_ordered(biomass_idx,:))
-
-  
 %% perform PCA
 
-visualize_sampling(string(fieldnames(models))', ...
-                   regexprep(regexprep(string(fieldnames(models))',"samplingResults_PN0238_00(.*)","$1"),"_"," "), ...
-                   samples_joined_ordered',...
-                   2,... %numel(string(fieldnames(models))'),...
-                   1,2,...
-                   1)
-
-               
-%% PCA subsystem specific 
-% 
-% subsystems = unique(arrayfun(@(x) x{:},model_orig.subSystems));
-% sil = [];
-% homo = []; 
-% 
-% for subsys_id = 1:numel(subsystems)
-%     % subsys = subsystems{16};
-%     subsys = subsystems{subsys_id}
-%     subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-%     samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-%     if length(subsys_rxn_idx) > 3
-%         [s,h] = visualize_sampling(string(fieldnames(models))', ...
-%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-%                            samples_subsys_rxns',...
-%                            numel(string(fieldnames(models))'),...
-%                            2,3,...
-%                            0);
-%     else 
-%         s = NaN;
-%         h = NaN;
-%     end
-%     sil = [sil, s];
-%     homo = [homo, h];              
-% end
-% 
-% %% 
-% subsys_id = 64;
-% subsys = subsystems{subsys_id};
-% subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-% samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-% [s,h] = visualize_sampling(string(fieldnames(models))', ...
-%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-%                            samples_subsys_rxns',...
-%                            numel(string(fieldnames(models))'),...
-%                            1,2,...
-%                            1);
-%                        
-% %% 
-% subsys_id = 24;
-% subsys = subsystems{subsys_id};
-% subsys_rxn_idx = find(string(arrayfun(@(x) x{:},model_orig.subSystems)) == subsys);
-% samples_subsys_rxns =  samples_joined_ordered(subsys_rxn_idx,:);
-% [s,h] = visualize_sampling(string(fieldnames(models))', ...
-%                            regexprep(regexprep(string(fieldnames(condition_models)),"_"," "),"MDA MB231 ",""), ...
-%                            samples_subsys_rxns',...
-%                            numel(string(fieldnames(models))'),...
-%                            1,2,...
-%                            1);                       
-               
-%% visualize the distributions for rxns
-
-samples_ordered = samples_ordered(1:5);
-
-rxn_id = 3316;
-rxn_samp_fluxes = cell2mat(arrayfun(@(x) x{1}(rxn_id,:),samples_ordered','UniformOutput',false)');
-
-
-
-figure
-for i=1:size(rxn_samp_fluxes,1)
-    [probability_estimate,xi] = ksdensity(rxn_samp_fluxes(i,:));
-    plot(xi,probability_estimate*100,'LineWidth',1); % multiplied with 100 to have %
-    %trapz(probability_estimate, xi) % should approx to 1 % integral should sum up to 1
-    %[y,x] = hist(rxn_samp_fluxes(i,:),25)
-    %plot(x,y,'LineWidth',1);
-    hold on
-end
-legend(regexprep(regexprep(string(fieldnames(models)),"_"," "),"samplingResults_MDA_MB231_",""))
-xlabel("rxn flux value")
-ylabel("probability of obtaining x [%]")
-title("Probability distributions between different models given the performed sampling - rxn: " +  model_orig.rxnNames{rxn_id} + " (idx: " + num2str(rxn_id) + " )" )
-hold off
+exp = exp.visualize_sampling(0,... 
+                             1,2,...
+                             1,...
+                             "samples",0);
+                         
+exp.visualize_sampling_rxn_distribution(3316)
 
 
 %% perform differential testing - wilcoxon rank
 
-stats=[];
-model1 = "samplingResults_MDA_MB231_Cont_NO_model_20250602_090252";
-model2 = "samplingResults_MDA_MB231_Cont_VC_model_20250602_090916";
-samples_model1 = samples_ordered{find(matches(fieldnames(models)', model1))};
-samples_model2 = samples_ordered{find(matches(fieldnames(models)',model2))};
-
-
-num_samples = size(samples_joined_ordered, 1);
-stats = zeros(num_samples, 1);  % Preallocate for speed
-for counter=1:size(samples_joined_ordered,1)
-    rxn_sample_value_model1 = samples_model1(counter,:);
-    rxn_sample_value_model2 = samples_model2(counter,:);    
-    stats(counter) = ranksum(rxn_sample_value_model1,rxn_sample_value_model2 );
-end
-
-
-stats = [stats,mafdr(stats)];
-
-%% compute signal to noise ration 
-% + adding 1000 to all samples flux values, so that we are only dealing on
-% a positive scale 
-% + we are doing the snr ratio -> deviding through the std of both
-% distributions -> normally only the noise std 
-% + but here we do not really have a baseline and a noise distribution 
-
-
-mean_model1 = mean(samples_model1 + 1000, 2);  % mean of each row (observation)
-median_model1 = median(samples_model1 + 1000, 2);  % mean of each row (observation)
-std_model1 = std(samples_model1 + 1000, 0, 2);  % std of each row (observation)
-
-mean_model2 = mean(samples_model2 + 1000, 2);  % mean of each row (observation)
-median_model2 = median(samples_model2 + 1000, 2);  % mean of each row (observation)
-std_model2 = std(samples_model2 + 1000, 0, 2);  % std of each row (observation)
+exp.diff_flux_testing(["Cont_NO",...
+                       "CTR"],1,1,scr_para.results_path + filesep)
+                       
 
 
 
-snr = (mean_model2 - mean_model1) ./ (std_model1 + std_model2);
 
 
-log2FC=log2(abs(mean_model2./mean_model1));
-stats =[mean_model1, mean_model2, std_model1, std_model2, ...
-              mean_model1 - mean_model2, log2FC, snr, ...
-              stats];
-        
-stats_tab=array2table(stats,'RowNames',all_rxns,'VariableNames',{'mean_model1','mean_model2','std_model1','std_model2','diff','log2FC','SNR','pValue','p_adj'});
-writetable(stats_tab, scr_para.results_path + filesep + "diff_flux_results_" + model1 + "_" + model2 + ".xlsx",'WriteRowNames',true)
-  
-%%  
-figure
-histogram(-log2(stats(:,9)))
-%title('P values (-log10)')
-title( 'P adj values (-log2)')
-    
-figure
-%hist(log10(stats(:,4)))
-histogram(stats(:,6))
-%title('log10 foldchange (mean(B)/mean(A))')
-title('log2 foldchange mean_model2/mean_model1))')
-    
-figure
-% plot(log10(stats(:,4)),stats(:,6),'*')
-% title('vulcano: log10 foldchange vs -log10(P)')
-plot(stats(:,6),-log2(stats(:,9)),'.')
-hold on 
 
-title('vulcano: log2 foldchange vs -log2(P_adj)')
+
+
+
+
+
+
+
+
+
+
+
    
 
 
