@@ -183,18 +183,28 @@ classdef fastcore_experiment
         end 
         
         
-        function [] = visualize_sampling_rxn_distribution(obj,rxn_id)
-           
+        function [] = visualize_sampling_rxn_distribution(obj,rxn_id,data_slot_to_use)
+            
+            arguments
+                obj
+                rxn_id
+                data_slot_to_use ="samples" 
+            end
+            
+            data = obj.(data_slot_to_use);
             rxn_samp_fluxes = obj.samples(rxn_id,:);
+            plotting_range_min = min(data(rxn_id,:));
+            plotting_range_max = max(data(rxn_id,:));
+            plotting_range = linspace(plotting_range_min,plotting_range_max,50);
 
             figure
             for i=unique(obj.sample_labels)
                 idx = find(obj.sample_labels == i);
-                [probability_estimate,xi] = ksdensity(rxn_samp_fluxes(1,idx));
-                plot(xi,probability_estimate*100,'LineWidth',1); % multiplied with 100 to have %
+                %[probability_estimate,xi] = ksdensity(rxn_samp_fluxes(1,idx));
+                %plot(xi,probability_estimate*100,'LineWidth',1); % multiplied with 100 to have %
                 %trapz(probability_estimate, xi) % should approx to 1 % integral should sum up to 1
-                %[y,x] = hist(rxn_samp_fluxes(i,:),25)
-                %plot(x,y,'LineWidth',1);
+                [y,x] = hist(rxn_samp_fluxes(1,idx),plotting_range)
+                plot(x,(y/length(idx))*100,'LineWidth',1);
                 hold on
             end
             legend(unique(obj.sample_labels))
