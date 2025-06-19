@@ -10,10 +10,10 @@ clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
 
-
+addpath(genpath("C:\Users\leonie.thomas\plot2svg"))
 
 %% define script parameters
-model_id = "20250526_0717";
+model_id = "20250525_0950";
 project_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
 cd (project_path)
@@ -40,14 +40,19 @@ scr_para.gene_drug_relation_file = './data/GeneDrugRelations.mat';
 altcolor= [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;...
                        255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; %shorter 10% = 1 bar
                    
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
 
                    
                    
 model_names = regexprep(fieldnames(condition_models),"_", " ");
+%%
+
+writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
+writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
+
 %% script initialization
 
 changeCobraSolver("ibm_cplex");
@@ -73,10 +78,11 @@ results.model_size
 
 
 load(path_to_model_to_analyse + "\" + scr_para.model_to_load) % load context specific models again, to have all the genes in them, needed for later comparison
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-% condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
+condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+
 
 %% Rxn occurence similarity - HOW SIMILAR IS THE CONTENT OF THE MODELS AT HAND ? 
 
@@ -88,13 +94,18 @@ J = squareform(pdist(AA_keep','jaccard'));
 fig = fun.plot_clustergram(1-J,...
                      model_names,...
                      model_names,...
-                     {'Model similarity based on Jaccard distance of rxns'},...
+                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
                      [100 100 800 600],...
                      altcolor);
 saveas(fig,scr_para.results_path + "\rxn_occurence_jaccard_distance.png");
 results.jaccard = J;
 
 clear J
+%% inner and outersection 
+inter = length(intersect(condition_models.MDA_MB231_Cont_VC.rxns, condition_models.MDA_MB231_Cont_NO.rxns));
+out_VC = length(setdiff(condition_models.MDA_MB231_Cont_VC.rxns, condition_models.MDA_MB231_Cont_NO.rxns));
+out_NO = length(setdiff(condition_models.MDA_MB231_Cont_NO.rxns, condition_models.MDA_MB231_Cont_VC.rxns))
+
 
 %% Pathway analysis 
 
@@ -105,9 +116,13 @@ a = arrayfun(@(x) fun.get_pathway_counts(AA_keep(:,x),model_orig),...
 a = cat(2,a{:});
 b = fun.get_pathway_counts(ones(1,size(model_orig.subSystems,1))',model_orig);
 PathwayActivity_A_keep = a(:,:)./b;
-filter_0_idx = find(sum(PathwayActivity_A_keep,2) ~= 0);
+%filter_0_idx = find(sum(PathwayActivity_A_keep,2) > size(PathwayActivity_A_keep,2)*0.7);
+filter_0_idx  = find(var(PathwayActivity_A_keep')' > 0);
 pathways_to_plot = unique([model_orig.subSystems{:}]);
 pathways_to_plot = pathways_to_plot(filter_0_idx);
+b = b(filter_0_idx);
+pathways_to_plot = pathways_to_plot + "  -  " + string(b)';
+
 
 fig = fun.plot_clustergram(PathwayActivity_A_keep(filter_0_idx,:),...
                      pathways_to_plot,...
@@ -116,11 +131,55 @@ fig = fun.plot_clustergram(PathwayActivity_A_keep(filter_0_idx,:),...
                      [100 100 800 600],...fig
                      altcolor)
 saveas(fig,scr_para.results_path + "\pathway_activity_jaccard_score.png");
-
+plot2svg(['./analysis/' char(model_id) '/pathway_activity_jaccard_score_svg.svg'],fig)
 results.pathway_activity = PathwayActivity_A_keep;
 
-clear AA_keep PathwayActivity_A_keep a b filter_0_idx pathways_to_plot
-     
+
+%clear AA_keep PathwayActivity_A_keep a b filter_0_idx pathways_to_plot
+
+% get colorbar for set size 
+b = [90 178 1000 40 98 31 47 93 165 211 450 133 34 40 46 8 45 32 151 71 32 65 105 27 961 15 41 14 11 16 21 164 59 19 3 7];
+heatmap_data = reshape(b, [], 1); % column vector
+
+% Create the heatmap using imagesc
+imagesc(heatmap_data);
+
+
+%% Pathway analysis of outersection
+AA_keep_outer = AA_keep; 
+AA_keep_outer(find(sum(AA_keep_outer,2) ~= 1),:) = 0 ;
+
+a = arrayfun(@(x) fun.get_pathway_counts(AA_keep_outer(:,x),model_orig),...
+             1:size(AA_keep_outer,2),...
+             'UniformOutput', false);
+        
+a = cat(2,a{:});
+b = fun.get_pathway_counts(ones(1,size(model_orig.subSystems,1))',model_orig);
+%PathwayActivity_A_keep = a(:,:)./b;
+PathwayActivity_A_keep = a;
+%filter_0_idx = find(sum(PathwayActivity_A_keep,2) > size(PathwayActivity_A_keep,2)*0.7);
+%filter_0_idx  = find(var(PathwayActivity_A_keep')' > 0);
+filter_0_idx = sum(PathwayActivity_A_keep,2)>0;
+pathways_to_plot = unique([model_orig.subSystems{:}]);
+pathways_to_plot = pathways_to_plot(filter_0_idx);
+b = b(filter_0_idx);
+pathways_to_plot = pathways_to_plot + "  -  " + string(b)';
+
+
+fig = fun.plot_clustergram(PathwayActivity_A_keep(filter_0_idx,:),...
+                     pathways_to_plot,...
+                     model_names,...
+                     {'Pathway activity for all models [count rxn per pathway/ " for consistent model]'},...
+                     [100 100 800 600],...fig
+                     altcolor)
+saveas(fig,scr_para.results_path + "\pathway_activity_outer_jaccard_score.png");
+plot2svg(['./analysis/' char(model_id) '/pathway_activity_outer_jaccard_score_svg.svg'],fig)
+results.pathway_activity_outer = PathwayActivity_A_keep;
+
+%clear AA_keep PathwayActivity_A_keep a b filter_0_idx pathways_to_plot
+
+model_orig.rxns(AA_keep_outer(:,2))
+
 %% FBA 
 
 condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
@@ -248,7 +307,7 @@ clear FVA_res FVA_sim_reactions FVA_sim_overall minFlux maxFlux overallSim rxnSi
 FVAsimilarity([FVA_res.minFlux(:,y), FVA_res.maxFlux(:,y)],...
                                              [FVA_res.minFlux(:,x), FVA_res.maxFlux(:,x)]);
         
-
+ 
 %% save results 
 
 save(scr_para.results_path + filesep + char(datetime('now', 'Format', 'yyyyMMdd_hhss')) + "_results_analysis.mat", 'results');
@@ -257,103 +316,115 @@ save(scr_para.results_path + filesep + char(datetime('now', 'Format', 'yyyyMMdd_
 
 
 %% single gene deletion - essential genes - enrichment of essential genes
-% 
-% threshold = 0.5;
-% 
-% condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-%                              condition_models,'UniformOutput',false);
-%                   
-% for x = fieldnames(condition_models)'
-%     
-%     modell = condition_models.(string(x));
-%     
-%     % perform the gene deletion to see which genes are essential 
-%     [modell.grRatio, modell.grRateKO, ...
-%      modell.grRateWT, ~, ~, ~] = singleGeneDeletion(modell, 'FBA', [], 0, 1);
-%     modell.geneList = modell.genes;
-%     modell.essential_genes = modell.grRatio <= threshold;
-% 
-%     modell.essential_genes_Symbols = modell.geneList(modell.essential_genes); %get the identifiers for the essential genes
-%     [~,ia,ib] = intersect(modell.essential_genes_Symbols, dico.ENTREZ); 
-%     modell.essential_genes_Symbols(ia) = dico.SYMBOL(ib); %extract the symbols
-% 
-%     %[modell.enrichment] = GeneEnrichments(modell.essential_genes_Symbols);
-%     %[~,I] = sort(cell2mat(modell.enrichment.enrichment));
-%     %modell.enrichment(I,:);
-%         
-%     condition_models.(x{:}) = modell;
-% end
+
+threshold = 0.5;
+
+condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+                             condition_models,'UniformOutput',false);
+                  
+for x = fieldnames(condition_models)'
+    
+    modell = condition_models.(string(x));
+    
+    % perform the gene deletion to see which genes are essential 
+    [modell.grRatio, modell.grRateKO, ...
+     modell.grRateWT, ~,modell.essential_genes_del_Rxns, ~] = singleGeneDeletion(modell, 'FBA', string(modell.genes), 0, 0);
+    modell.geneList = modell.genes;
+    modell.essential_genes = modell.grRatio <= threshold;
+
+    modell.essential_genes_Symbols = modell.geneList(modell.essential_genes); %get the identifiers for the essential genes
+    [~,ia,ib] = intersect(modell.essential_genes_Symbols, dico.ENTREZ); 
+    modell.essential_genes_Symbols(ia) = dico.SYMBOL(ib); %extract the symbols
+
+    [modell.enrichment] = GeneEnrichments(modell.essential_genes_Symbols);
+    [~,I] = sort(cell2mat(modell.enrichment.enrichment));
+    modell.enrichment(I,:);
+        
+    condition_models.(x{:}) = modell;
+end
 % 
 % % visualize enrichment ? what are those gene sets ? 
 % 
-% figure
-% hold on
-% p = structfun(@(x) plot(sort(x.grRatio,'ascend')),condition_models)
-% xlabel('genes sorted ascending')
-% ylabel('growth Rate Ratio KO/WT')
-% legend(model_names)
-% saveas(gcf,scr_para.results_path + "\ess_genes_grRateKO_WT.png");
-% hold off;
+figure
+hold on
+p = structfun(@(x) plot(sort(x.grRatio,'ascend')),condition_models)
+xlabel('genes sorted ascending')
+ylabel('growth Rate Ratio KO/WT')
+legend(model_names)
+saveas(gcf,scr_para.results_path + "\ess_genes_grRateKO_WT.png");
+hold off;
 % 
-% figure
-% hold on
-% p = structfun(@(x) plot(sort(x.grRateKO,'ascend')),condition_models)
-% xlabel('genes sorted ascending')
-% ylabel('growth Rate Ratio KO/WT')
-% legend(model_names)
-% saveas(gcf,scr_para.results_path + "\ess_genes_grRate.png");
-% hold off;
-% 
-% clear ia ib I p threshold modell
-% 
-% 
-% %% get all the essential genes form all the models
-% 
-% essential_genes = struct2array(structfun(@(x) x.essential_genes,condition_models,'UniformOutput',false));
-% 
-% J = squareform(pdist(essential_genes','jaccard'));
-% %Jaccard similarity plots for sample models 7
-% fig = fun.plot_clustergram(1-J,...
-%                      model_names,...
-%                      model_names,...
-%                      {'Essential gene similarity based on Jaccard distance'},...
-%                      [100 100 800 600],...
-%                      altcolor);
-% saveas(fig,scr_para.results_path + "\essential_gene_similarity_jaccard_score.png");
-% 
-% %% visualize essential genes
-% 
-% id_genes_ess = find(sum(essential_genes,2) ~= 0);
-% essential_genes_non_zero = double(essential_genes(id_genes_ess,:));
-% 
-% [~,ib] = ismember(condition_models.MDA_MB231_Cont_NO.geneList(id_genes_ess)', dico.ENTREZ);
-% 
-% fig = fun.plot_clustergram(essential_genes_non_zero,...
-%                      dico.SYMBOL(ib)',...
-%                      model_names,...
-%                      {'essential genes per model'},...
-%                      [100 100 800 600],...
-%                      altcolor);
-% saveas(fig,scr_para.results_path + "\essential_genes.png");
-% 
-% clear J ib id_genes_ess essential_genes_non_zero essential_genes
-% 
-% %% gene set enrichment of essential genes
-% % get the top 15 terms and visulize them for all the models
-% 
-% enrichment = cell2mat(struct2array(structfun(@(x) x.enrichment.enrichment,condition_models,'UniformOutput',false)));
-% 
-% choose_gene_sets = find((abs(min(enrichment') - max(enrichment')) > 0.4)' | (sum(enrichment,2)>0.6));
-% gene_set_names = arrayfun(@(x) regexprep(x,"_","\_"),condition_models.MDA_MB231_Cont_NO.enrichment.("Database/website"));
-% 
-% fig = fun.plot_clustergram(enrichment(choose_gene_sets,:),...
-%                      gene_set_names(choose_gene_sets)',model_names,...
-%                      {'enrichment of essential genes per model in gene sets'},...
-%                      [100 100 800 600],...
-%                      altcolor);
-% saveas(fig,scr_para.results_path + "\enrichment_genesets_essential_genes.png");
-% 
-% clear choose_gene_sets enrichment gene_set_names
+figure
+hold on
+p = structfun(@(x) plot(sort(x.grRateKO,'ascend')),condition_models)
+xlabel('genes sorted ascending')
+ylabel('growth Rate Ratio KO/WT')
+legend(model_names)
+saveas(gcf,scr_para.results_path + "\ess_genes_grRate.png");
+hold off;
+
+clear ia ib I p threshold modell
+
+
+%% get all the essential genes form all the models
+
+essential_genes = struct2array(structfun(@(x) x.essential_genes,condition_models,'UniformOutput',false));
+essential_genes_del_Rxns = struct2array(structfun(@(x) x.essential_genes_del_Rxns,condition_models,'UniformOutput',false));
+
+essential_genes_unique = essential_genes;
+essential_genes_unique(find(sum(essential_genes,2)==2),:) = 0;
+unique_essential_rxns_NO = essential_genes_del_Rxns(find(essential_genes_unique(:,1)),1);
+unique_essential_rxns_NO_idx = find(ismember(model_orig.rxns,vertcat(unique_essential_rxns_NO{:})));
+unique_essential_rxns_VC = essential_genes_del_Rxns(find(essential_genes_unique(:,2)),2);
+unique_essential_rxns_VC_idx = find(ismember(model_orig.rxns,vertcat(unique_essential_rxns_VC{:})));
+
+
+J = squareform(pdist(essential_genes','jaccard'));
+%Jaccard similarity plots for sample models 7
+fig = fun.plot_clustergram(1-J,...
+                     model_names,...
+                     model_names,...
+                     {'Essential gene similarity based on Jaccard distance'},...
+                     [100 100 800 600],...
+                     altcolor);
+saveas(fig,scr_para.results_path + "\essential_gene_similarity_jaccard_score.png");
+
+
+
+
+%% visualize essential genes
+
+id_genes_ess = find(sum(essential_genes,2) ~= 0);
+essential_genes_non_zero = double(essential_genes(id_genes_ess,:));
+
+[~,ib] = ismember(condition_models.MDA_MB231_Cont_NO.geneList(id_genes_ess)', dico.ENTREZ);
+
+fig = fun.plot_clustergram(essential_genes_non_zero,...
+                     dico.SYMBOL(ib)',...
+                     model_names,...
+                     {'essential genes per model'},...
+                     [100 100 800 600],...
+                     altcolor);
+saveas(fig,scr_para.results_path + "\essential_genes.png");
+
+clear J ib id_genes_ess essential_genes_non_zero essential_genes
+
+%% gene set enrichment of essential genes
+% get the top 15 terms and visulize them for all the models
+
+enrichment = cell2mat(struct2array(structfun(@(x) x.enrichment.enrichment,condition_models,'UniformOutput',false)));
+
+choose_gene_sets = find((abs(min(enrichment') - max(enrichment')) > 0.4)' | (sum(enrichment,2)>0.6));
+gene_set_names = arrayfun(@(x) regexprep(x,"_","\_"),condition_models.MDA_MB231_Cont_NO.enrichment.("Database/website"));
+
+fig = fun.plot_clustergram(enrichment(choose_gene_sets,:),...
+                     gene_set_names(choose_gene_sets)',model_names,...
+                     {'enrichment of essential genes per model in gene sets'},...
+                     [100 100 800 600],...
+                     altcolor);
+saveas(fig,scr_para.results_path + "\enrichment_genesets_essential_genes.png");
+
+clear choose_gene_sets enrichment gene_set_names
 % 
 % %% essential genes detected in which pathways
 % 
