@@ -182,7 +182,7 @@ classdef expression_data
                obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                figflag (1,1) double {mustBeMember(figflag,[1,0])}
                file_path_results (1,1) string
-               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
+               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized","raw_counts"])} ="FPKM"
             end
 
             mkdir(file_path_results + "Discretization" )
