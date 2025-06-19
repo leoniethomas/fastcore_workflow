@@ -1,0 +1,8 @@
+.vscode/
+Figures/
+analysis/
+context_specific_models/
+discretization/
+escher_visualization/
+slides/
+data/
