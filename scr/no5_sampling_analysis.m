@@ -15,7 +15,7 @@ path_to_sampling_data = "." +filesep + "analysis" + filesep +model_id + filesep 
 cd (project_path)
 addpath(genpath(project_path))
 sampling_files = string(ls(path_to_sampling_data));
-sampling_files = sampling_files(contains(sampling_files, "amplingResults"));
+sampling_files = sampling_files(contains(sampling_files, "samplingResults_MDA_MB231_Cont_"));
 sampling_files = regexprep(sampling_files, " ", "")
 
 
@@ -51,30 +51,73 @@ exp = fastcore_experiment(sampling_files,1);
 exp = exp.join_fluxsum_output();
 exp = exp.join_sampling_output();
 
+%% check fluxsum 
+
+[~,income_flux] = exp.fastcore_runs.samplingResults_MDA_MB231_Cont_NO_model_20250602_090252.compute_flux_sum(1);
+[~,outgo_flux] = exp.fastcore_runs.samplingResults_MDA_MB231_Cont_NO_model_20250602_090252.compute_flux_sum(1,0);
+outgo_flux = abs(outgo_flux);
+
 %%
 exp = exp.change_model_labels(["samplingResults_MDA_MB231_Cont_NO_model_20250602_090252",...
                                "samplingResults_MDA_MB231_Cont_NO_model_20250602_090543",...
                                "samplingResults_MDA_MB231_Cont_VC_model_20250602_090916",...
-                               "samplingResults_MDA_MB231_Cont_VC_model_20250602_091221",...
-                               "samplingResults_MDA_MB231_HERVK_C_NO_model_20250602_091549",...
-                               "samplingResults_MDA_MB231_HERVK_C_NO_model_20250602_091904",...
-                               "samplingResults_MDA_MB231_HERVK_C_VC_model_20250602_092222",...
-                               "samplingResults_MDA_MB231_HERVK_C_VC_model_20250602_092545"],...
-                              ["Cont_NO", "Cont_NO","CTR", "CTR", "HERVK_NO", "HERVK_NO", "HERVK", "HERVK"]);
+                               "samplingResults_MDA_MB231_Cont_VC_model_20250602_091221"],...
+                              ["Cont\_NO", "Cont\_NO","CTR", "CTR"]);
 
 %% perform PCA
 
 exp = exp.visualize_sampling(0,... 
                              1,2,...
                              1,...
-                             "samples",0);
+                             "fluxsum",0);
                          
-exp.visualize_sampling_rxn_distribution(3316)
+      %%                 
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"PDHm")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"PGK")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"PFK")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"FBA")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"HEX1")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"G6PDH2r")))
 
+
+%%
+
+
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"ACONTm")),"fluxsum")
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"ACONTm")))
+
+%%
+% writeCbModel(condition_models.MDA_MB231_Cont_VC,'format','json','fileName','VC_model.json')
+% writeCbModel(condition_models.MDA_MB231_Cont_NO,'format','json','fileName','NO_model.json')
+
+%% create escher input csv 
+
+writetable(table(exp.rxn_names, mean(exp.samples(:,1:4000),2)),"sampling_data_NO.csv")
+writetable(table(exp.rxn_names, mean(exp.samples(:,4000:8000),2)),"sampling_data_VC.csv")
+
+
+%% fluxes single samples
+
+i = 123
+writetable(table(exp.rxn_names, mean(exp.samples(:,i),2)),"sampling_data_ev_"+ string(i) + ".csv")
+%% create escher input csv fluxsum
+
+met_names_escher = regexprep(exp.met_names, '\[(.)\]$', '_$1');
+
+writetable(table(met_names_escher, mean(exp.fluxsum(:,1:4000),2)),"sampling_data_fluxsum_NO.csv")
+writetable(table(met_names_escher, mean(exp.fluxsum(:,4000:8000),2)),"sampling_data_fluxsum_VC.csv")
+%% save  model and sample mean
+
+writeCbModel(exp.fastcore_runs.SamplingResults_medium_1500_model_1.model,'format','json','fileName','ev_medium_1_model.json')
+writetable(table(exp.fastcore_runs.SamplingResults_medium_1500_model_1.model.rxns,...
+                 mean(exp.fastcore_runs.SamplingResults_medium_1500_model_1.sampling,2)),"sampling_data_medium_ev_1.csv")
+
+%% find samples which are different to visualize them 
+dist_samples = pdist(exp.samples(:,1:4000));
 
 %% perform differential testing - wilcoxon rank
 
-exp.diff_flux_testing(["Cont_NO",...
+exp.diff_flux_testing(["Cont\_NO",...
                        "CTR"],1,1,scr_para.results_path + filesep)
                        
 
