@@ -57,7 +57,7 @@ data = data.get_normalized_data(scr_para.TPM_file,"TPM");
 
 data = data.get_discretized_data(1,...
                                  string(scr_para.QC_figures_path) + date + filesep, ...
-                                 "TPM");
+                                 "raw_counts");
                              
 
 %% mapping gene expression to rxns 
