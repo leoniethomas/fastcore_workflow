@@ -25,7 +25,7 @@ classdef fastcore_run
             end
         end
         
-        function [obj,fluxsum] = compute_flux_sum(obj,figflag)
+        function [obj,fluxsum] = compute_flux_sum(obj,figflag,compute_based_on_incoming_flux)
             %COMPUTE_FLUX_SUM this function calculates the fluxsum based on all the
             %rxns producing a metabolite, using the sampling data and the stochiometric
             %matrix from the model!
@@ -33,6 +33,7 @@ classdef fastcore_run
             arguments
                obj (1,1) fastcore_run
                figflag (1,1) double {mustBeMember(figflag,[1,0])} =1
+               compute_based_on_incoming_flux (1,1) double {mustBeMember(compute_based_on_incoming_flux,[1,0])} =1
             end
 
             obj.fluxsum=zeros(size(obj.model.S,1),size(obj.sampling,2));
@@ -40,7 +41,12 @@ classdef fastcore_run
                 v=obj.sampling(:,counter); % one sample
                 temp=repmat(v',size(obj.model.S,1),1); %
                 fluxes=obj.model.S.*temp;
-                fluxSumP=full(sum((fluxes>0).*fluxes,2));
+                if compute_based_on_incoming_flux
+                    fluxSumP=full(sum((fluxes>0).*fluxes,2));
+                else
+                    fluxSumP=full(sum((fluxes<0).*fluxes,2));
+                end
+                
                 obj.fluxsum(:,counter)=fluxSumP;
             end
             disp('... fluxSum calculated ...')
