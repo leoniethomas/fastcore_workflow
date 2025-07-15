@@ -2,40 +2,43 @@
 
 % construct context specific model based on gene expression data 
 
-%% Setup and parameters
-
+%% set up session & define input parameter file
 
 clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
-vis_only_met_genes = 1;
-def_run_file = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_def_run_paramters.txt";
-disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_disc_data.mat";
+def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+
+
+%% read in all the script parameters and set working directory, directory the discretization is saved into
 
 input_paramters = readtable(def_run_file, 'Delimiter','\t');
-
-% Define your array of field names
 scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
 
+% add the working path to the path & set the github repo location to be the working directory
 addpath(genpath(scr_para.set_working_directory));
 cd(scr_para.set_working_directory);
-date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output 
-mkdir((scr_para.save_models_to), date)
-mkdir((scr_para.QC_figures_path), date)
 
+% define a unique identifier to be used to name the different  discretizations created
+date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output 
+
+% creating a directory for the following discretzation to be stored into - copying the defined parameters 
+mkdir((scr_para.save_disc_data_to), date)
+mkdir((scr_para.QC_figures_path), date)
 copyfile(def_run_file, ...
-         string(scr_para.save_models_to) + date+ filesep + date + "_def_run_paramters.txt")
+         string(scr_para.save_disc_data_to) + date+ filesep + date + "_def_run_paramters.txt")
      
 
 clear def_run_file input_paramters 
 
-
-%% load model and dico
-
-load(scr_para.model_used) 
+load(scr_para.model_used)
 load(scr_para.gene_dic_file)
+%%
+
+disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_disc_data.mat";
+
 load(disc_data)
 
 
@@ -45,6 +48,7 @@ load(disc_data)
 % I should still fix this part -> cause this is only applying for my input
 % files 
 % -> make a function out of it 
+% adjust it to what is done in the metamod git
 
 [NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
 met_name = RAW(2:end,find(matches(RAW(1,:),scr_para.medium_used_naming_colum)));

@@ -1,9 +1,7 @@
-%% Normalization and QC of the gene expression data used as an input to constrain the metabolic model and therefore create a context specific model
-
-% - this scripts works with an file defining the input parameters - downloading the github repository the file can be found in the data folder 
+%% Normalization and QC of the gene expression data + Discretization 
 
 
-%% read in all the script parameters and set working directory, directory the discretization is saved into
+%% set up session & define input parameter file
 
 clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
@@ -11,20 +9,21 @@ feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
 def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+
+
+%% read in all the script parameters and set working directory, directory the discretization is saved into
+
 input_paramters = readtable(def_run_file, 'Delimiter','\t');
 scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
 
-% add the working path to the path & set the github repo location to be the
-% working directory
+% add the working path to the path & set the github repo location to be the working directory
 addpath(genpath(scr_para.set_working_directory));
 cd(scr_para.set_working_directory);
 
-% define a unique identifier to be used to name the different
-% discretizations created
+% define a unique identifier to be used to name the different  discretizations created
 date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output 
 
-% creating a directory for the following discretzation to be stored into -
-% copying the defined parameters 
+% creating a directory for the following discretzation to be stored into - copying the defined parameters 
 mkdir((scr_para.save_disc_data_to), date)
 mkdir((scr_para.QC_figures_path), date)
 copyfile(def_run_file, ...
@@ -33,7 +32,8 @@ copyfile(def_run_file, ...
 
 clear def_run_file input_paramters 
 
-
+load(scr_para.model_used)
+load(scr_para.gene_dic_file)
 
 %% load metadata, and expression data
 
@@ -57,13 +57,10 @@ data = data.get_normalized_data(scr_para.TPM_file,"TPM");
 
 data = data.get_discretized_data(1,...
                                  string(scr_para.QC_figures_path) + date + filesep, ...
-                                 "raw_counts");
+                                 "FPKM");
                              
 
 %% mapping gene expression to rxns 
-
-load(scr_para.model_used)
-load(scr_para.gene_dic_file)
 
 data = data.map_expression_2_rxns(model,dico)
 
@@ -74,6 +71,29 @@ data = data.get_metabolic_genes(load(scr_para.model_used),...
                                 load(scr_para.gene_dic_file));
 
 %% QC - data exploration
+
+% - pca and clear visualization scripts -> untangle this function!!
+
+
+
+% pca function -> storage in the object 
+% visualization function -> with the option to visualize different
+% attributes on top of the pcs 
+% 
+
+
+% run pca on data 
+
+
+% visualize pca on data 
+
+
+% run clustering on data 
+
+
+% visualize clustering on data
+
+% how can I integrate a umap into the script ? 
 
 
 [coeff,score,latent,...
