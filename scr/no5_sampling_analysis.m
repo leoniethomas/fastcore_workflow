@@ -51,6 +51,10 @@ exp = fastcore_experiment(sampling_files,1);
 exp = exp.join_fluxsum_output();
 exp = exp.join_sampling_output();
 
+%% fluxsum no ? 
+
+
+
 %% check fluxsum 
 
 [~,income_flux] = exp.fastcore_runs.samplingResults_MDA_MB231_Cont_NO_model_20250602_090252.compute_flux_sum(1);
@@ -82,9 +86,39 @@ exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"G6PDH2r")))
 
 %%
 
+%model = exp.fastcore_runs.samplingResults_MDA_MB231_Cont_NO_model_20250602_090252.model;
+model = model_orig
+arg_rxns = string(model.rxns(find(model.S(find(contains(model.mets,"no[c]")),:)~=0 )));
+f = printRxnFormula(model);
+f(find(model.S(find(contains(model.mets,"arg_L[c]")),:)~=0 ))
+cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[c]")),:)~=0 )));
+gu_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"gudac[c]")),:)~=0 )));
 
-exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"ACONTm")),"fluxsum")
-exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"ACONTm")))
+arg_rxns = string(model.rxns(find(model.S(find(contains(model.mets,"arg_L[e]")),:)~=0 )));
+cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[e]")),:)~=0 )));
+
+exp.rxn_names(find(matches(exp.rxn_names,arg_rxns)))
+
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"EX_arg_L[e]")))
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"r1668")))
+    "r1669"
+    "r1933"
+    "GLNyLATthc"
+    "HISyLATthc"
+    "ARGtD"
+    "EX_arg_L[e]"
+    "r1667"
+
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"biomass_reaction")))
+
+
+arg_rxns = string(model.rxns(find(model.S(find(contains(model.mets,"arg_L[m]")),:)~=0 )));
+cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[m]")),:)~=0 )));
+%%
+
+
+exp.visualize_sampling_rxn_distribution(find(matches(exp.met_names,"arg_L[e]")),"fluxsum")
+exp.visualize_sampling_rxn_distribution(find(matches(exp.rxn_names,"DM_pcreat[c]")))
 
 %%
 % writeCbModel(condition_models.MDA_MB231_Cont_VC,'format','json','fileName','VC_model.json')

@@ -13,13 +13,16 @@ feature astheightlimit 2000 % enable long file names
 addpath(genpath("C:\Users\leonie.thomas\plot2svg"))
 
 %% define script parameters
+tic 
 model_id = "20250525_0950";
 project_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
 cd (project_path)
 addpath(genpath(project_path))
+toc
 
 %% load the created models with their whole workspace
+tic
 
 load(path_to_model_to_analyse + "\" +   model_id + "_workspace_cond_models.mat") % load the condition specific models created with rFASTCORMICS
 
@@ -48,10 +51,11 @@ condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
                    
                    
 model_names = regexprep(fieldnames(condition_models),"_", " ");
+toc
 %%
 
-writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
-writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
+%writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
+%writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
 
 %% script initialization
 
@@ -83,6 +87,16 @@ condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
 condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
 condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
 
+%% how many no rxns ? in the different models 
+model = condition_models.MDA_MB231_Cont_NO;
+no_rxns =find(model.S(find(matches(model.mets,"no[c]")),:));
+model.rxns(no_rxns)
+formulas = printRxnFormula(model);
+formulas(no_rxns)
+
+phe_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"pi[c]")),:))))
+arg_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"phe_L[c]")),:))))
+cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[c]")),:))))
 
 %% Rxn occurence similarity - HOW SIMILAR IS THE CONTENT OF THE MODELS AT HAND ? 
 
@@ -144,6 +158,21 @@ heatmap_data = reshape(b, [], 1); % column vector
 % Create the heatmap using imagesc
 imagesc(heatmap_data);
 
+%% scatter plot based on pathway activity 
+
+filter_lables_to_plot  = find(var(PathwayActivity_A_keep')' >= 0);
+pathways_to_plot = unique([model_orig.subSystems{:}]);
+pathways_to_plot = string(pathways_to_plot(filter_lables_to_plot))';
+
+figure
+scatter(PathwayActivity_A_keep(:,1), PathwayActivity_A_keep(:,2))
+hold on 
+text(PathwayActivity_A_keep(filter_lables_to_plot,1), PathwayActivity_A_keep(filter_lables_to_plot,2), pathways_to_plot, ...
+                         'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+fig = gcf;
+hold off
+%plot2svg(['./analysis/' char(model_id) '/pathway_activity_jaccard_score_scatter_svg.svg'],fig)
+saveas(fig,scr_para.results_path + "\/pathway_activity_jaccard_score_scatter.png");
 
 %% Pathway analysis of outersection
 AA_keep_outer = AA_keep; 
@@ -157,8 +186,10 @@ a = cat(2,a{:});
 b = fun.get_pathway_counts(ones(1,size(model_orig.subSystems,1))',model_orig);
 %PathwayActivity_A_keep = a(:,:)./b;
 PathwayActivity_A_keep = a;
+
 %filter_0_idx = find(sum(PathwayActivity_A_keep,2) > size(PathwayActivity_A_keep,2)*0.7);
 %filter_0_idx  = find(var(PathwayActivity_A_keep')' > 0);
+
 filter_0_idx = sum(PathwayActivity_A_keep,2)>0;
 pathways_to_plot = unique([model_orig.subSystems{:}]);
 pathways_to_plot = pathways_to_plot(filter_0_idx);
@@ -180,6 +211,23 @@ results.pathway_activity_outer = PathwayActivity_A_keep;
 
 model_orig.rxns(AA_keep_outer(:,2))
 
+
+%% investigate cholesterol metabolism 
+
+% find rxns which are specific to model and part of the cholesterol
+% metabolism
+idx_rxns = find(sum(AA_keep,2) == 1 & string(model_orig.subSystems) == "Valine, leucine, and isoleucine metabolism");
+%idx_rxns = find(sum(AA_keep,2) == 1 & string(model_orig.subSystems) == "Sphingolipid metabolism");
+
+model_orig.rxns(idx_rxns)
+
+form = printRxnFormula(model_orig);
+form(idx_rxns)
+
+
+AA_keep(idx_rxns,:)
+model_orig.rxns(idx_rxns)
+    
 %% FBA 
 
 condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
@@ -333,15 +381,17 @@ for x = fieldnames(condition_models)'
     modell.essential_genes = modell.grRatio <= threshold;
 
     modell.essential_genes_Symbols = modell.geneList(modell.essential_genes); %get the identifiers for the essential genes
-    [~,ia,ib] = intersect(modell.essential_genes_Symbols, dico.ENTREZ); 
+    [~,ia,ib] = intersect(regexprep(modell.essential_genes_Symbols,".1$",""), dico.ENTREZ); 
     modell.essential_genes_Symbols(ia) = dico.SYMBOL(ib); %extract the symbols
 
     [modell.enrichment] = GeneEnrichments(modell.essential_genes_Symbols);
     [~,I] = sort(cell2mat(modell.enrichment.enrichment));
     modell.enrichment(I,:);
-        
+    
     condition_models.(x{:}) = modell;
 end
+
+
 % 
 % % visualize enrichment ? what are those gene sets ? 
 % 
@@ -364,7 +414,13 @@ saveas(gcf,scr_para.results_path + "\ess_genes_grRate.png");
 hold off;
 
 clear ia ib I p threshold modell
+%% save gene essentiallity 
 
+ess_genes = table(condition_models.MDA_MB231_Cont_NO.essential_genes,condition_models.MDA_MB231_Cont_VC.essential_genes,...
+                  'RowNames', regexprep(string(condition_models.MDA_MB231_Cont_NO.genes),".1$",""),...
+                  'VariableNames',string(fieldnames(condition_models))');
+
+writetable(ess_genes,scr_para.results_path + "\ess_genes.csv",'WriteRowNames',true)
 
 %% get all the essential genes form all the models
 
