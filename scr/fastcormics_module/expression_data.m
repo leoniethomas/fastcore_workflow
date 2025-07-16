@@ -20,6 +20,7 @@ classdef expression_data
         features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
         rxn_names % rxn names from the metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
+        pca
     end
     
     methods
@@ -282,48 +283,57 @@ classdef expression_data
             
         end
         
-        function [coeff,score,latent,tsquared,explained,cluster] = QC_pca_kmeans(obj,data_slot,group_column, vis_pcs,num_k,vis_genes_idx,save_fig, pat_rep_label)
+        function obj = perform_pca_kmeans(obj,data_slot,num_k,vis_features)
+            
+            arguments
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+               data_slot (1,1)
+               num_k (1,1)
+               vis_features (1,:) =ones(1,size(obj.(data_slot),1))
+            end  
+            
             
             data = obj.(data_slot);
-            sample_name = string(obj.metadata.(group_column));
-            data = full(data(vis_genes_idx,:));
+            data = full(data(find(vis_features),:));
             
-            [coeff,score,latent,tsquared,explained] = pca(data');
+            [obj.pca.(data_slot).coeff,obj.pca.(data_slot).score,obj.pca.(data_slot).latent,obj.pca.(data_slot).tsquared,obj.pca.(data_slot).explained] = pca(data');
             cluster =num2cell(num2str(kmeans(data',num_k)));
+            column_name = "kmeans_k" + string(num_k) + "_" + data_slot + "_features_" + string(length(find(vis_features)));
+            obj.metadata.(column_name) = str2num(cell2mat(cluster));
+            
+        end
+        
+        function visualize_dimreduction(obj,colour_label,reduction,data_slot,save_fig, pat_rep_label,vis_dim)
 
+            arguments
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+               colour_label (1,1) ="Treatment"
+               reduction (1,1) ="pca"
+               data_slot (1,1) ="FPKM"
+               save_fig (1,1) ="mapped_expression_" + reduction + ".png"
+               pat_rep_label (1,2) =["_" "/_"]
+               vis_dim (1,2) =[1,2]
+            end  
+            
+            sample_cat = string(obj.metadata.(colour_label));
+            score = obj.(reduction).(data_slot).score;
+            explained = obj.(reduction).(data_slot).explained;
             figure
             hold on
-            for x = unique(sample_name)'
+            for x = unique(sample_cat)'
                 %disp(x);
-                idx = contains(sample_name,x{:});
-                scatter(score(idx,vis_pcs(2)),score(idx,vis_pcs(1)))
+                idx = contains(sample_cat,x{:});
+                scatter(score(idx,vis_dim(2)),score(idx,vis_dim(1)))
             end   
 
-            title('PCA - label')
-            xlabel(['PC ', num2str(vis_pcs(2)), '  : ', num2str(explained(vis_pcs(2)))])
-            ylabel(['PC ', num2str(vis_pcs(1)), '  : ', num2str(explained(vis_pcs(1)))])
-            legend(regexprep(unique(sample_name)', pat_rep_label(1), pat_rep_label(2)) , ...
+            title(regexprep(reduction+" - " + data_slot + " - " + colour_label, "_" , " "))
+            xlabel(['PC ', num2str(vis_dim(2)), '  : ', num2str(explained(vis_dim(2)))])
+            ylabel(['PC ', num2str(vis_dim(1)), '  : ', num2str(explained(vis_dim(1)))])
+            legend(regexprep(unique(sample_cat)', pat_rep_label(1), pat_rep_label(2)) , ...
                    'location','best')
             hold off
             saveas(gcf, regexprep(save_fig,"PCA.png","PCA_label.png"));
-
-            figure
-            hold on
-            for x = unique(cluster)'
-                %disp(x);
-                idx = contains(cluster,x{:});
-                scatter(score(idx,vis_pcs(2)),score(idx,vis_pcs(1)))
-            end   
-
-            title('PCA - cluster id')
-            xlabel(['PC ', num2str(vis_pcs(2)), '  : ', num2str(explained(vis_pcs(2)))])
-            ylabel(['PC ', num2str(vis_pcs(1)), '  : ', num2str(explained(vis_pcs(1)))])
-            legend(unique(cluster), ...
-                   'location','best')
-            hold off
-            saveas(gcf, regexprep(save_fig,"PCA.png","PCA_clustering.png"));
         end
-
     end
 end
 

@@ -55,7 +55,7 @@ data = data.get_normalized_data(scr_para.TPM_file,"TPM");
 
 %%
 
-data = data.get_discretized_data(1,...
+data = data.get_discretized_data(0,...
                                  string(scr_para.QC_figures_path) + date + filesep, ...
                                  "FPKM");
                              
@@ -72,61 +72,25 @@ data = data.get_metabolic_genes(load(scr_para.model_used),...
 
 %% QC - data exploration
 
-% - pca and clear visualization scripts -> untangle this function!!
-
-
-
-% pca function -> storage in the object 
-% visualization function -> with the option to visualize different
-% attributes on top of the pcs 
-% 
-
 
 % run pca on data 
+data = data.perform_pca_kmeans("FPKM",2);
+data = data.perform_pca_kmeans("mapping_exp_2_rxns",2);
+data = data.perform_pca_kmeans("TPM",2);
+data = data.perform_pca_kmeans("discretized",2);
+% visualize pca and clustering
+data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","pca","FPKM")
+data.visualize_dimreduction("Treatment","pca","FPKM")
+data.visualize_dimreduction("kmeans_k2_mapping_exp_2_rxns_features_10600","pca","mapping_exp_2_rxns")
+data.visualize_dimreduction("Treatment","pca","mapping_exp_2_rxns")
+data.visualize_dimreduction("kmeans_k2_TPM_features_37232","pca","TPM")
+data.visualize_dimreduction("Treatment","pca","TPM")
+data.visualize_dimreduction("kmeans_k2_discretized_features_37232","pca","discretized")
+data.visualize_dimreduction("Treatment","pca","discretized")
 
 
-% visualize pca on data 
 
-
-% run clustering on data 
-
-
-% visualize clustering on data
-
-% how can I integrate a umap into the script ? 
-
-
-[coeff,score,latent,...
- tsquared,explained,cluster] = data.QC_pca_kmeans("mapping_exp_2_rxns", scr_para.columns_to_define_model_samples_on, ...
-                                                  [1 2],6, 1:length(data.rxn_names), ...
-                                                  [scr_para.QC_figures_path date '/' date  '_mapped_expression_PCA.png'],...
-                                                  ["MDA-MB231-" ""]);
-                                              
-                                     
-[coeff,score,latent,...
- tsquared,explained,cluster] = data.QC_pca_kmeans("TPM", scr_para.columns_to_define_model_samples_on, ...
-                                                  [1 2],6,1:length(data.feature_names_norm), ...
-                                                  [scr_para.QC_figures_path date '/' date  'TPM_PCA.png'],...
-                                                  ["MDA-MB231-" ""]);
-[coeff,score,latent,...
- tsquared,explained,cluster] = data.QC_pca_kmeans("discretized", scr_para.columns_to_define_model_samples_on, ...
-                                                  [1 2],2,1:length(data.feature_names_norm), ...
-                                                  [scr_para.QC_figures_path date '/' date  '_discretized_on_TPM_metgenes_PCA.png'],...
-                                                  ["MDA-MB231-" ""]);   
-                                              
-[coeff,score,latent,...
- tsquared,explained,cluster] = data.QC_pca_kmeans("FPKM", scr_para.columns_to_define_model_samples_on, ...
-                                                  [1 2],6, 1:length(data.feature_names_norm), ...
-                                                  [scr_para.QC_figures_path date '/' date  '_fpkm_PCA.png'],...
-                                                  ["MDA-MB231-" ""]);   
-                                              
-[coeff,score,latent,...
- tsquared,explained,cluster] = data.QC_pca_kmeans("raw_counts", scr_para.columns_to_define_model_samples_on, ...
-                                                  [1 2],6, 1:length(data.feature_names_raw), ...
-                                                  [scr_para.QC_figures_path date '/' date  '_raw_counts_PCA.png'],...
-                                                  ["MDA-MB231-" ""]);                                          
-
-
+% get QC plots                               
 data.get_QC_plots("raw_counts","SampleID",string(scr_para.QC_figures_path) + date + filesep)
 
 data.get_QC_plots("FPKM","SampleID",string(scr_para.QC_figures_path) + date + filesep)
