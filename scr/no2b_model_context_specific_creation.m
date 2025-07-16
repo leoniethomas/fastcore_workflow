@@ -71,6 +71,7 @@ exp = exp.medium_constrain(med,"set_fluxes",0)
 %% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
 
 exp.data = data;
+exp.data.source = disc_data;
 
 %%%%%%%%%%%%%%%%%%%%%%  set settings used for the fastcormics run 
 optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ...
@@ -114,9 +115,10 @@ exp.condition_models = condition_models;
 %%
 
 clear A AA idx xi x TXT tsquared model_cond condition_column cond
+mkdir([scr_para.save_models_to  date])
 
 exp_file_name = [scr_para.save_models_to  date '/' date '_fastcore_exp.mat'];  % Convert datetime object to string
-disp(md_file_name);
+disp(exp_file_name);
 md_file_name = [scr_para.save_models_to  date '/' date '_cond_models.mat'];  % Convert datetime object to string
 disp(md_file_name);
 dat_file_name = [scr_para.save_models_to   date '/' date  '_workspace_cond_models.mat'];  % Convert datetime object to string

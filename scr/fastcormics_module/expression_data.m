@@ -21,6 +21,7 @@ classdef expression_data
         rxn_names % rxn names from the metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
         pca
+        source
     end
     
     methods
