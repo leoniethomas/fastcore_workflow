@@ -33,13 +33,55 @@ copyfile(def_run_file, ...
 
 clear def_run_file input_paramters 
 
+%% model and dictionary 
 load(scr_para.model_used)
 load(scr_para.gene_dic_file)
-%%
 
-disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250525_0912\20250525_0912_disc_data.mat";
+%% load preprocessed gene expression data
+
+disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250716_1109\20250716_1109_disc_data.mat";
 
 load(disc_data)
+
+
+%% create medium for the models
+
+med = medium(["RPMI1640.tsv", "FBS.tsv"],"./data/media");
+
+med = med.read_medium_files(["Concentration_M","Concentration_M"])
+med.medium_composition.Flux_mmol_gDW_h = - conc2Rate(med.medium_composition.Concentration_M,1e5,24,400e-12);
+
+needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
+med = med.add_additional_rxns_boundaries(string(split(scr_para.unwanted_uptakes_export_ub, ";"))',...
+                                         string(split(scr_para.unwanted_uptakes_export_lb, ";"))',...
+                                         needed_mets,[])
+                                     
+                                     
+%% set rxns boundaries from medium 
+
+
+
+[~,idx, idx_fluxes_in_model] = intersect(model.medium.rxn,model.rxns);   
+model.lb(idx_fluxes_in_model) = -model.medium{idx,"flux"};
+
+[EX, UPT] = findExcRxns(model);
+needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
+Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
+                                 [model.medium.rxn; findRxnsFromMets(model, needed_mets)]);
+
+% set the rxns lower and upper bound, rxns that we set that we do not want
+% to have, are those also reasonable in my case, for my data ? 
+model.ub(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_ub, ";"))))=0; 
+model.lb(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_lb, ";"))))=0; 
+
+% close all the exchange rxns which are not in the medium, 
+% but this results in losing the biomass when running fastcc 
+% also the constrain_model_rFASTCORMICS can force in the medium 
+% by putting it into the optional_settings.func
+%model.lb(findRxnIDs(model, Ex_to_close))=0; 
+
+clear idx_fluxes_in_model idx
+
 
 
 %% Load medium
