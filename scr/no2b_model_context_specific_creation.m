@@ -33,9 +33,7 @@ copyfile(def_run_file, ...
 
 clear def_run_file input_paramters 
 
-%% model and dictionary 
-load(scr_para.model_used)
-load(scr_para.gene_dic_file)
+
 
 %% load preprocessed gene expression data
 
@@ -55,87 +53,22 @@ needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
 med = med.add_additional_rxns_boundaries(string(split(scr_para.unwanted_uptakes_export_ub, ";"))',...
                                          string(split(scr_para.unwanted_uptakes_export_lb, ";"))',...
                                          needed_mets,[])
+
+%% start a fastcore experiment & test the consistency of input model
+
+load(scr_para.model_used)
+load(scr_para.gene_dic_file)
+model_orig = model;
+
+% BUILD generic CONSISTENT model - fast consistency check (fastcc)
+exp = fastcore_experiment(model_orig,dico)
                                      
-                                     
-%% set rxns boundaries from medium 
+%% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
+
+exp = exp.medium_constrain(med,"set_fluxes",1)
 
 
-
-[~,idx, idx_fluxes_in_model] = intersect(model.medium.rxn,model.rxns);   
-model.lb(idx_fluxes_in_model) = -model.medium{idx,"flux"};
-
-[EX, UPT] = findExcRxns(model);
-needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
-Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
-                                 [model.medium.rxn; findRxnsFromMets(model, needed_mets)]);
-
-% set the rxns lower and upper bound, rxns that we set that we do not want
-% to have, are those also reasonable in my case, for my data ? 
-model.ub(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_ub, ";"))))=0; 
-model.lb(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_lb, ";"))))=0; 
-
-% close all the exchange rxns which are not in the medium, 
-% but this results in losing the biomass when running fastcc 
-% also the constrain_model_rFASTCORMICS can force in the medium 
-% by putting it into the optional_settings.func
-%model.lb(findRxnIDs(model, Ex_to_close))=0; 
-
-clear idx_fluxes_in_model idx
-
-
-
-%% Load medium
-% + set lower boundaries to values in input file
-% + set the rest of the exchange reactions to 0
-% I should still fix this part -> cause this is only applying for my input
-% files 
-% -> make a function out of it 
-% adjust it to what is done in the metamod git
-
-[NUM,TXT,RAW]=xlsread(scr_para.medium_used_file);
-met_name = RAW(2:end,find(matches(RAW(1,:),scr_para.medium_used_naming_colum)));
-flux = cell2mat(RAW(2:end,find(matches(RAW(1,:),scr_para.medium_used_concentration_column))));
-rxn=cellfun(@(x)['EX_' x],met_name,'uni',false);
-model.medium = table(met_name,rxn, flux);
-[~,idx, idx_fluxes_in_model] = intersect(model.medium.rxn,model.rxns);   
-model.lb(idx_fluxes_in_model) = -model.medium{idx,"flux"};
-
-[EX, UPT] = findExcRxns(model);
-needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
-Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
-                                 [model.medium.rxn; findRxnsFromMets(model, needed_mets)]);
-
-% set the rxns lower and upper bound, rxns that we set that we do not want
-% to have, are those also reasonable in my case, for my data ? 
-model.ub(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_ub, ";"))))=0; 
-model.lb(find(ismember(model.rxns,split(scr_para.unwanted_uptakes_export_lb, ";"))))=0; 
-
-% close all the exchange rxns which are not in the medium, 
-% but this results in losing the biomass when running fastcc 
-% also the constrain_model_rFASTCORMICS can force in the medium 
-% by putting it into the optional_settings.func
-%model.lb(findRxnIDs(model, Ex_to_close))=0; 
-
-clear idx_fluxes_in_model idx
-
-
-%% BUILD generic CONSISTENT model - fast consistency check (fastcc)
-model_orig=model;
-A = fastcc_4_rfastcormics(model, 1e-4, 1);
-
-% remove non consistent reactions from model
-model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
-% check if the biomass reactions are still there
-if isempty(model.rxns(find(contains(model.rxns,'biomass'))))
-    error("You lost your objective function, when running fastcc! - your medium might not be sufficient!")
-end
-model_orig=model;
-% check if the created model is now really consistent
-A = fastcc_4_rfastcormics(model, 1e-4, 1);
-
-clear A model
-
-%% BUILT CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
+%% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
 
 load(scr_para.gene_dic_file)
 

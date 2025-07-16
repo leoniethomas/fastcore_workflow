@@ -11,34 +11,113 @@ classdef fastcore_experiment
         transformed_samples
         fluxsum
         met_names
+        original_model
+        medium_constrained_model
+        dico
+        medium
     end
     
     methods
         %%
-        function obj = fastcore_experiment(sampling_files,run_fluxsum)
+        
+        function obj = fastcore_experiment(model,dico)
             %UNTITLED4 Construct an instance of this class
             %   Detailed explanation goes here
-            arguments
-            sampling_files
-            run_fluxsum =0
-            end
-            sample_data = cell2struct(arrayfun(@(x) load(fullfile(x)), sampling_files','UniformOutput', false),...
-                          regexprep(sampling_files, ".mat", ""),...
-                          2);
-            models =  structfun(@(y) y.x.modelSampling,sample_data,'UniformOutput', false);
-            samples =  structfun(@(y) y.x.samples,sample_data,'UniformOutput', false);
             
-            sample_names = arrayfun(@(x) repmat(x, 1,size(samples.(string(x)),2)) , fieldnames(samples)'  , 'UniformOutput' , false);
-            obj.sample_labels = string([sample_names{:}]);
+            disp("Running fastcc and getting rid of unconsistent rxns!")
+            A = fastcc_4_rfastcormics(model, 1e-4, 1);
+
+            % remove non consistent reactions from model
+            model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
+            % check if the biomass reactions are still there
+            consistency_check(model);
             
-            obj.fastcore_runs = cell2struct(arrayfun(@(x) fastcore_run(models.(x),samples.(x),run_fluxsum),...
-                                            string(fieldnames(models)),'UniformOutput', false),...
-                                            regexprep(sampling_files, ".mat", ""),...
-                                            1);
-                                        
-            obj.run_names = string(fieldnames(obj.fastcore_runs));
+            obj.original_model = model;
+            obj.dico = dico;
             
         end
+        
+        function obj = medium_constrain(obj,medium_data,mode,close_all_exchange_rxns, column_media_rxn_abbr)
+            
+            arguments
+                obj
+                medium_data (1,1) medium
+                mode (1,1) string {mustBeMember(mode,["set_fluxes","set_concentrations"])} ="set_fluxes"
+                close_all_exchange_rxns (1,1) double {mustBeMember(close_all_exchange_rxns,[0 1])} =0
+                column_media_rxn_abbr (1,1) string ="ExRxns_Recon3D"
+            end
+            obj.medium = medium_data;
+            
+            % find rxns defined in media composition
+            model = obj.original_model;
+            
+            [~,idx, idx_fluxes_in_model] = intersect(medium_data.medium_composition.(column_media_rxn_abbr),...
+                                                     model.rxns); 
+                                                 
+            % set fluxes for metabolites in the medium
+            if mode == "set_fluxes"
+                model.lb(idx_fluxes_in_model) = medium_data.medium_composition{idx,"Flux_mmol_gDW_h"};
+            elseif mode == "set_concentrations"
+                model.lb(idx_fluxes_in_model) = medium_data.medium_composition{idx,"Concentration_M"};
+            end
+            
+            [EX, UPT] = findExcRxns(model);
+            needed_mets = medium_data.manual_set_boundaries.wanted_import;
+            Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
+                                             [medium_data.medium_composition.(column_media_rxn_abbr);...
+                                              findRxnsFromMets(model, needed_mets)]);
+
+            % set the rxns lower and upper bound, rxns that we set that we do not want
+            % to have, are those also reasonable in my case, for my data ? 
+            model.ub(find(ismember(model.rxns,split(medium_data.manual_set_boundaries.unwanted_export, ";"))))=0; 
+            model.lb(find(ismember(model.rxns,split(medium_data.manual_set_boundaries.unwanted_import, ";"))))=0; 
+
+            % close all the exchange rxns which are not in the medium, 
+            % but this results in losing the biomass when running fastcc 
+            % also the constrain_model_rFASTCORMICS can force in the medium 
+            % by putting it into the optional_settings.func
+            if close_all_exchange_rxns
+                disp("All the exchange rxns not defined in the medium will be closed!")
+                model.lb(findRxnIDs(model, Ex_to_close))=0; 
+            end 
+            
+            
+            
+            disp("Running fastcc and getting rid of unconsistent rxns!")
+            A = fastcc_4_rfastcormics(model, 1e-4, 1);
+
+            % remove non consistent reactions from model
+            model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
+            % check if the biomass reactions are still there
+            consistency_check(model);
+            
+            obj.medium_constrained_model = model;
+        end
+
+%         function obj = fastcore_experiment(sampling_files,run_fluxsum)
+%             %UNTITLED4 Construct an instance of this class
+%             %   Detailed explanation goes here
+%             arguments
+%             sampling_files
+%             run_fluxsum =0
+%             end
+%             sample_data = cell2struct(arrayfun(@(x) load(fullfile(x)), sampling_files','UniformOutput', false),...
+%                           regexprep(sampling_files, ".mat", ""),...
+%                           2);
+%             models =  structfun(@(y) y.x.modelSampling,sample_data,'UniformOutput', false);
+%             samples =  structfun(@(y) y.x.samples,sample_data,'UniformOutput', false);
+%             
+%             sample_names = arrayfun(@(x) repmat(x, 1,size(samples.(string(x)),2)) , fieldnames(samples)'  , 'UniformOutput' , false);
+%             obj.sample_labels = string([sample_names{:}]);
+%             
+%             obj.fastcore_runs = cell2struct(arrayfun(@(x) fastcore_run(models.(x),samples.(x),run_fluxsum),...
+%                                             string(fieldnames(models)),'UniformOutput', false),...
+%                                             regexprep(sampling_files, ".mat", ""),...
+%                                             1);
+%                                         
+%             obj.run_names = string(fieldnames(obj.fastcore_runs));
+%             
+%         end
         %%
         function obj = join_sampling_output(obj)
             %METHOD1 Summary of this method goes here
@@ -295,6 +374,24 @@ classdef fastcore_experiment
 
         end
         
+    end
+    end
+
+    
+function consistency_check(model)
+    %UNTITLED4 Construct an instance of this class
+    %   Detailed explanation goes here    
+
+    disp("Check consistency of input model!")
+    if isempty(model.rxns(find(contains(model.rxns,'biomass'))))
+        error("You lost your objective function, when running fastcc!")
+    end
+    % check if the created model is now really consistent
+    A = fastcc_4_rfastcormics(model, 1e-4, 1);
+    if length(model.rxns) ~= length(A)
+        error("Your intput model is not consistent after running fastcc! Check your model!")
+    else
+        disp("Your model is consistent!")
     end
 end
 
