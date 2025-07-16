@@ -65,29 +65,23 @@ exp = fastcore_experiment(model_orig,dico)
                                      
 %% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
 
-exp = exp.medium_constrain(med,"set_fluxes",1)
+exp = exp.medium_constrain(med,"set_fluxes",0)
 
 
 %% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
 
-load(scr_para.gene_dic_file)
+exp.data = data;
 
-subSys=vertcat(model_orig.subSystems{:});
- 
-optional_settings.unpenalized = model_orig.rxns(ismember(subSys, ...
+%%%%%%%%%%%%%%%%%%%%%%  set settings used for the fastcormics run 
+optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ...
                                                          strsplit(scr_para.unpenalizedSystems,";")));
-
-% you need to input the exchange rxns names, to force the model exchange
-% rxns in, after check f
-optional_settings.func = {'DM_atp_c_', 'biomass_reaction',model_orig.medium.rxn{:}}; %biomass_maintenance %-> c
-
-% these two things need to be set like this otherwise the model will not be
-% medium constrained!
-optional_settings.medium = model_orig.medium.met_name; %(add media instead)
+% forcing the medium in by setting it into fun option
+optional_settings.func = {'DM_atp_c_', 'biomass_reaction',med.medium_composition.ExRxns_Recon3D{:}}; %biomass_maintenance %-> c
+% composition constrain the model by setting the optional setting to the medium composition
+optional_settings.medium = med.medium_composition.Mets_Recon3D; %(add media instead)
 optional_settings.not_medium_constrained = scr_para.not_medium_constrained;
-
 biomass_rxn = {'biomass_reaction'} 
-
+%%%%%%%%%%%%%%%%%%%%%%  
                         
 condition_models = struct();
 
@@ -112,11 +106,17 @@ for cond = unique(data.metadata.(condition_column))'
         disp("number of samples for which this condition was modelled on: " + size(data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
 end
 
+exp.optional_settings = optional_settings;
+exp.condition_models = condition_models;
+
+
 
 %%
 
 clear A AA idx xi x TXT tsquared model_cond condition_column cond
 
+exp_file_name = [scr_para.save_models_to  date '/' date '_fastcore_exp.mat'];  % Convert datetime object to string
+disp(md_file_name);
 md_file_name = [scr_para.save_models_to  date '/' date '_cond_models.mat'];  % Convert datetime object to string
 disp(md_file_name);
 dat_file_name = [scr_para.save_models_to   date '/' date  '_workspace_cond_models.mat'];  % Convert datetime object to string
@@ -124,5 +124,5 @@ disp(dat_file_name);
 
 save(md_file_name, 'condition_models')
 save(dat_file_name)
-
+save(exp_file_name, 'exp')
 

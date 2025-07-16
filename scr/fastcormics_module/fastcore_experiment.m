@@ -13,8 +13,11 @@ classdef fastcore_experiment
         met_names
         original_model
         medium_constrained_model
+        condition_models
         dico
         medium
+        data
+        optional_settings
     end
     
     methods
