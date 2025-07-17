@@ -11,19 +11,19 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 addpath(genpath("C:\Users\leonie.thomas\plot2svg"))
+addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
+addpath(genpath("C:\Users\leonie.thomas\scFASTCORMICS"))
 
 %% define script parameters
 tic 
 model_id = "20250525_0950";
-project_path = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
+project_path = "C:\Users\leonie.thomas\fastcore_workflow";
 path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
 cd (project_path)
 addpath(genpath(project_path))
 toc
 
 %% load the created models with their whole workspace
-tic
-
 load(path_to_model_to_analyse + "\" +   model_id + "_workspace_cond_models.mat") % load the condition specific models created with rFASTCORMICS
 
 input_paramters = dir(path_to_model_to_analyse + "\" + "*def_run_paramters.txt");
@@ -51,7 +51,12 @@ condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
                    
                    
 model_names = regexprep(fieldnames(condition_models),"_", " ");
-toc
+
+%%
+
+exp = struct();
+exp.condition_models = condition_models;
+exp.original_model = model_orig;
 %%
 
 %writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
@@ -65,52 +70,13 @@ results = struct();
 
 % load functions
 fun = functions_no3;
+%%
+analysis_results = model_analysis(exp);
 
-%% get model size - HOW BIG ARE OUR MODELS ? 
+%% plot jaccard similarity score for rxn presence 
 
-condition_models = structfun(@(x) removeUnusedGenesFastbox(x,1), ... % remove unused genes to get model size in terms of genes active 
-                             condition_models,'UniformOutput',false);
-                         
+get_jaccard_similarity(analysis_results)
 
-
-% simple quantities per model - #rxns #genes #metabolites in the models
-results.model_size = array2table(struct2array(structfun(@(x) {numel(x.rxns);numel(x.mets);numel(x.genes)}, ...
-                                                        condition_models,'UniformOutput',false))',...
-                                 'VariableNames',{'count_reactions','count_metabolites','count_genes'},...
-                                 'RowNames',model_names)
-results.model_size
-
-
-load(path_to_model_to_analyse + "\" + scr_para.model_to_load) % load context specific models again, to have all the genes in them, needed for later comparison
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
-
-%% how many no rxns ? in the different models 
-model = condition_models.MDA_MB231_Cont_NO;
-no_rxns =find(model.S(find(matches(model.mets,"no[c]")),:));
-model.rxns(no_rxns)
-formulas = printRxnFormula(model);
-formulas(no_rxns)
-
-phe_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"pi[c]")),:))))
-arg_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"phe_L[c]")),:))))
-cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[c]")),:))))
-
-%% Rxn occurence similarity - HOW SIMILAR IS THE CONTENT OF THE MODELS AT HAND ? 
-
-% get the rxns still in the modell into a matrix where the rxns which are kept are set to 1, instead of a array which entails the indices of all the rxns kept  
-AA_keep = struct2array(structfun(@(x) fun.reverse_find_from_indices(length(model_orig.rxns),x.AA), ...
-                       condition_models,'UniformOutput',false));
-% in that format we can compute a distance matrix
-J = squareform(pdist(AA_keep','jaccard'));
-fig = fun.plot_clustergram(1-J,...
-                     model_names,...
-                     model_names,...
-                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
-                     [100 100 800 600],...
-                     altcolor);
 saveas(fig,scr_para.results_path + "\rxn_occurence_jaccard_distance.png");
 results.jaccard = J;
 
@@ -525,5 +491,14 @@ clear choose_gene_sets enrichment gene_set_names
 % 
 % clear DrugList grRatio grRateKO grRateWT drug_deletion_res drugidxs_with_an_effect
 
+%% how many no rxns ? in the different models 
+model = condition_models.MDA_MB231_Cont_NO;
+no_rxns =find(model.S(find(matches(model.mets,"no[c]")),:));
+model.rxns(no_rxns)
+formulas = printRxnFormula(model);
+formulas(no_rxns)
 
+phe_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"pi[c]")),:))))
+arg_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"phe_L[c]")),:))))
+cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[c]")),:))))
 
