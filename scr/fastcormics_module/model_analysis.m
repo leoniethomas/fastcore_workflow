@@ -37,6 +37,19 @@ classdef model_analysis
                      {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
                      [100 100 800 600]);   
         end
+        
+        function [fig,intersection,outersection] = get_intersections_outersections(exp,model_names,slot)
+            arguments
+               exp
+               model_names 
+               slot (1,1) string ="rxns"
+            end
+            
+            exp.condition_models 
+            
+            
+            
+        end
     end
 end
 
