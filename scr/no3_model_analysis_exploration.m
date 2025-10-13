@@ -21,25 +21,21 @@ changeCobraSolver("ibm_cplex");
 %% define script parameters
 tic 
 model_id = "20250716_0612";
-work_on_fastcore_exp = 1;
-project_path = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
-path_to_model_to_analyse = project_path + "\context_specific_models\" + model_id;
+work_on_fastcore_exp = 0;
+%project_path = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
+project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
+path_to_model_to_analyse = project_path + filesep + "context_specific_models" + filesep + model_id;
 cd (project_path)
 addpath(genpath(project_path))
 
-input_paramters = dir(path_to_model_to_analyse + "\" + "*def_run_paramters.txt");
-input_paramters = [input_paramters.folder '\' input_paramters.name];
+input_paramters = dir(path_to_model_to_analyse + filesep + "*def_run_paramters.txt");
+input_paramters = [input_paramters.folder filesep input_paramters.name];
 input_paramters = readtable(input_paramters);
 scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
-scr_para.results_path = project_path + "\analysis\" + model_id;
-
 scr_para.model_to_load = model_id + "_cond_models.mat";
 scr_para.model_workspace_to_load = model_id + "_workspace_cond_models.mat";
-scr_para.objective = 'biomass';
-scr_para.remove_unused_genes = 1;
 
-mkdir(scr_para.results_path);
-results = struct();
+
 toc
 
 %% load the created models with their whole workspace
@@ -47,50 +43,51 @@ toc
 % conidtion and workspace file are read in 
 
 if work_on_fastcore_exp
-    load(path_to_model_to_analyse + "\" +   model_id + "_fastcore_exp.mat") % load the condition specific models created with rFASTCORMICS
+    load(path_to_model_to_analyse + filesep +   model_id + "_fastcore_exp.mat") % load the condition specific models created with rFASTCORMICS
 else
-    load(path_to_model_to_analyse + "\" +   model_id + "_cond_models.mat")
-    load(path_to_model_to_analyse + "\" +   model_id + "_workspace_cond_models.mat")
+    load(path_to_model_to_analyse + filesep +   model_id + "_cond_models.mat")
+    load(path_to_model_to_analyse + filesep +   model_id + "_workspace_cond_models.mat")
     
     % filter some models out 
-    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
+%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
+%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
+%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
+%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
     
-    exp = struct();
+    exp = fastcore_experiment(model_orig,dico);
     exp.condition_models = condition_models;
-    exp.original_model = model_orig;
+    %exp.metadata = expression_data.metadata;
+    %exp = struct();
+    %exp.condition_models = condition_models;
+    %exp.original_model = model_orig;
 end
+
+scr_para.results_path = project_path + filesep + "analysis" + filesep + model_id;
+scr_para.objective = 'biomass';
+scr_para.remove_unused_genes = 1;
+
+mkdir(scr_para.results_path);
+results = struct();
 
 
 %writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
 %writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
 
 %% 
-analysis_results = model_analysis(exp);
+analysis_results = model_analysis(exp); 
 
 %% plot jaccard similarity score for rxn presence 
 
-fig = get_jaccard_similarity(analysis_results)
+[fig,J] = get_jaccard_similarity(analysis_results)
 
 saveas(fig,scr_para.results_path + "\rxn_occurence_jaccard_distance.png");
 results.jaccard = J;
 clear J
 
 
-%% visualize intersections
+%% visualize intersections rxn presence 
 
-
-%%
-
-
-
-venn([3,4,5], [1 2 1 2])
-inter = length(intersect(condition_models.MDA_MB231_Cont_VC.rxns, condition_models.MDA_MB231_Cont_NO.rxns));
-out_VC = length(setdiff(condition_models.MDA_MB231_Cont_VC.rxns, condition_models.MDA_MB231_Cont_NO.rxns));
-out_NO = length(setdiff(condition_models.MDA_MB231_Cont_NO.rxns, condition_models.MDA_MB231_Cont_VC.rxns))
-
+analysis_results.get_intersection_plot("reaction_presence")
 
 %% Pathway analysis 
 
