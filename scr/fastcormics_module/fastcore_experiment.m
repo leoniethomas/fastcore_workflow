@@ -97,30 +97,31 @@ classdef fastcore_experiment
             obj.medium_constrained_model = model;
         end
 
-%         function obj = fastcore_experiment(sampling_files,run_fluxsum)
-%             %UNTITLED4 Construct an instance of this class
-%             %   Detailed explanation goes here
-%             arguments
-%             sampling_files
-%             run_fluxsum =0
-%             end
-%             sample_data = cell2struct(arrayfun(@(x) load(fullfile(x)), sampling_files','UniformOutput', false),...
-%                           regexprep(sampling_files, ".mat", ""),...
-%                           2);
-%             models =  structfun(@(y) y.x.modelSampling,sample_data,'UniformOutput', false);
-%             samples =  structfun(@(y) y.x.samples,sample_data,'UniformOutput', false);
-%             
-%             sample_names = arrayfun(@(x) repmat(x, 1,size(samples.(string(x)),2)) , fieldnames(samples)'  , 'UniformOutput' , false);
-%             obj.sample_labels = string([sample_names{:}]);
-%             
-%             obj.fastcore_runs = cell2struct(arrayfun(@(x) fastcore_run(models.(x),samples.(x),run_fluxsum),...
-%                                             string(fieldnames(models)),'UniformOutput', false),...
-%                                             regexprep(sampling_files, ".mat", ""),...
-%                                             1);
-%                                         
-%             obj.run_names = string(fieldnames(obj.fastcore_runs));
-%             
-%         end
+         function obj = add_sampling_to_fastcore_experiment(obj,sampling_files,run_fluxsum)
+             %UNTITLED4 Construct an instance of this class
+             %   Detailed explanation goes here
+             arguments
+             obj
+             sampling_files
+             run_fluxsum =0
+             end
+             sample_data = cell2struct(arrayfun(@(x) load(fullfile(x)), sampling_files','UniformOutput', false),...
+                           regexprep(sampling_files, ".mat", ""),...
+                           2);
+             models =  structfun(@(y) y.x.modelSampling,sample_data,'UniformOutput', false);
+             samples =  structfun(@(y) y.x.samples,sample_data,'UniformOutput', false);
+             
+             sample_names = arrayfun(@(x) repmat(x, 1,size(samples.(string(x)),2)) , fieldnames(samples)'  , 'UniformOutput' , false);
+             obj.sample_labels = string([sample_names{:}]);
+             
+             obj.fastcore_runs = cell2struct(arrayfun(@(x) fastcore_run(models.(x),samples.(x),run_fluxsum),...
+                                             string(fieldnames(models)),'UniformOutput', false),...
+                                             regexprep(sampling_files, ".mat", ""),...
+                                             1);
+                                         
+             obj.run_names = string(fieldnames(obj.fastcore_runs));
+             
+         end
         %%
         function obj = join_sampling_output(obj)
             %METHOD1 Summary of this method goes here

@@ -9,7 +9,7 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
-def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
 
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
@@ -37,7 +37,7 @@ clear def_run_file input_paramters
 
 %% load preprocessed gene expression data
 
-disc_data = "\\atlas.uni.lux\FSTC_SYSBIO\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\discretization\20250716_1109\20250716_1109_disc_data.mat";
+disc_data = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/discretization/20250716_1109/20250716_1109_disc_data.mat";
 
 load(disc_data)
 
