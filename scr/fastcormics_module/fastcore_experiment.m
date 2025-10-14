@@ -10,6 +10,10 @@ classdef fastcore_experiment
         fastcore_runs
         transformed_samples
         fluxsum
+        fba
+        fva
+        fva_similarity
+        fva_similarity_rxns
         met_names
         original_model
         medium_constrained_model
@@ -122,7 +126,11 @@ classdef fastcore_experiment
              obj.run_names = string(fieldnames(obj.fastcore_runs));
              
          end
-        %%
+         
+         function obj = add_fba_to_experiment(obj)
+             
+         end
+        
         function obj = join_sampling_output(obj)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
@@ -141,6 +149,40 @@ classdef fastcore_experiment
             min(obj.samples(biomass_idx,:))
             max(obj.samples(biomass_idx,:))
 
+        end
+        function [min_out,max_out] = join_fva_output(obj)
+            %METHOD1 Summary of this method goes here
+            %   Detailed explanation goes here
+            all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
+            all_rxns = unique(vertcat(all_rxns{:}));
+
+            max_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fva.maxFlux.(x),all_rxns), ...
+                                              string(fieldnames(obj.condition_models)),...
+                                              'UniformOutput',false);
+            max_out = array2table(cell2mat(max_ordered'), 'VariableNames', fieldnames(obj.condition_models));
+            max_out.Properties.RowNames = all_rxns;
+            min_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fva.minFlux.(x),all_rxns), ...
+                                              string(fieldnames(obj.condition_models)),...
+                                              'UniformOutput',false);
+
+            min_out = array2table(cell2mat(min_ordered'), 'VariableNames', fieldnames(obj.condition_models));
+            min_out.Properties.RowNames = all_rxns;
+        end
+        function joined_output = join_fba_output(obj)
+            %METHOD1 Summary of this method goes here
+            %   Detailed explanation goes here
+            all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
+            all_rxns = unique(vertcat(all_rxns{:}));
+
+            samples_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fba.(x).v,all_rxns), ...
+                                              string(fieldnames(obj.condition_models)),...
+                                              'UniformOutput',false);
+            biomass_idx = find(ismember(all_rxns, "biomass_reaction"))
+
+            fba_solution = array2table(cell2mat(samples_ordered'), 'VariableNames', fieldnames(obj.condition_models));
+            fba_solution.Properties.RowNames = all_rxns;
+            %fba_solution = fba_solution(obj.original_model.rxns,:);
+            joined_output = fba_solution;
         end
         function obj = join_fluxsum_output(obj)
             all_mets = cellfun(@(x) obj.fastcore_runs.(x).model.mets, string(fieldnames(obj.fastcore_runs)),'UniformOutput',false);

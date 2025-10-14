@@ -4,6 +4,7 @@ classdef model_analysis
         model_names
         model_size
         reaction_presence
+        pathway_counts
     end
     
     methods
@@ -25,6 +26,8 @@ classdef model_analysis
             AA_keep = struct2array(structfun(@(x) get_feature_presence(length(exp.original_model.rxns),x.AA), ...
                                    condition_models,'UniformOutput',false));
             obj.reaction_presence = AA_keep;
+
+
             
         end
         
@@ -39,22 +42,115 @@ classdef model_analysis
                      [100 100 800 600]);   
         end
         
-        function get_intersection_plot(obj,slot_name)
+        function idx = get_intersection_plot(obj,slot_name)
             
             set_names = string(obj.model_names)';
             M = obj.(slot_name);
-            plot_flexible_venn(M, set_names);
+            idx = plot_flexible_venn(M, set_names);
+        end
+        function [obj,relative_counts] = get_pathway_counts(obj,exp)
+           
+            % get pathway ids in model 
+            set_labels = string(obj.model_names)';
+            M = obj.reaction_presence;
+            pathways = string(exp.original_model.subSystems);
+            unique_pathways = unique(pathways);
+
+            % For each unique pathway, find row indices where it occurs
+            groups = arrayfun(@(x) find(pathways == x), unique_pathways, 'UniformOutput', false);
+            num_rows = size(M,1);
+            num_groups = length(groups);
+            G = zeros(num_groups, num_rows);
+
+            for g = 1:num_groups
+                G(g, groups{g}) = 1;
+            end
+
+            group_sums = G * M;
+            % Create table
+            T = array2table(group_sums, 'VariableNames', set_labels);
+
+            % Assign row names (only works if unique_pathways is a cellstr or string array)
+            T.Properties.RowNames = cellstr(unique_pathways); 
+            
+            % groupcounts & unique both sort the same way/ therefore can be
+            % assigned without matching
+            T.original = groupcounts(pathways);
+            
+            obj.pathway_counts = T
+        end
+        function top_data = get_pathway_plot(obj,top_pathways,data_type)
+                arguments
+                    obj
+                    top_pathways =1:20
+                    data_type ="relative"
+                end
+            if data_type == "relative"
+                relative_counts = array2table(obj.pathway_counts{:,1:end-1} ./ obj.pathway_counts.original);
+                relative_counts.Properties.RowNames = obj.pathway_counts.Properties.RowNames;
+                relative_counts.Properties.VariableNames = obj.pathway_counts.Properties.VariableNames(1:end-1);
+                data = relative_counts
+                value_label = "relative counts of subsystem occurence/original model"
+            else
+                data = obj.pathway_counts(:,1:end-1)
+                data{:,:} = data{:,:}./1000
+                value_label = "absolute count of rxns per subsystems [# 1/1000]"
+            end
+            
+            
+            % Compute variance along rows (dim=2)
+            row_var = var(data{:,:}, 0, 2);
+            % Get indices of top n highest variance rows
+            [~, sortedIdx] = sort(row_var, 'descend');
+            
+            
+            if size(data,1) < length(top_pathways)
+                top_pathways = 1:size(data,1)
+            end
+            top20Idx = sortedIdx(top_pathways);
+            
+            fig = plot_clustergram(data{top20Idx,:},...
+                     data.Properties.RowNames(top20Idx),...
+                     data.Properties.VariableNames,...
+                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
+                     [100 100 800 600],...
+                     value_label);   
+                 
+            top_data = data(top20Idx,:);
+        end
+        function J = get_fba_plot(exp,fba_flux_matrix)
+            J = squareform(pdist(fba_flux_matrix{:,:}','jaccard'));
+            altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
+            fig = plot_clustergram(log(1-J),...
+                                 string(exp.model_names)',...
+                                 string(exp.model_names)',...
+                                 {'Similarity of optimal fluxes obtained via FBA [log(jaccard  similarity score)]'},...
+                                 [100 100 800 600],...
+                                 altcolor);
+            
+        end
+        function J = get_fva_sim_plot(exp,fva_sim_matrix)
+            altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
+            fig = plot_clustergram(cell2mat(fva_sim_matrix),...
+                                 string(exp.model_names)',...
+                                 string(exp.model_names)',...
+                                 {'Similarity of optimal fluxes obtained via FBA [log(jaccard  similarity score)]'},...
+                                 [100 100 800 600],...
+                                 altcolor);
+            disp(cell2mat(fva_sim_matrix))
+            
         end
     end
 end
 
-function [fig] = plot_clustergram(data,rownames, colnames,title,position,altcolor)
+function [fig] = plot_clustergram(data,rownames, colnames,title,position,colorbarLabel,altcolor)
     arguments
         data
         rownames
         colnames
         title
         position
+        colorbarLabel = "Value"  % Default label
         altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
     end
   cgo_J = clustergram(data,...
@@ -63,12 +159,21 @@ function [fig] = plot_clustergram(data,rownames, colnames,title,position,altcolo
               'ColumnLabelsRotate',45, ...
               'Cluster', 'all', ...
               'symmetric','False',...
+              'Standardize', 'none',...
               'Colormap', altcolor);  
    addTitle(cgo_J,title)
    cgf = plot(cgo_J); % This should be a figure handle
    colorbar(cgf,'eastoutside');
+   
+   % Add colorbar and label
+   cb = colorbar(cgf, 'eastoutside');
+   cb.Label.String = colorbarLabel;
+   cb.Label.FontSize = 12;  % optional formatting
+    
    fig = gcf;
    fig.Position = position;
+   
+   
 
 end
 
@@ -77,7 +182,7 @@ end
             rev_find(indices) = 1; 
  end
  
- function plot_flexible_venn(M, set_names)
+ function idx = plot_flexible_venn(M, set_names)
 % M: binary matrix (rows = items, cols = sets)
 % set_names: cell array of strings (e.g., {'A','B','C','D'})
 
@@ -88,11 +193,14 @@ end
 
 % Generate all exclusive intersection combinations
 labels = strings(2^n - 1, 1);  % Max 15 for 4 sets
+idx = struct();  % Max 15 for 4 sets
 
 % Loop through 1 to 2^n - 1 to get all combinations (except all zeros)
 for i = 1:(2^n - 1)
     mask = dec2bin(i, n) == '1';  % Logical mask for active sets
+    name_set = strjoin(set_names(find(mask)), "_")
     rows_match = all(M(:, mask) == 1, 2) & all(M(:, ~mask) == 0, 2);
+    idx.(name_set) = find(rows_match);
     labels(i) = string(sum(rows_match));
 end
 

@@ -48,18 +48,8 @@ else
     load(path_to_model_to_analyse + filesep +   model_id + "_cond_models.mat")
     load(path_to_model_to_analyse + filesep +   model_id + "_workspace_cond_models.mat")
     
-    % filter some models out 
-%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_NO')
-%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_C_VC')
-%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_NO')
-%    condition_models = rmfield(condition_models,'MDA_MB231_HERVK_D_VC')
-    
     exp = fastcore_experiment(model_orig,dico);
     exp.condition_models = condition_models;
-    %exp.metadata = expression_data.metadata;
-    %exp = struct();
-    %exp.condition_models = condition_models;
-    %exp.original_model = model_orig;
 end
 
 scr_para.results_path = project_path + filesep + "analysis" + filesep + model_id;
@@ -87,248 +77,83 @@ clear J
 
 %% visualize intersections rxn presence 
 
-analysis_results.get_intersection_plot("reaction_presence")
+% get indices of outer and intersections
+idx = analysis_results.get_intersection_plot("reaction_presence")
 
-%% Pathway analysis 
+%% Pathway analysis
 
-a = arrayfun(@(x) fun.get_pathway_counts(AA_keep(:,x),model_orig),...
-             1:size(AA_keep,2),...
-             'UniformOutput', false);
-        
-a = cat(2,a{:});
-b = fun.get_pathway_counts(ones(1,size(model_orig.subSystems,1))',model_orig);
-PathwayActivity_A_keep = a(:,:)./b;
-%filter_0_idx = find(sum(PathwayActivity_A_keep,2) > size(PathwayActivity_A_keep,2)*0.7);
-filter_0_idx  = find(var(PathwayActivity_A_keep')' > 0);
-pathways_to_plot = unique([model_orig.subSystems{:}]);
-pathways_to_plot = pathways_to_plot(filter_0_idx);
-b = b(filter_0_idx);
-pathways_to_plot = pathways_to_plot + "  -  " + string(b)';
+% get count of rxn per pathway per model -> pathway presence
+analysis_results = analysis_results.get_pathway_counts(exp);
+% visualize pathway presence
+analysis_results.get_pathway_plot(1:15,"")
 
-
-fig = fun.plot_clustergram(PathwayActivity_A_keep(filter_0_idx,:),...
-                     pathways_to_plot,...
-                     model_names,...
-                     {'Pathway activity for all models [count rxn per pathway/ " for consistent model]'},...
-                     [100 100 800 600],...fig
-                     altcolor)
-saveas(fig,scr_para.results_path + "\pathway_activity_jaccard_score.png");
-plot2svg(['./analysis/' char(model_id) '/pathway_activity_jaccard_score_svg.svg'],fig)
-results.pathway_activity = PathwayActivity_A_keep;
-
-
-%clear AA_keep PathwayActivity_A_keep a b filter_0_idx pathways_to_plot
-
-% get colorbar for set size 
-b = [90 178 1000 40 98 31 47 93 165 211 450 133 34 40 46 8 45 32 151 71 32 65 105 27 961 15 41 14 11 16 21 164 59 19 3 7];
-heatmap_data = reshape(b, [], 1); % column vector
-
-% Create the heatmap using imagesc
-imagesc(heatmap_data);
+% get the subsystems for the outersection rxn
 
 %% scatter plot based on pathway activity 
 
-filter_lables_to_plot  = find(var(PathwayActivity_A_keep')' >= 0);
-pathways_to_plot = unique([model_orig.subSystems{:}]);
-pathways_to_plot = string(pathways_to_plot(filter_lables_to_plot))';
+models_to_compare = string(analysis_results.model_names(1:2));
+plotting_data = analysis_results.get_pathway_plot(1:200,"relative");
+labeling_data = analysis_results.get_pathway_plot(1:20,"relative");
 
 figure
-scatter(PathwayActivity_A_keep(:,1), PathwayActivity_A_keep(:,2))
+scatter(plotting_data.(models_to_compare(1)), plotting_data.(models_to_compare(2)))
 hold on 
-text(PathwayActivity_A_keep(filter_lables_to_plot,1), PathwayActivity_A_keep(filter_lables_to_plot,2), pathways_to_plot, ...
+text(labeling_data.(models_to_compare(1)), labeling_data.(models_to_compare(2)),...
+                         labeling_data.Properties.RowNames, ...
                          'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
-fig = gcf;
-hold off
-%plot2svg(['./analysis/' char(model_id) '/pathway_activity_jaccard_score_scatter_svg.svg'],fig)
-saveas(fig,scr_para.results_path + "\/pathway_activity_jaccard_score_scatter.png");
-
-%% Pathway analysis of outersection
-AA_keep_outer = AA_keep; 
-AA_keep_outer(find(sum(AA_keep_outer,2) ~= 1),:) = 0 ;
-
-a = arrayfun(@(x) fun.get_pathway_counts(AA_keep_outer(:,x),model_orig),...
-             1:size(AA_keep_outer,2),...
-             'UniformOutput', false);
-        
-a = cat(2,a{:});
-b = fun.get_pathway_counts(ones(1,size(model_orig.subSystems,1))',model_orig);
-%PathwayActivity_A_keep = a(:,:)./b;
-PathwayActivity_A_keep = a;
-
-%filter_0_idx = find(sum(PathwayActivity_A_keep,2) > size(PathwayActivity_A_keep,2)*0.7);
-%filter_0_idx  = find(var(PathwayActivity_A_keep')' > 0);
-
-filter_0_idx = sum(PathwayActivity_A_keep,2)>0;
-pathways_to_plot = unique([model_orig.subSystems{:}]);
-pathways_to_plot = pathways_to_plot(filter_0_idx);
-b = b(filter_0_idx);
-pathways_to_plot = pathways_to_plot + "  -  " + string(b)';
-
-
-fig = fun.plot_clustergram(PathwayActivity_A_keep(filter_0_idx,:),...
-                     pathways_to_plot,...
-                     model_names,...
-                     {'Pathway activity for all models [count rxn per pathway/ " for consistent model]'},...
-                     [100 100 800 600],...fig
-                     altcolor)
-saveas(fig,scr_para.results_path + "\pathway_activity_outer_jaccard_score.png");
-plot2svg(['./analysis/' char(model_id) '/pathway_activity_outer_jaccard_score_svg.svg'],fig)
-results.pathway_activity_outer = PathwayActivity_A_keep;
-
-%clear AA_keep PathwayActivity_A_keep a b filter_0_idx pathways_to_plot
-
-model_orig.rxns(AA_keep_outer(:,2))
-
-
-%% investigate cholesterol metabolism 
-
-% find rxns which are specific to model and part of the cholesterol
-% metabolism
-idx_rxns = find(sum(AA_keep,2) == 1 & string(model_orig.subSystems) == "Valine, leucine, and isoleucine metabolism");
-%idx_rxns = find(sum(AA_keep,2) == 1 & string(model_orig.subSystems) == "Sphingolipid metabolism");
-
-model_orig.rxns(idx_rxns)
-
-form = printRxnFormula(model_orig);
-form(idx_rxns)
-
-
-AA_keep(idx_rxns,:)
-model_orig.rxns(idx_rxns)
-    
+                     
 %% FBA 
 
-condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+exp.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
                              condition_models,'UniformOutput',false);
-AA_mets_imp = zeros(numel(model_orig.rxns),length(condition_models));
-AA_mets_exp = zeros(numel(model_orig.rxns),length(condition_models));
+exp.fba        = structfun(@(x) optimizeCbModel(x,'max','zero'),...
+                                 exp.condition_models,'UniformOutput',false);
+                         
+fba_flux_matrix = exp.join_fba_output();
 
-filename = 'consumption_export.xlsx';
+ex_rxns = exp.original_model.rxns(find(findExcRxns(exp.original_model)));
+fba_exchange = fba_flux_matrix(ex_rxns(find(ismember(ex_rxns, fba_flux_matrix.Properties.RowNames))),:);
+fba_exchange = fba_exchange(find(sum(abs(fba_exchange{:,:}),2) > 0),:)
+fba_exchange.rxns = fba_exchange.Properties.RowNames;
 
-for x=fieldnames(condition_models)'
-    
-    model = condition_models.(string(x));
-    model.solution = optimizeCbModel(model,'max','zero');
-    ex_rxns = find(findExcRxns(model));
-    exc_reactions = table(ex_rxns,printRxnFormula(model, model.rxns(ex_rxns)), ...
-                          model.rxns(ex_rxns), model.lb(ex_rxns),model.ub(ex_rxns),...
-                          model.solution.v(ex_rxns),...
-                          'VariableNames',{'rxn_id' 'met_exchanged' 'ex_rxns' 'lb' 'ub' 'flux'});
-    
-    disp("----------" + string(x) + " ---- Ex reactions flux < 0 --------------------")
-    exc_reactions(exc_reactions.flux < 0,:)
-    AA_mets_imp(:,find(matches(fieldnames(condition_models),x))) = matches(model_orig.rxns,string(exc_reactions{exc_reactions.flux < 0,'ex_rxns'}));
-    exc_reactions(exc_reactions.flux < 0,:),scr_para.results_path + filesep +  filename,'Sheet',string(x) + "_consumption"
-    writetable(exc_reactions(exc_reactions.flux < 0,:),scr_para.results_path + filesep +  filename,'Sheet',regexprep(string(x), "HERVK", "HERV") + "_consumption") % writetable has a problem with the K for some reason...dont know why...
-    disp("----------" + string(x) + " ---- Ex reactions flux > 0 --------------------")
-    exc_reactions(exc_reactions.flux > 0,:)
-    writetable(exc_reactions(exc_reactions.flux > 0,:),scr_para.results_path + filesep + filename,'Sheet',string(x) + "_export")
-    condition_models.(string(x)) = model;
-    AA_mets_exp(:,find(matches(fieldnames(condition_models),x))) = matches(model_orig.rxns,string(exc_reactions{exc_reactions.flux > 0,'ex_rxns'}));
-    
-end
-clear exc_reactions x model
+writetable(fba_exchange,scr_para.results_path + filesep +  "consumption_export.xlsx") 
 
-results.FBA = [fieldnames(condition_models),struct2cell(structfun(@(x) x.solution.f,...
-                             condition_models,'UniformOutput',false))]
                          
 disp("display jaccard distance based on which metabolites are ...")
 disp("consumed:")
-J = 1-squareform(pdist(AA_mets_imp','jaccard'))
+J = 1-squareform(pdist((fba_exchange{:,1:end-1} > 0)','jaccard'))
 disp("and exported:")
-J = 1-squareform(pdist(AA_mets_exp','jaccard'))    
-                         
-%% visualize FBA results 
+J = 1-squareform(pdist((fba_exchange{:,1:end-1} < 0)','jaccard'))    
 
-names = string(fieldnames(condition_models));
-fluxes = full(sparse(cell2mat(arrayfun(@(x) condition_models.(names(x)).AA', 1:length(names), 'UniformOutput', false))', ...
-                     cell2mat(arrayfun(@(x) ones(1, numel(condition_models.(names(x)).AA)) * x, 1:length(names), 'UniformOutput', false))',...
-                     cell2mat(arrayfun(@(x) condition_models.(names(x)).solution.v', 1:length(names), 'UniformOutput', false))', ...
-                     length(model_orig.rxns), length(fieldnames(condition_models))));
 
-% jaccard similarity for FBA defined fluxes
+analysis_results.get_fba_plot(fba_flux_matrix)
 
-J = squareform(pdist(fluxes','jaccard'));
-fig = fun.plot_clustergram(log(1-J),...
-                     model_names,...
-                     model_names,...
-                     {'Similarity of optimal fluxes obtained via FBA [log(jaccard  similarity score)]'},...
-                     [100 100 800 600],...
-                     altcolor);
-
-% [coeff,score,latent,tsquared,explained] = pca(fluxes');
-% 
-% figure
-% hold on
-% for x = names'
-%     disp(x);
-%     idx = find(contains(names,x));
-%     disp(idx);
-%     scatter(score(idx,1),score(idx,2))
-% end   
-% 
-% title('PCA - fluxes FBA')
-% xlabel([num2str(1), ' component: ', num2str(explained(1))])
-% ylabel([num2str(2), ' component: ', num2str(explained(2))])
-% legend(model_names ,'location','best')
-% hold off
+%% 
+[max,min] = exp.join_fva_output()
 
 %% Similarity Based on Flux Variability Analysis
 
-[minFlux, maxFlux] = structfun(@(x) fluxVariability(x),...
-                               condition_models,'UniformOutput',false); 
-            
-FVA_res.minFlux = arrayfun(@(x) fun.expand_values(condition_models.(x{:}).AA,...
-                                                  minFlux.(x{:}),...
-                                                  length(model_orig.rxns)),...
-                           fieldnames(condition_models), 'UniformOutput', false);
-                       
-FVA_res.minFlux = horzcat(FVA_res.minFlux{:});   
+[exp.minFlux, exp.maxFlux] = structfun(@(x) fluxVariability(x),...
+                               exp.condition_models,'UniformOutput',false);         
+[exp.fva.minFlux,exp.fva.maxFlux] = join_fva_output(exp);
 
-FVA_res.maxFlux = arrayfun(@(x) fun.expand_values(condition_models.(x{:}).AA,...
-                                                  maxFlux.(x{:}), ...
-                                                  length(model_orig.rxns)),...
-                           fieldnames(condition_models), 'UniformOutput', false);
-                       
-FVA_res.maxFlux = horzcat(FVA_res.maxFlux{:});  
 
-% compute similarity on basis of the FVA
-FVA_sim_reactions = cell(length(fieldnames(condition_models)),length(fieldnames(condition_models)));
-FVA_sim_overall = FVA_sim_reactions;
+for y=1:length(fieldnames(exp.condition_models))
+    for x=1:length(fieldnames(exp.condition_models)) 
+        if x ~= y
+            [overallSim, rxnSim] = FVAsimilarity([exp.fva.minFlux{:,y}, exp.fva.maxFlux{:,y}],...
+                                                 [exp.fva.minFlux{:,x}, exp.fva.maxFlux{:,x}]);
 
-for y=1:length(fieldnames(condition_models))
-    for x=1:length(fieldnames(condition_models))                       
-        [overallSim, rxnSim] = FVAsimilarity([FVA_res.minFlux(:,y), FVA_res.maxFlux(:,y)],...
-                                             [FVA_res.minFlux(:,x), FVA_res.maxFlux(:,x)]);
-        
-        FVA_sim_reactions{y,x} = rxnSim;
-        FVA_sim_overall{y,x} = overallSim;      
+            exp.fva_similarity_rxns{y,x} = rxnSim;
+            exp.fva_similarity{y,x} = overallSim; 
+        else
+            exp.fva_similarity_rxns{y,x} = 1;
+            exp.fva_similarity{y,x} = 1;
+        end
     end
 end
 
-fig = fun.plot_clustergram(cell2mat(FVA_sim_overall),...
-                     model_names,model_names,...
-                     {'FVA overall Similarity'},...
-                     [100 100 800 600],...
-                     altcolor);
-saveas(fig,scr_para.results_path + "\FVA_similarity_score.png");
-
-results.FVA = FVA_res;
-results.FVA.sim_rxns = FVA_sim_reactions;
-results.FVA.sim_overall = FVA_sim_overall;
-
-clear FVA_res FVA_sim_reactions FVA_sim_overall minFlux maxFlux overallSim rxnSim
-                 
-%%
-FVAsimilarity([FVA_res.minFlux(:,y), FVA_res.maxFlux(:,y)],...
-                                             [FVA_res.minFlux(:,x), FVA_res.maxFlux(:,x)]);
-        
- 
-%% save results 
-
-save(scr_para.results_path + filesep + char(datetime('now', 'Format', 'yyyyMMdd_hhss')) + "_results_analysis.mat", 'results');
-
-  
+analysis_results.get_fva_sim_plot(exp.fva_similarity)
 
 
 %% single gene deletion - essential genes - enrichment of essential genes
@@ -351,10 +176,6 @@ for x = fieldnames(condition_models)'
     modell.essential_genes_Symbols = modell.geneList(modell.essential_genes); %get the identifiers for the essential genes
     [~,ia,ib] = intersect(regexprep(modell.essential_genes_Symbols,".1$",""), dico.ENTREZ); 
     modell.essential_genes_Symbols(ia) = dico.SYMBOL(ib); %extract the symbols
-
-    [modell.enrichment] = GeneEnrichments(modell.essential_genes_Symbols);
-    [~,I] = sort(cell2mat(modell.enrichment.enrichment));
-    modell.enrichment(I,:);
     
     condition_models.(x{:}) = modell;
 end
