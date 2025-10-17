@@ -153,8 +153,9 @@ classdef fastcore_experiment
         function [min_out,max_out] = join_fva_output(obj)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
-            all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
-            all_rxns = unique(vertcat(all_rxns{:}));
+            %all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
+            %all_rxns = unique(vertcat(all_rxns{:}));
+            all_rxns = obj.original_model.rxns;
 
             max_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fva.maxFlux.(x),all_rxns), ...
                                               string(fieldnames(obj.condition_models)),...
@@ -171,8 +172,9 @@ classdef fastcore_experiment
         function joined_output = join_fba_output(obj)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
-            all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
-            all_rxns = unique(vertcat(all_rxns{:}));
+            %all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
+            %all_rxns = unique(vertcat(all_rxns{:}));
+            all_rxns = obj.original_model.rxns;
 
             samples_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fba.(x).v,all_rxns), ...
                                               string(fieldnames(obj.condition_models)),...
@@ -185,10 +187,11 @@ classdef fastcore_experiment
             joined_output = fba_solution;
         end
         function obj = join_fluxsum_output(obj)
-            all_mets = cellfun(@(x) obj.fastcore_runs.(x).model.mets, string(fieldnames(obj.fastcore_runs)),'UniformOutput',false);
-            all_mets = unique(vertcat(all_mets{:}));
+            %all_mets = cellfun(@(x) obj.fastcore_runs.(x).model.mets, string(fieldnames(obj.fastcore_runs)),'UniformOutput',false);
+            %all_mets = unique(vertcat(all_mets{:}));
+            all_mets = obj.original_model.mets;
             
-            x = 'samplingResults_MDA_MB231_Cont_NO_model_20250602_090252';
+            %x = 'samplingResults_MDA_MB231_Cont_NO_model_20250602_090252';
             fluxsum = arrayfun(@(x) get_sampling_orig_order_mets(obj.fastcore_runs.(x).model,...
                                                                          obj.fastcore_runs.(x).fluxsum,...
                                                                          all_mets),...
