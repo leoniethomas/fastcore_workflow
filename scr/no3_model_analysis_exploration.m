@@ -1,33 +1,42 @@
-%% analysis of the context specific models 
-% what are the main questions for now ? 
+%% Model analysis script 
+% This script performs the analysis of a set of models.
+% Overview: 
+% 1. creates a model analysis object, storing all the analysis results 
+% 
 
-% growth rate ? is it reasonable ? 
+%% Preparations for the analysis workflow
 
-
-%% define VARIABLES 
-
+% clear working space
 clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
 
-
-addpath(genpath("C:\Users\leonie.thomas\plot2svg"))
+% add rFASTCORMICS to the path variable as well as 
 addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
+% add scFASTCORMICS to the path -> model_analysis uses the function
+% removeUnusedGenesFastbox.m -> which is a lot faster than removeUnusedGenes.m
+% this is the reason why we need to load scFASTCORMICS here 
+% we could also think about just adding the function to rFASTCORMICS
 addpath(genpath("C:\Users\leonie.thomas\scFASTCORMICS"))
+% set the solver you want to use 
 changeCobraSolver("ibm_cplex");
 
+% define script PARAMETERS
 
-
-%% define script parameters
-tic 
+% define which of the models in your consistent model directory you want to read in 
 model_id = "20250716_0612";
+% do you work on a fastcore experiment object, which is created by the
+% scripts in this workflow, or are you reading in your own models ? 
 work_on_fastcore_exp = 0;
+% path to your working directory - where your scr folder is located as well
 %project_path = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
 project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + filesep + "context_specific_models" + filesep + model_id;
 cd (project_path)
 addpath(genpath(project_path))
 
+% reading in the script parameters defined in the def_run_parameters.txt
+% file - can be found in the data folder and adjusted 
 input_paramters = dir(path_to_model_to_analyse + filesep + "*def_run_paramters.txt");
 input_paramters = [input_paramters.folder filesep input_paramters.name];
 input_paramters = readtable(input_paramters);
@@ -36,11 +45,21 @@ scr_para.model_to_load = model_id + "_cond_models.mat";
 scr_para.model_workspace_to_load = model_id + "_workspace_cond_models.mat";
 
 
-toc
+%% LOADING CONTEXT SPECIFIC MODELS
+% There are two options. Either: 
+% - you read in your own context specific models - work_on_fastcore_exp = 0
+% - or you work on a fastcore_experiment object created with the previous
+% workflow scripts! work_on_fastcore_exp = 1
 
-%% load the created models with their whole workspace
-% - for older versions there is not fastcore_exp file - therefore the
-% conidtion and workspace file are read in 
+% in case you work on your own context specific models. There are a couple
+% of things to make sure, before being able to run these scripts 
+% - you need to put your different models into a named struct object 
+% - each model needs to contain the AA/retained_reaction vector as one
+% ofthe structure slots 
+% - the struct with models needs to be named 
+% - you need the original model the context specific models were created on
+% - and you need the dico dataframe, which is the dataframe giving the
+% symbol to entrez id conversion 
 
 if work_on_fastcore_exp
     load(path_to_model_to_analyse + filesep +   model_id + "_fastcore_exp.mat") % load the condition specific models created with rFASTCORMICS
@@ -59,7 +78,7 @@ scr_para.remove_unused_genes = 1;
 mkdir(scr_para.results_path);
 results = struct();
 
-
+% export models to different formats
 %writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
 %writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
 
@@ -78,7 +97,7 @@ clear J
 %% visualize intersections rxn presence 
 
 % get indices of outer and intersections
-idx = analysis_results.get_intersection_plot("reaction_presence")
+idx = analysis_results.get_intersection_plot("reaction_presence",["DETANO","Untreated"]);
 
 %% Pathway analysis
 
@@ -128,13 +147,12 @@ J = 1-squareform(pdist((fba_exchange{:,1:end-1} < 0)','jaccard'))
 
 analysis_results.get_fba_plot(fba_flux_matrix)
 
-%% 
-[max,min] = exp.join_fva_output()
 
 %% Similarity Based on Flux Variability Analysis
 
-[exp.minFlux, exp.maxFlux] = structfun(@(x) fluxVariability(x),...
-                               exp.condition_models,'UniformOutput',false);         
+[exp.fva.minFlux, exp.fva.maxFlux] = structfun(@(x) fluxVariability(x),...
+                                               exp.condition_models,'UniformOutput',false);
+ 
 [exp.fva.minFlux,exp.fva.maxFlux] = join_fva_output(exp);
 
 

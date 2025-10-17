@@ -1,14 +1,28 @@
 classdef model_analysis
+    % This object class is meant to store the analysis results that are
+    % obtained when analysing and comparing context specific metabolic
+    % models. 
  
     properties
-        model_names
-        model_size
+        model_names % names of context specific models, for example named after SampleID or Treatment regime
+        model_size % 
         reaction_presence
         pathway_counts
     end
     
     methods
         function obj = model_analysis(exp)
+            % this function performs multiple tasks
+            % - reading in context specific models, with names 
+            % - getting the sice of the networks (genes,reaction, &
+            % metabolite count)
+            % - aligning the AA/retained_reaction output coming from
+            % fastcormics function, and defining a new matrix which gives
+            % the reacion presence of the models for all the reaction that
+            % were in the original model
+            arguments
+               exp (1,1) struct
+            end
             
             disp("Removing unused genes!")
             condition_models = exp.condition_models;
@@ -32,6 +46,10 @@ classdef model_analysis
         end
         
         function [fig,J] = get_jaccard_similarity(obj)
+           % this function computes the jaccard similarity between the
+           % models based on the reaction presence. 
+            
+
            J = squareform(pdist(obj.reaction_presence','jaccard'));
            disp("Jaccard similarity:")
            1-J
@@ -42,11 +60,26 @@ classdef model_analysis
                      [100 100 800 600]);   
         end
         
-        function idx = get_intersection_plot(obj,slot_name)
+        function idx = get_intersection_plot(obj,slot_name,models_to_compare)
+            % this function returns the intersection size between all the
+            % models + a venn diagramm visualizing the intersection size
+            % intersection of up to 4 models
+            arguments
+               obj 
+               slot_name
+               models_to_compare (1,:) string =string(obj.model_names)'
+            end
+            [~,idx] = ismember(string(obj.model_names), models_to_compare);
+            models_to_compare = models_to_compare(idx(idx ~= 0));
             
-            set_names = string(obj.model_names)';
+            if numel(models_to_compare) > 4
+                error('models_to_compare can have at most 4 elements.');
+            end
+            
             M = obj.(slot_name);
-            idx = plot_flexible_venn(M, set_names);
+            [~, idx] = ismember(models_to_compare,string(obj.model_names));
+            M = M(:,idx);
+            idx = plot_flexible_venn(M, models_to_compare);
         end
         function [obj,relative_counts] = get_pathway_counts(obj,exp)
            
