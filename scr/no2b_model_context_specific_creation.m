@@ -9,7 +9,11 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
-def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
+%def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
+def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_paramters.txt";
+% define which discretization run you want to use for model building
+disc_data_id = "20251028_0720";
+
 
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
@@ -37,7 +41,7 @@ clear def_run_file input_paramters
 
 %% load preprocessed gene expression data
 
-disc_data = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/discretization/20250716_1109/20250716_1109_disc_data.mat";
+disc_data = string(scr_para.set_working_directory) + filesep + "discretization" + filesep + disc_data_id + filesep + disc_data_id + "_disc_data.mat";
 
 load(disc_data)
 

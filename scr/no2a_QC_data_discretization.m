@@ -8,7 +8,8 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
-def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+%def_run_file = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model\data\def_run_paramters.txt";
+def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_paramters.txt";
 
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
