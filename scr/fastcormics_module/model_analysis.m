@@ -298,42 +298,45 @@ classdef model_analysis
                                  [100 100 800 600]);
 
         end
+        
+        function [fig] = plot_clustergram(obj,data,rownames, colnames,title,position,colorbarLabel,altcolor)
+            arguments
+                obj
+                data
+                rownames
+                colnames
+                title
+                position
+                colorbarLabel = "Value"  % Default label
+                altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
+            end
+          cgo_J = clustergram(data,...
+                      'RowLabels', rownames,...
+                      'ColumnLabels', colnames,...
+                      'ColumnLabelsRotate',45, ...
+                      'Cluster', 'all', ...
+                      'symmetric','False',...
+                      'Standardize', 'none',...
+                      'Colormap', altcolor);  
+           addTitle(cgo_J,title)
+           cgf = plot(cgo_J); % This should be a figure handle
+           colorbar(cgf,'eastoutside');
+
+           % Add colorbar and label
+           cb = colorbar(cgf, 'eastoutside');
+           cb.Label.String = colorbarLabel;
+           cb.Label.FontSize = 12;  % optional formatting
+
+           fig = gcf;
+           fig.Position = position;
+
+
+
+        end
     end
 end
 
-function [fig] = plot_clustergram(data,rownames, colnames,title,position,colorbarLabel,altcolor)
-    arguments
-        data
-        rownames
-        colnames
-        title
-        position
-        colorbarLabel = "Value"  % Default label
-        altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
-    end
-  cgo_J = clustergram(data,...
-              'RowLabels', rownames,...
-              'ColumnLabels', colnames,...
-              'ColumnLabelsRotate',45, ...
-              'Cluster', 'all', ...
-              'symmetric','False',...
-              'Standardize', 'none',...
-              'Colormap', altcolor);  
-   addTitle(cgo_J,title)
-   cgf = plot(cgo_J); % This should be a figure handle
-   colorbar(cgf,'eastoutside');
-   
-   % Add colorbar and label
-   cb = colorbar(cgf, 'eastoutside');
-   cb.Label.String = colorbarLabel;
-   cb.Label.FontSize = 12;  % optional formatting
-    
-   fig = gcf;
-   fig.Position = position;
-   
-   
 
-end
 
  function rev_find = get_feature_presence(length,indices)
             rev_find = zeros(1,length)';

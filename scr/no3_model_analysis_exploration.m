@@ -189,31 +189,26 @@ analysis_results.enrichment = analysis_results.perform_gene_enrichment(exp,0.5);
 analysis_results.visualize_enrichment()
  
 %% Drug deletion
-% % define a list of drugs 
-% load(scr_para.gene_drug_relation_file);
-% DrugList = unique(GeneDrugRelations.DrugName);
-% condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-%                              condition_models,'UniformOutput',false);
-%                          
-%                          
-% [grRatio, grRateKO, grRateWT] = structfun(@(x) DrugDeletion(x,'FBA',DrugList),...
-%                                           condition_models,'UniformOutput',false);
-%                                       
-% drug_deletion_res = struct("grRatio",struct2array(grRatio),...
-%                            "grRateKO",struct2array(grRateKO),...
-%                            "grRateWT",struct2array(grRateWT));
-% 
-% drugidxs_with_an_effect = find(sum(drug_deletion_res.grRatio,2)<(size(drug_deletion_res.grRatio,2) - 0.0001));
-% fig = fun.plot_clustergram(double(drug_deletion_res.grRatio(drugidxs_with_an_effect,:)),...
-%                      DrugList(drugidxs_with_an_effect)',model_names,...
-%                      {'Drugdeletion - grRatio KO/WT'},...
-%                      [100 100 800 600],...
-%                      altcolor);
-% saveas(fig,scr_para.results_path + "\drug_deletion_growthRateKO_WT.png");
-% 
-% results.drug_deletion = drug_deletion_res;
-% 
-% clear DrugList grRatio grRateKO grRateWT drug_deletion_res drugidxs_with_an_effect
+% define a list of drugs 
+load(string(scr_para.set_working_directory) + filesep + "data" + filesep + "GeneDrugRelations.mat" );
+DrugList = unique(GeneDrugRelations.DrugName);
+condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+                             exp.condition_models,'UniformOutput',false);
+                         
+                         
+[grRatio, grRateKO, grRateWT] = structfun(@(x) DrugDeletion(x,'FBA',DrugList),...
+                                          exp.condition_models,'UniformOutput',false);
+                                      
+drug_deletion_res = struct("grRatio",struct2array(grRatio),...
+                           "grRateKO",struct2array(grRateKO),...
+                           "grRateWT",struct2array(grRateWT));
+
+drugidxs_with_an_effect = find(sum(drug_deletion_res.grRatio,2)<(size(drug_deletion_res.grRatio,2) - 0.0001));
+fig = analysis_results.plot_clustergram(double(drug_deletion_res.grRatio(drugidxs_with_an_effect,:)),...
+                     DrugList(drugidxs_with_an_effect)',analysis_results.model_names,...
+                     {'Drugdeletion - grRatio KO/WT'},...
+                     [100 100 800 600]);
+saveas(fig,scr_para.results_path + "\drug_deletion_growthRateKO_WT.png");
 
 
 
