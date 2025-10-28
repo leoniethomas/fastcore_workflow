@@ -61,6 +61,21 @@ classdef model_analysis
                      [100 100 800 600]);   
         end
         
+        function [fig,J] = get_jaccard_similarity_ess_genes(obj,threshold)
+           % this function computes the jaccard similarity between the
+           % models based on the reaction presence. 
+            
+
+           J = squareform(pdist(obj.gene_essentiality.ratio' > threshold,'jaccard'));
+           disp("Jaccard similarity:")
+           1-J
+           fig = plot_clustergram(1-J,...
+                     obj.model_names,...
+                     obj.model_names,...
+                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
+                     [100 100 800 600]);   
+        end
+        
         function idx = get_intersection_plot(obj,slot_name,models_to_compare)
             % this function returns the intersection size between all the
             % models + a venn diagramm visualizing the intersection size
@@ -68,7 +83,7 @@ classdef model_analysis
             arguments
                obj 
                slot_name
-               models_to_compare (1,:) string =string(obj.model_names)'
+               models_to_compare (1,:) string = string(obj.model_names(1:min(4,end)))
             end
             [~,idx] = ismember(string(obj.model_names), models_to_compare);
             models_to_compare = models_to_compare(idx(idx ~= 0));
@@ -118,6 +133,38 @@ classdef model_analysis
             T.original = groupcounts(pathways);
             
             obj.pathway_counts = T
+        end
+        function get_essentiallity_plots(obj,file_path_figure)
+            measures = ["rate", "ratio"];  % list of measures to loop over
+
+            for i = 1:length(measures)
+                measure = measures(i);
+                %measure = "rate" % "ratio"
+                data = obj.gene_essentiality.(measure);
+
+                if measure == "ratio"
+                    ylabel_text = 'growth rate KO/WT';
+                elseif measure == "rate"
+                    ylabel_text = 'growth rate KO';
+                end
+
+                % Sort each column individually
+                sorted_data = sort(data, 1);  % sorts each column independently
+                tol = 1e-6;  % adjust if needed
+                max_vals = max(sorted_data, [], 1);
+                rows_to_remove = any(abs(sorted_data - max_vals) < tol, 2);
+                sorted_data = sorted_data(~rows_to_remove, :);
+                % Plot all columns as separate lines
+                figure;
+                plot(sorted_data, 'LineWidth', 1.5);
+                ylabel(ylabel_text);
+                xlabel('genes sorted ascending');
+                legend(strrep(obj.model_names, '_', '-'), 'Location', 'northwest');
+                saveas(gcf,file_path_figure + "\ess_genes_" + measure + ".png");
+                grid on;
+                hold off;
+            end
+            
         end
         function top_data = get_pathway_plot(obj,top_pathways,data_type)
                 arguments

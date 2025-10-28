@@ -24,10 +24,10 @@ changeCobraSolver("ibm_cplex");
 % define script PARAMETERS
 
 % define which of the models in your consistent model directory you want to read in 
-model_id = "20250716_0612";
+model_id = "20251028_0709";
 % do you work on a fastcore experiment object, which is created by the
 % scripts in this workflow, or are you reading in your own models ? 
-work_on_fastcore_exp = 0;
+work_on_fastcore_exp = 1;
 % path to your working directory - where your scr folder is located as well
 project_path = "/Users/leonie.thomas/Documents/fastcore_workflow";
 %project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
@@ -97,12 +97,12 @@ clear J
 %% visualize intersections rxn presence 
 
 % get indices of outer and intersections
-idx = analysis_results.get_intersection_plot("reaction_presence",["DETANO","Untreated"]);
+idx = analysis_results.get_intersection_plot("reaction_presence");
 
 %% Pathway analysis
 
 % get count of rxn per pathway per model -> pathway presence
-analysis_results = analysis_results.get_pathway_counts(exp);
+analysis_results = analysis_results.get_pathway_activity(exp);
 % visualize pathway presence
 analysis_results.get_pathway_plot(1:15,"")
 
@@ -124,7 +124,7 @@ text(labeling_data.(models_to_compare(1)), labeling_data.(models_to_compare(2)),
 %% FBA 
 
 exp.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-                             condition_models,'UniformOutput',false);
+                             exp.condition_models,'UniformOutput',false);
 exp.fba        = structfun(@(x) optimizeCbModel(x,'max','zero'),...
                                  exp.condition_models,'UniformOutput',false);
                          
@@ -165,115 +165,21 @@ analysis_results.get_fva_sim_plot(exp.fva_similarity)
 
 %%
 
-condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-                             condition_models,'UniformOutput',false);
+exp.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+                             exp.condition_models,'UniformOutput',false);
                          
 [grRatio, grRateKO, ...
  grRateWT, ~,...
  essential_genes_del_Rxns, ~] = structfun(@(x) singleGeneDeletion(x, 'FBA', string(x.genes), 0, 0),...
-                             condition_models,'UniformOutput',false);
-                         
-%%
+                             exp.condition_models,'UniformOutput',false);
                 
 analysis_results = analysis_results.add_essentiality_analysis_to_analysis_obj(exp,grRatio,grRateKO,essential_genes_del_Rxns,grRateWT)
 
-%% single gene deletion - essential genes - enrichment of essential genes
+% visualize gene essentiality
+analysis_results.get_essentiallity_plots(scr_para.results_path)
+% jaccard distance based on essential genes
+[fig, J] = analysis_results.get_jaccard_similarity_ess_genes(0.5)
 
-threshold = 0.5;
-
-condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-                             condition_models,'UniformOutput',false);
-                  
-for x = fieldnames(condition_models)'
-    
-    modell = condition_models.(string(x));
-    
-    % perform the gene deletion to see which genes are essential 
-    [modell.grRatio, modell.grRateKO, ...
-     modell.grRateWT, ~,modell.essential_genes_del_Rxns, ~] = singleGeneDeletion(modell, 'FBA', string(modell.genes), 0, 0);
-    modell.geneList = modell.genes;
-    modell.essential_genes = modell.grRatio <= threshold;
-
-    modell.essential_genes_Symbols = modell.geneList(modell.essential_genes); %get the identifiers for the essential genes
-    [~,ia,ib] = intersect(regexprep(modell.essential_genes_Symbols,".1$",""), dico.ENTREZ); 
-    modell.essential_genes_Symbols(ia) = dico.SYMBOL(ib); %extract the symbols
-    
-    condition_models.(x{:}) = modell;
-end
-
-
-% 
-% % visualize enrichment ? what are those gene sets ? 
-% 
-figure
-hold on
-p = structfun(@(x) plot(sort(x.grRatio,'ascend')),condition_models)
-xlabel('genes sorted ascending')
-ylabel('growth Rate Ratio KO/WT')
-legend(model_names)
-saveas(gcf,scr_para.results_path + "\ess_genes_grRateKO_WT.png");
-hold off;
-% 
-figure
-hold on
-p = structfun(@(x) plot(sort(x.grRateKO,'ascend')),condition_models)
-xlabel('genes sorted ascending')
-ylabel('growth Rate Ratio KO/WT')
-legend(model_names)
-saveas(gcf,scr_para.results_path + "\ess_genes_grRate.png");
-hold off;
-
-clear ia ib I p threshold modell
-%% save gene essentiallity 
-
-ess_genes = table(condition_models.MDA_MB231_Cont_NO.essential_genes,condition_models.MDA_MB231_Cont_VC.essential_genes,...
-                  'RowNames', regexprep(string(condition_models.MDA_MB231_Cont_NO.genes),".1$",""),...
-                  'VariableNames',string(fieldnames(condition_models))');
-
-writetable(ess_genes,scr_para.results_path + "\ess_genes.csv",'WriteRowNames',true)
-
-%% get all the essential genes form all the models
-
-essential_genes = struct2array(structfun(@(x) x.essential_genes,condition_models,'UniformOutput',false));
-essential_genes_del_Rxns = struct2array(structfun(@(x) x.essential_genes_del_Rxns,condition_models,'UniformOutput',false));
-
-essential_genes_unique = essential_genes;
-essential_genes_unique(find(sum(essential_genes,2)==2),:) = 0;
-unique_essential_rxns_NO = essential_genes_del_Rxns(find(essential_genes_unique(:,1)),1);
-unique_essential_rxns_NO_idx = find(ismember(model_orig.rxns,vertcat(unique_essential_rxns_NO{:})));
-unique_essential_rxns_VC = essential_genes_del_Rxns(find(essential_genes_unique(:,2)),2);
-unique_essential_rxns_VC_idx = find(ismember(model_orig.rxns,vertcat(unique_essential_rxns_VC{:})));
-
-
-J = squareform(pdist(essential_genes','jaccard'));
-%Jaccard similarity plots for sample models 7
-fig = fun.plot_clustergram(1-J,...
-                     model_names,...
-                     model_names,...
-                     {'Essential gene similarity based on Jaccard distance'},...
-                     [100 100 800 600],...
-                     altcolor);
-saveas(fig,scr_para.results_path + "\essential_gene_similarity_jaccard_score.png");
-
-
-
-
-%% visualize essential genes
-
-id_genes_ess = find(sum(essential_genes,2) ~= 0);
-essential_genes_non_zero = double(essential_genes(id_genes_ess,:));
-
-[~,ib] = ismember(condition_models.MDA_MB231_Cont_NO.geneList(id_genes_ess)', dico.ENTREZ);
-
-fig = fun.plot_clustergram(essential_genes_non_zero,...
-                     dico.SYMBOL(ib)',...
-                     model_names,...
-                     {'essential genes per model'},...
-                     [100 100 800 600],...
-                     altcolor);
-saveas(fig,scr_para.results_path + "\essential_genes.png");
-
-clear J ib id_genes_ess essential_genes_non_zero essential_genes
 
 %% gene set enrichment of essential genes
 % get the top 15 terms and visulize them for all the models
@@ -334,15 +240,4 @@ clear choose_gene_sets enrichment gene_set_names
 % results.drug_deletion = drug_deletion_res;
 % 
 % clear DrugList grRatio grRateKO grRateWT drug_deletion_res drugidxs_with_an_effect
-
-%% how many no rxns ? in the different models 
-model = condition_models.MDA_MB231_Cont_NO;
-no_rxns =find(model.S(find(matches(model.mets,"no[c]")),:));
-model.rxns(no_rxns)
-formulas = printRxnFormula(model);
-formulas(no_rxns)
-
-phe_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"pi[c]")),:))))
-arg_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"phe_L[c]")),:))))
-cit_rxns = string(model.rxns(find(model.S(find(matches(model.mets,"citr_L[c]")),:))))
 
