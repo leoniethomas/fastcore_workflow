@@ -8,6 +8,7 @@ classdef model_analysis
         model_size % 
         reaction_presence
         pathway_counts
+        gene_essentiality
     end
     
     methods
@@ -81,11 +82,17 @@ classdef model_analysis
             M = M(:,idx);
             idx = plot_flexible_venn(M, models_to_compare);
         end
-        function [obj,relative_counts] = get_pathway_counts(obj,exp)
+        function [obj] = get_pathway_activity(obj,exp,slot)
+            arguments
+                    obj
+                    exp
+                    slot ="reaction_presence"
+            end
+            
            
             % get pathway ids in model 
             set_labels = string(obj.model_names)';
-            M = obj.reaction_presence;
+            M = obj.(slot);
             pathways = string(exp.original_model.subSystems);
             unique_pathways = unique(pathways);
 
@@ -164,13 +171,48 @@ classdef model_analysis
         end
         function J = get_fva_sim_plot(exp,fva_sim_matrix)
             altcolor =[255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255; 
-            fig = plot_clustergram(cell2mat(fva_sim_matrix),...
+            fig = plot_clustergram(fva_sim_matrix,...
                                  string(exp.model_names)',...
                                  string(exp.model_names)',...
                                  {'Similarity of optimal fluxes obtained via FBA [log(jaccard  similarity score)]'},...
                                  [100 100 800 600],...
                                  altcolor);
             disp(cell2mat(fva_sim_matrix))
+            
+        end
+        function obj = add_essentiality_analysis_to_analysis_obj(obj,exp,ratio,rate,rxn_genes,grRateWT)
+            
+            all_genes = exp.original_model.genes;
+            
+
+            
+            %x = 'samplingResults_MDA_MB231_Cont_NO_model_20250602_090252';
+            fluxsum = arrayfun(@(x) get_order_from_orig_model(exp.condition_models.(x).genes,...
+                                                                         ratio.(x),...
+                                                                         all_genes),...
+                                       string(obj.model_names),...
+                                       'UniformOutput',false);
+                                   
+            ess.ratio = cell2mat(fluxsum');
+            
+            fluxsum2 = arrayfun(@(x) get_order_from_orig_model(exp.condition_models.(x).genes,...
+                                                                         rate.(x),...
+                                                                         all_genes),...
+                                       string(obj.model_names),...
+                                       'UniformOutput',false);
+                                   
+            ess.rate = cell2mat(fluxsum2');
+            
+            fluxsum3 = arrayfun(@(x) get_order_from_orig_model(exp.condition_models.(x).genes,...
+                                                                         rxn_genes.(x),...
+                                                                         all_genes),...
+                                       string(obj.model_names),...
+                                       'UniformOutput',false);
+                                   
+            ess.del_rxns = [fluxsum3{:,:}];
+            
+            obj.gene_essentiality = ess;
+            obj.gene_essentiality.grRateWT = grRateWT;
             
         end
     end
@@ -540,7 +582,23 @@ fC = [faceC alpha];
 rectangle('Position',[x y d d],'Curvature',1,'FaceColor',fC,'LineStyle','none');
 end
 
+ end
+
+ 
+function [sampling_fluxsum_ordered] = get_order_from_orig_model(m,s,mets_all)
+                                        [~,mapping_mets_in_orig_idx] = ismember(m,mets_all);
+                                        if isa(s, 'double')  % or replace with actual numeric class if needed
+                                            sampling_fluxsum_values = zeros(length(mets_all), size(s, 2));
+                                        elseif isa(s, 'cell')
+                                            sampling_fluxsum_values = cell(length(mets_all), size(s, 2));
+                                        else
+                                            error('Unsupported class for variable s: %s', class(s));
+                                        end
+                                        sampling_fluxsum_values(mapping_mets_in_orig_idx,:) = s;
+                                        sampling_fluxsum_ordered = sampling_fluxsum_values;
+                               
 end
+
 
 
 

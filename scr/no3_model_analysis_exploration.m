@@ -29,8 +29,8 @@ model_id = "20250716_0612";
 % scripts in this workflow, or are you reading in your own models ? 
 work_on_fastcore_exp = 0;
 % path to your working directory - where your scr folder is located as well
-%project_path = "\\atlas.uni.lux\fstc_sysbio\0- UserFolders\Leonie.THOMAS\projects\20250225_glynn_bulk_metabolic_model";
-project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
+project_path = "/Users/leonie.thomas/Documents/fastcore_workflow";
+%project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + filesep + "context_specific_models" + filesep + model_id;
 cd (project_path)
 addpath(genpath(project_path))
@@ -148,31 +148,34 @@ J = 1-squareform(pdist((fba_exchange{:,1:end-1} < 0)','jaccard'))
 analysis_results.get_fba_plot(fba_flux_matrix)
 
 
-%% Similarity Based on Flux Variability Analysis
+%% Flux Variability Analysis
 
 [exp.fva.minFlux, exp.fva.maxFlux] = structfun(@(x) fluxVariability(x),...
                                                exp.condition_models,'UniformOutput',false);
  
 [exp.fva.minFlux,exp.fva.maxFlux] = join_fva_output(exp);
 
+% compute FVAsimilarity
 
-for y=1:length(fieldnames(exp.condition_models))
-    for x=1:length(fieldnames(exp.condition_models)) 
-        if x ~= y
-            [overallSim, rxnSim] = FVAsimilarity([exp.fva.minFlux{:,y}, exp.fva.maxFlux{:,y}],...
-                                                 [exp.fva.minFlux{:,x}, exp.fva.maxFlux{:,x}]);
-
-            exp.fva_similarity_rxns{y,x} = rxnSim;
-            exp.fva_similarity{y,x} = overallSim; 
-        else
-            exp.fva_similarity_rxns{y,x} = 1;
-            exp.fva_similarity{y,x} = 1;
-        end
-    end
-end
-
+exp = exp.compute_fva_similariy()
 analysis_results.get_fva_sim_plot(exp.fva_similarity)
+% not sure what to do with the rxn wise fva similarity...heatplot ? not
+% sure
 
+
+%%
+
+condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+                             condition_models,'UniformOutput',false);
+                         
+[grRatio, grRateKO, ...
+ grRateWT, ~,...
+ essential_genes_del_Rxns, ~] = structfun(@(x) singleGeneDeletion(x, 'FBA', string(x.genes), 0, 0),...
+                             condition_models,'UniformOutput',false);
+                         
+%%
+                
+analysis_results = analysis_results.add_essentiality_analysis_to_analysis_obj(exp,grRatio,grRateKO,essential_genes_del_Rxns,grRateWT)
 
 %% single gene deletion - essential genes - enrichment of essential genes
 

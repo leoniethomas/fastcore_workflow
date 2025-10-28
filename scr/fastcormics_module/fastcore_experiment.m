@@ -343,6 +343,39 @@ classdef fastcore_experiment
             
         end
         
+        function obj = compute_fva_similariy(obj)
+            modelNames = fieldnames(obj.condition_models);
+            n = numel(modelNames);
+            
+            obj.fva_similarity = eye(n); % Diagonal is 1
+            obj.fva_similarity_rxns = cell(n);
+            
+            fvaData = cell(1, n);
+            for i = 1:n
+                fvaData{i} = [obj.fva.minFlux{:, i}, obj.fva.maxFlux{:, i}];
+            end
+
+            
+            indexPairs = find(triu(true(n), 1)); % Upper triangle linear indices
+            [rowIdx, colIdx] = ind2sub([n, n], indexPairs);
+
+            % Step 6: Functional-style loop without nested for-loops
+            for k = 1:length(indexPairs)
+                y = rowIdx(k);
+                x = colIdx(k);
+
+                [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
+
+                % Fill both [y,x] and [x,y] due to symmetry
+                obj.fva_similarity(y,x) = overallSim;
+                obj.fva_similarity(x,y) = overallSim;
+
+                obj.fva_similarity_rxns{y,x} = rxnSim;
+                obj.fva_similarity_rxns{x,y} = rxnSim;
+            end
+        end
+
+        
         function stats = diff_flux_testing(obj,models_to_compare,writetofile,figflag,filepath,filename)
             arguments
                 obj
@@ -482,7 +515,19 @@ function [sampling_fluxsum_ordered] = get_sampling_orig_order_mets(m,s,mets_all)
 end
 
 
+function computeAndStoreFVAsim(i, rowIdx, colIdx, fvaData, exp)
+    y = rowIdx(i);
+    x = colIdx(i);
 
+    [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
+    
+    % Store symmetric results
+    exp.fva_similarity(y, x) = overallSim;
+    exp.fva_similarity(x, y) = overallSim;
+
+    exp.fva_similarity_rxns{y, x} = rxnSim;
+    exp.fva_similarity_rxns{x, y} = rxnSim;
+end
 
 
 
