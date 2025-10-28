@@ -163,7 +163,7 @@ analysis_results.get_fva_sim_plot(exp.fva_similarity)
 % sure
 
 
-%%
+%% run gene essentiality analysis
 
 exp.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
                              exp.condition_models,'UniformOutput',false);
@@ -179,42 +179,16 @@ analysis_results = analysis_results.add_essentiality_analysis_to_analysis_obj(ex
 analysis_results.get_essentiallity_plots(scr_para.results_path)
 % jaccard distance based on essential genes
 [fig, J] = analysis_results.get_jaccard_similarity_ess_genes(0.5)
+% add figure that counts essential genes per pathway
 
 
-%% gene set enrichment of essential genes
-% get the top 15 terms and visulize them for all the models
+%% check for enrichment of the genes in databases 
 
-enrichment = cell2mat(struct2array(structfun(@(x) x.enrichment.enrichment,condition_models,'UniformOutput',false)));
+analysis_results.enrichment = analysis_results.perform_gene_enrichment(exp,0.5);
 
-choose_gene_sets = find((abs(min(enrichment') - max(enrichment')) > 0.4)' | (sum(enrichment,2)>0.6));
-gene_set_names = arrayfun(@(x) regexprep(x,"_","\_"),condition_models.MDA_MB231_Cont_NO.enrichment.("Database/website"));
-
-fig = fun.plot_clustergram(enrichment(choose_gene_sets,:),...
-                     gene_set_names(choose_gene_sets)',model_names,...
-                     {'enrichment of essential genes per model in gene sets'},...
-                     [100 100 800 600],...
-                     altcolor);
-saveas(fig,scr_para.results_path + "\enrichment_genesets_essential_genes.png");
-
-clear choose_gene_sets enrichment gene_set_names
-% 
-% %% essential genes detected in which pathways
-% 
-% essential_genes_pathways = structfun(@(x) findRxnsFromGenes(x,x.genes(x.essential_genes))',condition_models,'UniformOutput',false);
-% %but the pathways into one matrix for every model
-% t = structfun(@(x) unique(struct2array(structfun(@(y) y(:,3)',x,'UniformOutput',false)')),essential_genes_pathways,'UniformOutput',false);
-% uniq_pathways = unique(struct2array(t));
-% affected_pathways_ess_genes = double(struct2array(structfun(@(x)ismember(uniq_pathways,x)',t,'UniformOutput',false)));
-% 
-% fig = fun.plot_clustergram(affected_pathways_ess_genes,uniq_pathways',model_names,...
-%                      {'pathways for which essential genes were detected per model'},...
-%                      [100 100 800 600],...
-%                      altcolor);
-% saveas(fig,scr_para.results_path + "\occurence_pathways_essential_genes.png");
-% 
-% clear uniq_pathways affected_pathways_ess_genes essential_genes_pathways t 
-% 
-% %% Drug deletion
+analysis_results.visualize_enrichment()
+ 
+%% Drug deletion
 % % define a list of drugs 
 % load(scr_para.gene_drug_relation_file);
 % DrugList = unique(GeneDrugRelations.DrugName);
@@ -240,4 +214,7 @@ clear choose_gene_sets enrichment gene_set_names
 % results.drug_deletion = drug_deletion_res;
 % 
 % clear DrugList grRatio grRateKO grRateWT drug_deletion_res drugidxs_with_an_effect
+
+
+
 

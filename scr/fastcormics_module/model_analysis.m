@@ -9,6 +9,7 @@ classdef model_analysis
         reaction_presence
         pathway_counts
         gene_essentiality
+        enrichment
     end
     
     methods
@@ -43,6 +44,27 @@ classdef model_analysis
             obj.reaction_presence = AA_keep;
 
 
+            
+        end
+        
+        function enrichment = perform_gene_enrichment(obj,exp, threshold)
+            %threshold = 0.5;
+            data = obj.gene_essentiality.ratio;
+            mask = data < threshold;
+
+            num_cols = size(data, 2);
+            row_indices = cell(1, num_cols);  % store indices for each column
+            enrichment = struct()
+            
+            [found,idx] = ismember(regexprep(exp.original_model.genes, '\.\d+$', ''),exp.dico.ENTREZ);
+            GeneList_all =  exp.dico.SYMBOL(idx(found),:);
+
+            for col = 1:num_cols
+                row_indices{col} = exp.original_model.genes(find(mask(:, col)));  % find row indices where condition is true
+                [~,idx] = ismember(regexprep(row_indices{col}, '\.\d+$', ''),exp.dico.ENTREZ);
+                row_indices{col} = exp.dico.SYMBOL(idx,:);
+                enrichment.(obj.model_names{col}) = GeneEnrichments(string(row_indices{col}),GeneList_all);
+            end
             
         end
         
@@ -261,6 +283,20 @@ classdef model_analysis
             obj.gene_essentiality = ess;
             obj.gene_essentiality.grRateWT = grRateWT;
             
+        end
+        
+        function visualize_enrichment(obj)
+            
+            enrichment = cell2mat(struct2array(structfun(@(x) x.enrichment,obj.enrichment,'UniformOutput',false)));
+
+            choose_gene_sets = find((abs(min(enrichment') - max(enrichment')) > 0.4)' | (sum(enrichment,2)>0.6));
+            gene_set_names = arrayfun(@(x) regexprep(x,"_","\_"),obj.enrichment.(obj.model_names{1}).("Database/website"));
+
+            plot_clustergram(enrichment(choose_gene_sets,:),...
+                                 gene_set_names(choose_gene_sets)',string(obj.model_names),...
+                                 {'enrichment of essential genes per model in gene sets'},...
+                                 [100 100 800 600]);
+
         end
     end
 end
@@ -644,6 +680,31 @@ function [sampling_fluxsum_ordered] = get_order_from_orig_model(m,s,mets_all)
                                         sampling_fluxsum_values(mapping_mets_in_orig_idx,:) = s;
                                         sampling_fluxsum_ordered = sampling_fluxsum_values;
                                
+end
+
+function [enrichment] = GeneEnrichments(GeneList,GeneList_all)
+% gene list should be Symbols
+
+M = numel(GeneList_all);
+N = numel(GeneList);
+
+load('cancer_genes_datamined.mat')
+K=[];
+x=[];
+for i=1:numel(cancer_genes_names)
+    source = lower(cancer_genes{i});
+    
+    K = [K;sum(ismember(lower(GeneList_all), source))];
+    x = [x;sum(ismember(lower(GeneList), source))];
+end
+
+
+enrichment = table(cancer_genes_names,num2cell(1-hygecdf(x-1,M,K,N)),num2cell(repmat(M,822,1)),num2cell(K),num2cell(repmat(N,822,1)),num2cell(x),...
+    'VariableNames',{'Database/website','enrichment','Recon genes','Recon essential genes','Genelist','GeneList essential'});
+
+% [B, I] = sort(1-hygecdf(x,M,K,N),'ascend');
+% 
+% enrichment = enrichment(I,:);
 end
 
 
