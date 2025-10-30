@@ -21,6 +21,7 @@ classdef expression_data
         rxn_names % rxn names from the metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
         pca
+        umap
         source
     end
     
@@ -304,6 +305,34 @@ classdef expression_data
             
         end
         
+        function obj = perform_umap(obj,data_slot,num_k,vis_features)
+            
+            arguments
+               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+               data_slot (1,1)
+               num_k (1,1) =5
+               vis_features (1,:) =ones(1,size(obj.pca.(data_slot).score,1))
+            end  
+            
+            
+            data_plot = obj.pca.(data_slot).score;
+            data_plot = full(data_plot(find(vis_features),:));
+
+            % --- Run UMAP dimensionality reduction ---
+            % Make sure run_umap.m is on your MATLAB path
+            [reduction, ~] = run_umap( ...
+                data_plot, ...
+                'n_components', 2, ...     % project to 2D
+                'n_neighbors', num_k, ...     % size of local neighborhood
+                'min_dist', 0.1, ...       % how tightly points are packed
+                'metric', 'euclidean', ...  % distance metric
+                'verbose', false, ...
+                'random_state', 42 ... % makes sure that the plot is reproducible
+            );
+            obj.umap.(data_slot).score = reduction;
+            
+        end
+        
         function visualize_dimreduction(obj,colour_label,reduction,data_slot,save_fig, pat_rep_label,vis_dim)
 
             arguments
@@ -318,7 +347,7 @@ classdef expression_data
             
             sample_cat = string(obj.metadata.(colour_label));
             score = obj.(reduction).(data_slot).score;
-            explained = obj.(reduction).(data_slot).explained;
+            
             figure
             hold on
             for x = unique(sample_cat)'
@@ -328,8 +357,14 @@ classdef expression_data
             end   
 
             title(regexprep(reduction+" - " + data_slot + " - " + colour_label, "_" , " "))
-            xlabel(['PC ', num2str(vis_dim(2)), '  : ', num2str(explained(vis_dim(2)))])
-            ylabel(['PC ', num2str(vis_dim(1)), '  : ', num2str(explained(vis_dim(1)))])
+            if reduction == "pca"
+                explained = obj.(reduction).(data_slot).explained;
+                xlabel(['PC ', num2str(vis_dim(2)), '  : ', num2str(explained(vis_dim(2)))])
+                ylabel(['PC ', num2str(vis_dim(1)), '  : ', num2str(explained(vis_dim(1)))])
+            else
+                xlabel([reduction,' ', num2str(vis_dim(2))])
+                ylabel([reduction,' ', num2str(vis_dim(1))])
+            end
             legend(regexprep(unique(sample_cat)', pat_rep_label(1), pat_rep_label(2)) , ...
                    'location','best')
             hold off
