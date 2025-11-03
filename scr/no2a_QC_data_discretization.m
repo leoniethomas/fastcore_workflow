@@ -79,6 +79,17 @@ data = data.perform_pca_kmeans("FPKM",2);
 data = data.perform_pca_kmeans("mapping_exp_2_rxns",2);
 data = data.perform_pca_kmeans("TPM",2);
 data = data.perform_pca_kmeans("discretized",2);
+
+%% perform umap and visualize the umap with visualize_dimreduction function
+
+addpath(genpath(string(scr_para.set_working_directory) + filesep + "scr"+filesep + "fastcormics_module" +filesep + "UMAP"));
+rehash;
+data = data.perform_umap("FPKM")
+
+data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","umap","FPKM")
+
+
+%%
 % visualize pca and clustering
 data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","pca","FPKM")
 data.visualize_dimreduction("Treatment","pca","FPKM")
