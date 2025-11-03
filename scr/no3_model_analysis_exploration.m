@@ -148,6 +148,12 @@ J = 1-squareform(pdist((fba_exchange{:,1:end-1} < 0)','jaccard'))
 analysis_results.get_fba_plot(fba_flux_matrix)
 
 
+%% get fluxsum 
+
+exp.fba = fba_flux_matrix;
+fluxsum_metabolites = exp.compute_flux_sum();
+
+
 %% Flux Variability Analysis
 
 [exp.fva.minFlux, exp.fva.maxFlux] = structfun(@(x) fluxVariability(x),...
