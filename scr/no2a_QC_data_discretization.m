@@ -14,8 +14,7 @@ def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_pa
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
 
-input_paramters = readtable(def_run_file, 'Delimiter','\t');
-scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
+scr_para = read_in_run_def_file(def_run_file);
 
 % add the working path to the path & set the github repo location to be the working directory
 addpath(genpath(scr_para.set_working_directory));
@@ -108,7 +107,7 @@ data.get_QC_plots("raw_counts","SampleID",string(scr_para.QC_figures_path) + dat
 data.get_QC_plots("FPKM","SampleID",string(scr_para.QC_figures_path) + date + filesep)
 
 %% save data for model construction
-dat_file_name = [scr_para.save_disc_data_to   date '/' date  '_disc_data.mat'];  % Convert datetime object to string
+dat_file_name = fullfile(scr_para.save_disc_data_to,   date , [date  '_disc_data.mat']);  % Convert datetime object to string
 disp(dat_file_name);
 
 save(dat_file_name, 'data')
