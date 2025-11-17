@@ -165,14 +165,14 @@ classdef expression_data
                dic_gene_ids_entrez_used (:,:) table
             end
             
-            if exist("map_expression_2_data_rFASTCORMICS",'file') == 0
+            if exist("mapExpressionToModel",'file') == 0
                error("Fastcormics is not installed or the installation was not added to the path variable! The function used for mapping can not be found! map_expression_2_data_rFASTCORMICS function is needed to execute this task!") 
             end
            
-            mapping = map_expression_2_data_rFASTCORMICS(model_used, ...
+            mapping = mapExpressionToModel(model_used, ...
                                                          obj.discretized,...
                                                          dic_gene_ids_entrez_used,...
-                                                         obj.feature_names_norm);
+                                                         cellstr(obj.feature_names_norm),1);
             mapping = sparse(mapping);
             obj.mapping_exp_2_rxns = mapping;
             obj.rxn_names = string(model_used.rxns);

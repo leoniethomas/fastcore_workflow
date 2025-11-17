@@ -12,14 +12,13 @@ feature astheightlimit 2000 % enable long file names
 %def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
 def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_paramters.txt";
 % define which discretization run you want to use for model building
-disc_data_id = "20251028_0720";
+disc_data_id = "20251117_0329";
 
 
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
 
-input_paramters = readtable(def_run_file, 'Delimiter','\t');
-scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
+scr_para = read_in_run_def_file(def_run_file);
 
 % add the working path to the path & set the github repo location to be the working directory
 addpath(genpath(scr_para.set_working_directory));
@@ -36,8 +35,7 @@ copyfile(def_run_file, ...
      
 
 clear def_run_file input_paramters 
-
-
+changeCobraSolver("gurobi")
 
 %% load preprocessed gene expression data
 
@@ -69,7 +67,7 @@ exp = fastcore_experiment(model_orig,dico)
                                      
 %% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
 
-exp = exp.medium_constrain(med,"set_fluxes",0)
+%exp = exp.medium_constrain(med,"set_fluxes",0)
 
 
 %% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
@@ -100,13 +98,20 @@ for cond = unique(data.metadata.(condition_column))'
         
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        [model_cond,AA] = fastcormics_RNAseq(model_orig,data.discretized(:,idx), ...
-                                             data.feature_names_norm, dico, biomass_rxn, str2double(scr_para.already_mapped_tag),...
-                                                str2double(scr_para.consensus_proportion), str2double(scr_para.epsilon), optional_settings);
+        [model_cond, ...
+         retainedRxns, ...
+         indicesCompletedCoreOrig] = rFastcormics4cobra_v2(model_orig,data.discretized(:,idx), ...
+                                                           cellstr(data.feature_names_norm), dico,...
+                                                           scr_para.consensus_proportion, scr_para.epsilon,...
+                                                           optional_settings, biomass_rxn, 1, 0);
+        %[model_cond,AA] = fastcormics_RNAseq(model_orig,data.discretized(:,idx), ...
+        %                                     data.feature_names_norm, dico, biomass_rxn, str2double(scr_para.already_mapped_tag),...
+        %                                        str2double(scr_para.consensus_proportion), str2double(scr_para.epsilon), optional_settings);
         model_cond.running_time = toc;
         model_cond.used_data = data.discretized(:,idx); % add the data used for the model to the resulting model
         model_cond.sample_metadata = data.metadata(idx,:); % add metadta of the samples used to compute the model!
-        model_cond.AA = AA;
+        model_cond.retainedRxns = retainedRxns;
+        model_cond.indicesCompletedCoreOrig = indicesCompletedCoreOrig;
         condition_models.(strrep(cond{:},"-","_")) = model_cond;
         disp("number of samples for which this condition was modelled on: " + size(data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
 end

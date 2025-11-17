@@ -32,7 +32,7 @@ classdef fastcore_experiment
             %   Detailed explanation goes here
             
             disp("Running fastcc and getting rid of unconsistent rxns!")
-            A = fastcc_4_rfastcormics(model, 1e-4, 1);
+            A = fastcc(model, 1e-4, 1);
 
             % remove non consistent reactions from model
             model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
@@ -136,7 +136,7 @@ classdef fastcore_experiment
             
             
             disp("Running fastcc and getting rid of unconsistent rxns!")
-            A = fastcc_4_rfastcormics(model, 1e-4, 1);
+            A = fastcc(model, 1e-4, 1);
 
             % remove non consistent reactions from model
             model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
@@ -515,7 +515,7 @@ function consistency_check(model)
         error("You lost your objective function, when running fastcc!")
     end
     % check if the created model is now really consistent
-    A = fastcc_4_rfastcormics(model, 1e-4, 1);
+    A = fastcc(model, 1e-4, 1);
     if length(model.rxns) ~= length(A)
         error("Your intput model is not consistent after running fastcc! Check your model!")
     else
