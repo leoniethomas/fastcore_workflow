@@ -19,12 +19,12 @@ addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
 % we could also think about just adding the function to rFASTCORMICS
 addpath(genpath("C:\Users\leonie.thomas\scFASTCORMICS"))
 % set the solver you want to use 
-changeCobraSolver("ibm_cplex");
+changeCobraSolver("gurobi");
 
 % define script PARAMETERS
 
 % define which of the models in your consistent model directory you want to read in 
-model_id = "20251028_0709";
+model_id = "20251117_0439";
 % do you work on a fastcore experiment object, which is created by the
 % scripts in this workflow, or are you reading in your own models ? 
 work_on_fastcore_exp = 1;
@@ -39,10 +39,7 @@ addpath(genpath(project_path))
 % file - can be found in the data folder and adjusted 
 input_paramters = dir(path_to_model_to_analyse + filesep + "*def_run_paramters.txt");
 input_paramters = [input_paramters.folder filesep input_paramters.name];
-input_paramters = readtable(input_paramters);
-scr_para = cell2struct(input_paramters{:,"value"}, input_paramters{:,"slot_name"});
-scr_para.model_to_load = model_id + "_cond_models.mat";
-scr_para.model_workspace_to_load = model_id + "_workspace_cond_models.mat";
+scr_para = read_in_run_def_file(input_paramters);
 
 
 %% LOADING CONTEXT SPECIFIC MODELS

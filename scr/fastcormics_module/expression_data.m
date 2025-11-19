@@ -214,7 +214,7 @@ classdef expression_data
                dic_gene_ids_entrez_used table
             end        
             
-            metabolic_genes_entrez = string(regexprep(model_used.model.genes,".1",""));
+            metabolic_genes_entrez = regexprep(string(model_used.(string(fieldnames(model_used))).genes), '\.1$', '');           
             obj.features_metabolic_genes = string(dic_gene_ids_entrez_used.Var1.dico.SYMBOL(find(matches(dic_gene_ids_entrez_used.Var1.dico.ENTREZ,...
                                                                    metabolic_genes_entrez))));
             
