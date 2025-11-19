@@ -32,7 +32,12 @@ copyfile(def_run_file, ...
 
 clear def_run_file input_paramters 
 
-load(scr_para.model_used)
+
+ 
+model = load(scr_para.model_used);
+model = model.(string(fieldnames(model)));
+model = generateRules(model);
+
 load(scr_para.gene_dic_file)
 
 %% load metadata, and expression data
@@ -83,16 +88,16 @@ data = data.perform_pca_kmeans("discretized",2);
 
 addpath(genpath(string(scr_para.set_working_directory) + filesep + "scr"+filesep + "fastcormics_module" +filesep + "UMAP"));
 rehash;
-data = data.perform_umap("FPKM")
+%data = data.perform_umap("FPKM")
 
-data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","umap","FPKM")
+%data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","umap","FPKM")
 
 
 %%
 % visualize pca and clustering
 data.visualize_dimreduction("kmeans_k2_FPKM_features_37232","pca","FPKM")
 data.visualize_dimreduction("Treatment","pca","FPKM")
-data.visualize_dimreduction("kmeans_k2_mapping_exp_2_rxns_features_10600","pca","mapping_exp_2_rxns")
+%data.visualize_dimreduction("kmeans_k2_mapping_exp_2_rxns_features_10600","pca","mapping_exp_2_rxns")
 data.visualize_dimreduction("Treatment","pca","mapping_exp_2_rxns")
 data.visualize_dimreduction("kmeans_k2_TPM_features_37232","pca","TPM")
 data.visualize_dimreduction("Treatment","pca","TPM")
