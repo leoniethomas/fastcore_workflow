@@ -12,7 +12,7 @@ feature astheightlimit 2000 % enable long file names
 %def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
 def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_paramters.txt";
 % define which discretization run you want to use for model building
-disc_data_id = "20251117_0329";
+disc_data_id = "20251117_0509";
 
 
 
@@ -58,7 +58,9 @@ med = med.add_additional_rxns_boundaries(string(split(scr_para.unwanted_uptakes_
 
 %% start a fastcore experiment & test the consistency of input model
 
-load(scr_para.model_used)
+model = load(scr_para.model_used);
+model = model.(string(fieldnames(model)));
+model = generateRules(model);
 load(scr_para.gene_dic_file)
 model_orig = model;
 
@@ -67,6 +69,7 @@ exp = fastcore_experiment(model_orig,dico)
                                      
 %% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
 
+%% TODO -> set the concentraiton as fluxes !!
 %exp = exp.medium_constrain(med,"set_fluxes",0)
 
 
@@ -79,11 +82,13 @@ exp.data.source = disc_data;
 optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ...
                                                          strsplit(scr_para.unpenalizedSystems,";")));
 % forcing the medium in by setting it into fun option
-optional_settings.func = {'DM_atp_c_', 'biomass_reaction',med.medium_composition.ExRxns_Recon3D{:}}; %biomass_maintenance %-> c
+biomass_rxn = {'biomass_human'}  % 'biomass_reaction' for recon3d
+
+optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:},med.medium_composition.ExRxns_HumanGEM{:}}; %biomass_maintenance %-> c
 % composition constrain the model by setting the optional setting to the medium composition
-optional_settings.medium = med.medium_composition.Mets_Recon3D; %(add media instead)
+optional_settings.medium = med.medium_composition.Mets_HumanGEM; %(add media instead)
 optional_settings.not_medium_constrained = scr_para.not_medium_constrained;
-biomass_rxn = {'biomass_reaction'} 
+
 %%%%%%%%%%%%%%%%%%%%%%  
                         
 condition_models = struct();
@@ -98,9 +103,7 @@ for cond = unique(data.metadata.(condition_column))'
         
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        [model_cond, ...
-         retainedRxns, ...
-         indicesCompletedCoreOrig] = rFastcormics4cobra_v2(model_orig,data.discretized(:,idx), ...
+        [model_cond,retainedRxns, indicesCompletedCoreOrig] = rFastcormics4cobra_v2(model_orig,data.discretized(:,idx), ...
                                                            cellstr(data.feature_names_norm), dico,...
                                                            scr_para.consensus_proportion, scr_para.epsilon,...
                                                            optional_settings, biomass_rxn, 1, 0);
@@ -124,13 +127,14 @@ exp.condition_models = condition_models;
 %%
 
 clear A AA idx xi x TXT tsquared model_cond condition_column cond
-mkdir([scr_para.save_models_to  date])
+cd(scr_para.set_working_directory)
+mkdir(fullfile(scr_para.save_models_to, date))
 
-exp_file_name = [scr_para.save_models_to  date '/' date '_fastcore_exp.mat'];  % Convert datetime object to string
+exp_file_name = fullfile(scr_para.save_models_to,date,[ date '_fastcore_exp.mat']);  % Convert datetime object to string
 disp(exp_file_name);
-md_file_name = [scr_para.save_models_to  date '/' date '_cond_models.mat'];  % Convert datetime object to string
+md_file_name = fullfile(scr_para.save_models_to,date,[ date '_cond_models.mat']);  % Convert datetime object to string
 disp(md_file_name);
-dat_file_name = [scr_para.save_models_to   date '/' date  '_workspace_cond_models.mat'];  % Convert datetime object to string
+dat_file_name = fullfile(scr_para.save_models_to,date,[ date  '_workspace_cond_models.mat']);  % Convert datetime object to string
 disp(dat_file_name);
 
 save(md_file_name, 'condition_models')

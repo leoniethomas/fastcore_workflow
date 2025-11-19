@@ -18,7 +18,7 @@ classdef model_analysis
             % - reading in context specific models, with names 
             % - getting the sice of the networks (genes,reaction, &
             % metabolite count)
-            % - aligning the AA/retained_reaction output coming from
+            % - aligning the retainedRxns/retained_reaction output coming from
             % fastcormics function, and defining a new matrix which gives
             % the reacion presence of the models for all the reaction that
             % were in the original model
@@ -39,9 +39,9 @@ classdef model_analysis
                                              'RowNames',obj.model_names);
             disp("Put reaction prescense of all models in one dataframe!")
             % get reaction precense
-            AA_keep = struct2array(structfun(@(x) get_feature_presence(length(exp.original_model.rxns),x.AA), ...
+            retainedRxns_keep = struct2array(structfun(@(x) get_feature_presence(length(exp.original_model.rxns),x.retainedRxns), ...
                                    condition_models,'UniformOutput',false));
-            obj.reaction_presence = AA_keep;
+            obj.reaction_presence = retainedRxns_keep;
 
 
             
@@ -246,19 +246,16 @@ classdef model_analysis
                                  {'Similarity of optimal fluxes obtained via FBA [log(jaccard  similarity score)]'},...
                                  [100 100 800 600],...
                                  altcolor);
-            disp(cell2mat(fva_sim_matrix))
+            disp(fva_sim_matrix)
             
         end
         function obj = add_essentiality_analysis_to_analysis_obj(obj,exp,ratio,rate,rxn_genes,grRateWT)
             
             all_genes = exp.original_model.genes;
-            
-
-            
-            %x = 'samplingResults_MDA_MB231_Cont_NO_model_20250602_090252';
+           
             fluxsum = arrayfun(@(x) get_order_from_orig_model(exp.condition_models.(x).genes,...
                                                                          ratio.(x),...
-                                                                         all_genes),...
+                                                                         all_genes,1),...
                                        string(obj.model_names),...
                                        'UniformOutput',false);
                                    
@@ -266,7 +263,7 @@ classdef model_analysis
             
             fluxsum2 = arrayfun(@(x) get_order_from_orig_model(exp.condition_models.(x).genes,...
                                                                          rate.(x),...
-                                                                         all_genes),...
+                                                                         all_genes,grRateWT.(x)),...
                                        string(obj.model_names),...
                                        'UniformOutput',false);
                                    
@@ -704,11 +701,17 @@ end
 
  end
 
- 
-function [sampling_fluxsum_ordered] = get_order_from_orig_model(m,s,mets_all)
+function [sampling_fluxsum_ordered] = get_order_from_orig_model(m,s,mets_all,fill_value)
+            arguments
+               m
+               s
+               mets_all
+               fill_value =0
+            end
                                         [~,mapping_mets_in_orig_idx] = ismember(m,mets_all);
                                         if isa(s, 'double')  % or replace with actual numeric class if needed
-                                            sampling_fluxsum_values = zeros(length(mets_all), size(s, 2));
+                                           
+                                            sampling_fluxsum_values = ones(length(mets_all), size(s, 2))*fill_value;
                                         elseif isa(s, 'cell')
                                             sampling_fluxsum_values = cell(length(mets_all), size(s, 2));
                                         else
