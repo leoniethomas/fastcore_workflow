@@ -397,19 +397,18 @@ for i = 1:(2^n - 1)
 end
 
 % Pick colors
-default_colors = [
-    1 0 0;  % Red
-    0 1 0;  % Green
-    0 0 1;  % Blue
-    1 1 0   % Yellow
-];
-colors = default_colors(1:n, :);
+% default_colors = [
+%     1 0 0;  % Red
+%     0 1 0;  % Green
+%     0 0 1;  % Blue
+%     1 1 0   % Yellow
+% ];
+% colors = default_colors(1:n, :);
 
 % Call your venn() function
 venn(n, ...
     'sets', set_names, ...
     'labels', labels, ...
-    'colors', colors, ...
     'alpha', 0.5, ...
     'edgeC', [1 1 1], ...
     'edgeW', 2);
@@ -486,6 +485,7 @@ addParameter(p,'alpha', 0.3, validPosFrc);
 addParameter(p,'edgeC', 'w', validColor);
 addParameter(p,'edgeW', [], validPosNum);
 addParameter(p,'labelC', 'k', validColor);
+
 
 % Parse input
 parse(p,varargin{:});
@@ -588,8 +588,8 @@ switch n
         circle(X+r,Y,r,colors(2,:),alpha);
         circle(X+r/2,Y+r,r,colors(3,:),alpha);
         % draw circle A and B edge again (so they are not covered by circle C)
-        circle(X,Y,r,[0 0 0],0);
-        circle(X+r,Y,r,[0 0 0],0);
+        circle(X,Y,r,colors(1,:),alpha);
+        circle(X+r,Y,r,colors(2,:),alpha);
 
         text(1.5,3.2,s(1),'HorizontalAlignment','center')
         text(-0.1,1,s(2),'HorizontalAlignment','right')
