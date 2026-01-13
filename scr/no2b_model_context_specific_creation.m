@@ -35,14 +35,30 @@ copyfile(def_run_file, ...
          string(scr_para.save_disc_data_to) + date+ filesep + date + "_def_run_paramters.txt")
      
 
-clear def_run_file input_paramters 
+clear input_paramters 
 changeCobraSolver("gurobi")
 
+%% start a fastcore experiment & test the consistency of input model
+
+model = load(scr_para.model_used);
+model = model.(string(fieldnames(model)));
+model = generateRules(model);
+load(scr_para.gene_dic_file, "dico")
+
+% BUILD generic CONSISTENT model - fast consistency check (fastcc)
+exp = fastcore_experiment(model,dico)
+clear dico model
 %% load preprocessed gene expression data
 
 disc_data = string(scr_para.set_working_directory) + filesep + "discretization" + filesep + disc_data_id + filesep + disc_data_id + "_disc_data.mat";
 
 load(disc_data)
+
+
+%% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
+
+exp = exp.add_expression_data(data, disc_data)
+clear data disc_data disc_data_id
 
 
 %% create medium for the models
@@ -60,38 +76,19 @@ med = med.add_additional_rxns_boundaries(string(split(scr_para.unwanted_uptakes_
                                          string(split(scr_para.needed_mets_medium, ";"))',...
                                          [])
 
-%% start a fastcore experiment & test the consistency of input model
-
-model = load(scr_para.model_used);
-model = model.(string(fieldnames(model)));
-model = generateRules(model);
-load(scr_para.gene_dic_file)
-model_orig = model;
-
-% BUILD generic CONSISTENT model - fast consistency check (fastcc)
-exp = fastcore_experiment(model_orig,dico)
-                                     
-%% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
-
-%% TODO -> set the concentraiton as fluxes !!
 exp = exp.medium_constrain(med,"set_fluxes",0)
+clear med
 
-
-%% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
-
-exp.data = data;
-exp.data.source = disc_data;
-
+%% 
 %%%%%%%%%%%%%%%%%%%%%%  set settings used for the fastcormics run 
 % the unpenalized argument is currently not part of fastcormics4cobra_v2
 %optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ... 
 %                                                         strsplit(scr_para.unpenalizedSystems,";")));
-% forcing the medium in by setting it into fun option
-biomass_rxn = {'biomass_reaction'}  % 'biomass_reaction' for recon3d
 
-optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:},med.medium_composition.ExRxns_Recon3D{:}}; %biomass_maintenance %-> c
-% composition constrain the model by setting the optional setting to the medium composition
-optional_settings.medium = med.medium_composition.Mets_Recon3D; %(add media instead)
+% forcing the medium in by setting it into fun option
+biomass_rxn = {'biomass_reaction'}  
+optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:}, exp.medium.medium_composition.ExRxns_Recon3D{:}};
+optional_settings.medium = exp.medium.medium_composition.Mets_Recon3D;
 optional_settings.not_medium_constrained = scr_para.not_medium_constrained;
 
 %%%%%%%%%%%%%%%%%%%%%%  
@@ -100,41 +97,52 @@ condition_models = struct();
 
 condition_column = scr_para.columns_to_define_model_samples_on;
 % get the index of the samples in every defined group
-for cond = unique(data.metadata.(condition_column))'
+for cond = unique(exp.data.metadata.(condition_column))'
          % transform the array, the for loop loops over the rows, so if the elements over which you want to loop over are defined in cells in one row /not column then the for loop will concat all elements instead of looping over them
-        idx = contains(data.metadata.(condition_column),cond);
+        idx = contains(exp.data.metadata.(condition_column),cond);
+        
+        % write diary
+        fname = [tempname '.txt'];
+        diary(fname)
+        diary on
 
         disp("condition for which the samples are filtered: " + cond + newline + " ----------------####################### ------------------------");
         
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        [model_cond,retainedRxns, indicesCompletedCoreOrig] = rFastcormics4cobra_v2(exp.medium_constrained_model,data.discretized(:,idx), ...
-                                                                                    cellstr(data.feature_names_norm), dico,...
+        [model_cond,retainedRxns, indicesCompletedCoreOrig] = rFastcormics4cobra_v2(exp.medium_constrained_model,exp.data.discretized(:,idx), ...
+                                                                                    cellstr(exp.data.feature_names_norm), exp.dico,...
                                                                                     scr_para.consensus_proportion, scr_para.epsilon,...
                                                                                     optional_settings, biomass_rxn, 0, 0);
         model_cond.running_time = toc;
-        model_cond.used_data = data.discretized(:,idx); % add the data used for the model to the resulting model
-        model_cond.sample_metadata = data.metadata(idx,:); % add metadta of the samples used to compute the model!
+        model_cond.used_data = exp.data.discretized(:,idx); % add the data used for the model to the resulting model
+        model_cond.sample_metadata = exp.data.metadata(idx,:); % add metadta of the samples used to compute the model!
         model_cond.retainedRxns = retainedRxns;
         model_cond.indicesCompletedCoreOrig = indicesCompletedCoreOrig;
-        condition_models.(strrep(cond{:},"-","_")) = model_cond;
+        
         if ~sum(contains(model_cond.rxns,"biomass_reaction")) == 1
             error("Biomass_rxn is lost!!")
         end
         if length(model_cond.rxns)~=length(fastcc(model_cond, scr_para.epsilon, 0, 0, 'original'))
             error("Model generated by fascormics is not consistent!")
         end
-        disp("number of samples for which this condition was modelled on: " + size(data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
+        disp("number of samples for which this condition was modelled on: " + size(exp.data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
+        diary off
+
+        model_cond.diary = fileread(fname);
+        condition_models.(strrep(cond{:},"-","_")) = model_cond;
+        clear model_cond retainedRxns indicesCompletedCoreOrig
+        delete(fname);
 end
 
 exp.optional_settings = optional_settings;
 exp.condition_models = condition_models;
 
-
+clear biomass_rxn
 
 %%
 
-clear A AA idx xi x TXT tsquared model_cond condition_column cond
+clear idx model_cond condition_column cond optional_settings fname cond
 cd(scr_para.set_working_directory)
 mkdir(fullfile(scr_para.save_models_to, date))
 
@@ -146,6 +154,10 @@ dat_file_name = fullfile(scr_para.save_models_to,date,[ date  '_workspace_cond_m
 disp(dat_file_name);
 
 save(md_file_name, 'condition_models')
+clear condition_models
 save(dat_file_name)
 save(exp_file_name, 'exp')
 
+[~, name, ext] = fileparts(def_run_file);
+def_file_name = fullfile(scr_para.save_models_to,date, date + "_" + name + ext);
+copyfile(def_run_file, def_file_name);
