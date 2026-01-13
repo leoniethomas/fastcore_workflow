@@ -1,4 +1,4 @@
-function [discretized] = discretize_FPKM(fpkm,colnames,figflag,fig_path)
+function [discretized,ztransformed] = discretize_FPKM(fpkm,colnames,figflag,fig_path)
 %% Discretize_Data
 % script adapted from (c) Dr. Maria Pires Pacheco 2016
 
@@ -111,6 +111,7 @@ for j=1:size(fpkm,2) %for each sample
     %% do the analysis
     
     zFPKM = (signal(:,j)-mu1)/sigma1; %transform sample into zFPKM
+    ztransformed_keep(j,:)=zFPKM';
     
     sigma2  = fitresult_l.c1/sqrt(2);
     mu2     = fitresult_l.b1;
@@ -162,6 +163,7 @@ for j=1:size(fpkm,2) %for each sample
     discretized_keep(j,:)=discretized';
 end
 discretized = discretized_keep';
+ztransformed = ztransformed_keep';
 clear discretized_keep j
 %% Density plot for all samples
 
