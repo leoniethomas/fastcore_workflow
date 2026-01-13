@@ -10,10 +10,11 @@ feature astheightlimit 2000 % enable long file names
 
 % read in the parameters needed for the analysis
 %def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
-def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow/data/def_run_paramters.txt";
-% define which discretization run you want to use for model building
-disc_data_id = "20251117_0509";
 
+% define which discretization run you want to use for model building
+disc_data_id = "20251125_0837";
+def_run_file = "/Users/leonie.thomas/Documents/GSNOR_metab_models/fastcore_workflow/discretization" + filesep + ...
+                disc_data_id + filesep + disc_data_id + "_def_run_paramters.txt";
 
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
@@ -46,15 +47,18 @@ load(disc_data)
 
 %% create medium for the models
 
-med = medium(["RPMI1640.tsv", "FBS.tsv"],"./data/media");
+med = medium(["DMEM.tsv", "FBS.tsv"],"./data/media");
 
-med = med.read_medium_files(["Concentration_M","Concentration_M"])
-med.medium_composition.Flux_mmol_gDW_h = - conc2Rate(med.medium_composition.Concentration_M,1e5,24,400e-12);
+med = med.read_medium_files(["Concentration_M","Concentration_M"]); 
+med.medium_composition.Flux_mmol_gDW_h = - conc2Rate(med.medium_composition.Concentration_mM,...
+                                                       scr_para.cell_conc_cells_per_ml,...
+                                                       scr_para.t_in_hours,...
+                                                       scr_para.cell_dry_weight_gDW); % TODO put the values from the description file here 
 
-needed_mets = ["o2[e]", "co2[e]", "h2o[e]","h[e]", "oh1[e]"];
 med = med.add_additional_rxns_boundaries(string(split(scr_para.unwanted_uptakes_export_ub, ";"))',...
                                          string(split(scr_para.unwanted_uptakes_export_lb, ";"))',...
-                                         needed_mets,[])
+                                         string(split(scr_para.needed_mets_medium, ";"))',...
+                                         [])
 
 %% start a fastcore experiment & test the consistency of input model
 
@@ -70,7 +74,7 @@ exp = fastcore_experiment(model_orig,dico)
 %% BUILD medium-constrained CONSISTENT model - fast consistency check (fastcc)
 
 %% TODO -> set the concentraiton as fluxes !!
-%exp = exp.medium_constrain(med,"set_fluxes",0)
+exp = exp.medium_constrain(med,"set_fluxes",0)
 
 
 %% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
@@ -79,14 +83,15 @@ exp.data = data;
 exp.data.source = disc_data;
 
 %%%%%%%%%%%%%%%%%%%%%%  set settings used for the fastcormics run 
-optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ...
-                                                         strsplit(scr_para.unpenalizedSystems,";")));
+% the unpenalized argument is currently not part of fastcormics4cobra_v2
+%optional_settings.unpenalized = model_orig.rxns(ismember(vertcat(model_orig.subSystems{:}), ... 
+%                                                         strsplit(scr_para.unpenalizedSystems,";")));
 % forcing the medium in by setting it into fun option
-biomass_rxn = {'biomass_human'}  % 'biomass_reaction' for recon3d
+biomass_rxn = {'biomass_reaction'}  % 'biomass_reaction' for recon3d
 
-optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:},med.medium_composition.ExRxns_HumanGEM{:}}; %biomass_maintenance %-> c
+optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:},med.medium_composition.ExRxns_Recon3D{:}}; %biomass_maintenance %-> c
 % composition constrain the model by setting the optional setting to the medium composition
-optional_settings.medium = med.medium_composition.Mets_HumanGEM; %(add media instead)
+optional_settings.medium = med.medium_composition.Mets_Recon3D; %(add media instead)
 optional_settings.not_medium_constrained = scr_para.not_medium_constrained;
 
 %%%%%%%%%%%%%%%%%%%%%%  
@@ -103,19 +108,22 @@ for cond = unique(data.metadata.(condition_column))'
         
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        [model_cond,retainedRxns, indicesCompletedCoreOrig] = rFastcormics4cobra_v2(model_orig,data.discretized(:,idx), ...
-                                                           cellstr(data.feature_names_norm), dico,...
-                                                           scr_para.consensus_proportion, scr_para.epsilon,...
-                                                           optional_settings, biomass_rxn, 1, 0);
-        %[model_cond,AA] = fastcormics_RNAseq(model_orig,data.discretized(:,idx), ...
-        %                                     data.feature_names_norm, dico, biomass_rxn, str2double(scr_para.already_mapped_tag),...
-        %                                        str2double(scr_para.consensus_proportion), str2double(scr_para.epsilon), optional_settings);
+        [model_cond,retainedRxns, indicesCompletedCoreOrig] = rFastcormics4cobra_v2(exp.medium_constrained_model,data.discretized(:,idx), ...
+                                                                                    cellstr(data.feature_names_norm), dico,...
+                                                                                    scr_para.consensus_proportion, scr_para.epsilon,...
+                                                                                    optional_settings, biomass_rxn, 0, 0);
         model_cond.running_time = toc;
         model_cond.used_data = data.discretized(:,idx); % add the data used for the model to the resulting model
         model_cond.sample_metadata = data.metadata(idx,:); % add metadta of the samples used to compute the model!
         model_cond.retainedRxns = retainedRxns;
         model_cond.indicesCompletedCoreOrig = indicesCompletedCoreOrig;
         condition_models.(strrep(cond{:},"-","_")) = model_cond;
+        if ~sum(contains(model_cond.rxns,"biomass_reaction")) == 1
+            error("Biomass_rxn is lost!!")
+        end
+        if length(model_cond.rxns)~=length(fastcc(model_cond, scr_para.epsilon, 0, 0, 'original'))
+            error("Model generated by fascormics is not consistent!")
+        end
         disp("number of samples for which this condition was modelled on: " + size(data.discretized(:,idx),2) + newline + " ----------------####################### ------------------------")
 end
 
