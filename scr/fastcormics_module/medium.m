@@ -55,6 +55,7 @@ classdef medium
                 
                 % adding up the metabolites, in case they are in both media components
                 medium{:, ["Concentration_M"]} = medium{:, [col_conc]} + medium{:, [column_to_join(med_idx)]};
+                medium{:, ["Concentration_mM"]} = medium{:, ["Concentration_M"]}*1000;
                 medium.(col_conc) = [];
                 medium.(column_to_join(med_idx)) = []; 
                 col_conc = "Concentration_M_tab";
