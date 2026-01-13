@@ -8,18 +8,21 @@ classdef expression_data
     %
     
     properties
+        Properties
         sample_names % names of all samples/cells in the gene expression file read in
         metadata % metadata defining the properties of the different samples/cells
         feature_names_raw % defining the gene names used in the raw count data stored in the raw_counts slot
         raw_counts % raw unnormalized counts
         feature_names_norm % defining the gene names used for the normalized data slots 
         FPKM % Fragments Per Kilobase Million data
+        zFPKM % scaled and centered FPKM
         TPM %  Transcripts Per Kilobase Million data
         vst_normalized_counts % variance stabilized data from Deseq2
         discretized % discretized data - generated useing fastcormics discretize_FPKM function
         features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
         rxn_names % rxn names from the metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
+        model_presence
         pca
         umap
         source
@@ -39,20 +42,21 @@ classdef expression_data
                 %                        used later when visualizing the
                 %                        data
                 arguments
-                   path_raw_counts (1,1) string {mustBeFileType(path_raw_counts,"txt")}
-                   path_metadata (1,1) string {mustBeFileType(path_metadata,"txt")}
+                   path_raw_counts (1,1) %string {mustBeFileType(path_raw_counts,"txt")}
+                   path_metadata (1,1) %string {mustBeFileType(path_metadata,"txt")}
                    sample_label_column (1,1) string
                 end
             
                 
                 % read in sample names 
-                obj.metadata = readtable(path_metadata, 'Delimiter','\t');
+                obj.metadata = readtable(path_metadata, 'Delimiter',';');
                 
                 if ~any(contains(obj.metadata.Properties.VariableNames,sample_label_column))
                     disp("These are the columnnames in the metadata file:")
                     obj.metadata.Properties.VariableNames
                     error("The sample label column does not exist in the metadata! Check please which column you want to use to label the samples!")
                 end
+                obj.Properties = string(properties(obj));
                 obj.sample_names = string(obj.metadata.(sample_label_column))';
                 obj.raw_counts = readcell(path_raw_counts);
                 
@@ -62,7 +66,11 @@ classdef expression_data
                 feature_column = find(sum(find_numeric_entries)==0);
                 obj.feature_names_raw = rmmissing(string(obj.raw_counts(:,feature_column)));
                 sample_names = rmmissing(string(obj.raw_counts(sample_row,:)));
-                obj.feature_names_raw(find(matches(obj.feature_names_raw,sample_names))) = [];
+                sample_all = sample_names;
+                sample_names = sample_names(find(ismember(sample_names, obj.sample_names)));
+                not_sample_name = sample_all(find(~ismember(sample_all,sample_names)));
+                obj.feature_names_raw(find(matches(obj.feature_names_raw,not_sample_name))) = [];
+                
                 obj.raw_counts(sample_row,:) = [];
                 obj.raw_counts(:,feature_column) = [];
                 % we extracted the feature and sample column
@@ -115,7 +123,9 @@ classdef expression_data
             obj.(slot)(sample_row,:) = [];
             obj.(slot)(:,feature_column) = [];
             
-            features_in_data(find(matches(features_in_data,sample_names))) = [];
+            not_sample_name = sample_names(find(~ismember(sample_names,obj.sample_names)));
+            sample_names = sample_names(find(ismember(sample_names,obj.sample_names)));
+            features_in_data(find(matches(features_in_data,not_sample_name))) = [];
             if ~isempty(obj.feature_names_norm)
                 % in case there has been normalized data already read in
                 % the new data is filtered according what is already stored
@@ -189,7 +199,7 @@ classdef expression_data
             end
 
             mkdir(file_path_results + "Discretization" )
-            obj.discretized = discretize_FPKM(obj.(slot), ...
+            [obj.discretized,obj.zFPKM] = discretize_FPKM(obj.(slot), ...
                                               obj.sample_names,figflag,...
                                               char(file_path_results + "Discretization" + filesep));
             
@@ -285,12 +295,34 @@ classdef expression_data
             
         end
         
-        function obj = perform_pca_kmeans(obj,data_slot,num_k,vis_features)
+        function obj = delete_sample(obj,sample_names)
+            arguments
+                obj (1,1) expression_data  {mustBeValid_expression_data_object(obj)}
+                sample_names (1,:) string
+            end
+            
+            sample_count_init = length(obj.sample_names);
+            keep_sample_idx = find(~ismember(obj.sample_names,sample_names));
+            obj.sample_names = obj.sample_names(keep_sample_idx);
+            obj.metadata = obj.metadata(keep_sample_idx,:);
+
+            slots_with_sample_data = obj.Properties(find(sample_count_init == cellfun(@(p) size(obj.(p),2), obj.Properties)));
+            for slot = slots_with_sample_data'
+                obj.(slot) = obj.(slot)(:,keep_sample_idx);
+            end
+
+            % TODO -> delete all the dimension reductions already
+            % performed, need to be performed from scratch, since samples
+            % were removed
+            
+        end
+        function obj = perform_pca_kmeans(obj,data_slot,num_k,perform_clustering_on_pca,vis_features)
             
             arguments
                obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                data_slot (1,1)
                num_k (1,1)
+               perform_clustering_on_pca (1,1) =1
                vis_features (1,:) =ones(1,size(obj.(data_slot),1))
             end  
             
@@ -298,32 +330,38 @@ classdef expression_data
             data = obj.(data_slot);
             data = full(data(find(vis_features),:));
             
+            
             [obj.pca.(data_slot).coeff,obj.pca.(data_slot).score,obj.pca.(data_slot).latent,obj.pca.(data_slot).tsquared,obj.pca.(data_slot).explained] = pca(data');
-            cluster =num2cell(num2str(kmeans(data',num_k)));
+            if perform_clustering_on_pca
+                cluster =num2cell(num2str(kmeans(obj.pca.(data_slot).score,num_k)));
+            else
+                cluster =num2cell(num2str(kmeans(data',num_k)));
+            end
             column_name = "kmeans_k" + string(num_k) + "_" + data_slot + "_features_" + string(length(find(vis_features)));
             obj.metadata.(column_name) = str2num(cell2mat(cluster));
             
         end
         
-        function obj = perform_umap(obj,data_slot,num_k,vis_features)
+        function obj = perform_umap(obj,data_slot,num_neighbors,vis_features)
             
             arguments
                obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                data_slot (1,1)
-               num_k (1,1) =5
+               num_neighbors (1,1) =3
                vis_features (1,:) =ones(1,size(obj.pca.(data_slot).score,1))
             end  
             
             
             data_plot = obj.pca.(data_slot).score;
-            data_plot = full(data_plot(find(vis_features),:));
-
+            data_plot = full(data_plot(:,find(vis_features)));
+            % set seed 
+            rng(123);
             % --- Run UMAP dimensionality reduction ---
             % Make sure run_umap.m is on your MATLAB path
             [reduction, ~] = run_umap( ...
                 data_plot, ...
                 'n_components', 2, ...     % project to 2D
-                'n_neighbors', num_k, ...     % size of local neighborhood
+                'n_neighbors', num_neighbors, ...     % size of local neighborhood
                 'min_dist', 0.1, ...       % how tightly points are packed
                 'metric', 'euclidean', ...  % distance metric
                 'verbose', false, ...
@@ -332,41 +370,119 @@ classdef expression_data
             obj.umap.(data_slot).score = reduction;
             
         end
+
+        function save_data_as_csv(obj,slot,path,rowname_slot,colname_slot)
+            arguments
+                obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+                slot (1,1) string ="FPKM"
+                path (1,1) string = "./saved_data.csv"
+                rowname_slot (1,1) string ="feature_names_norm"
+                colname_slot (1,1) string ="sample_names"
+            end
+            
+            T = array2table(obj.(slot), 'VariableNames', obj.(colname_slot), 'RowNames', obj.(rowname_slot));
+            writetable(T, path, 'WriteRowNames', true);
+        end
+
+        function obj = fix_duplicated_feature_names(obj,slot)
+
+            % Original row names
+            rownames = obj.(slot);
+            
+            % Make row names unique by appending numeric suffixes
+            [uniqueNames, ~, ic] = unique(rownames, 'stable'); 
+            counts = accumarray(ic, 1);
+            suffixes = zeros(size(rownames));
+            
+            for i = 1:length(rownames)
+                if counts(ic(i)) > 1
+                    suffixes(i) = sum(strcmp(rownames(1:i), rownames{i}));
+                end
+            end
+            
+            % Add postfix only to duplicates
+            for i = 1:length(rownames)
+                if suffixes(i) > 1
+                    rownames{i} = [rownames{i} '_' num2str(suffixes(i))];
+                end
+            end
+            obj.(slot) = rownames;
+
+        end
         
-        function visualize_dimreduction(obj,colour_label,reduction,data_slot,save_fig, pat_rep_label,vis_dim)
+        function visualize_dimreduction(obj,colour_label,reduction,data_slot,shape_label,vis_dim, save_fig, pat_rep_label)
 
             arguments
                obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
                colour_label (1,1) ="Treatment"
                reduction (1,1) ="pca"
                data_slot (1,1) ="FPKM"
-               save_fig (1,1) ="mapped_expression_" + reduction + ".png"
-               pat_rep_label (1,2) =["_" "/_"]
+               shape_label (1,1) = "None"
                vis_dim (1,2) =[1,2]
+               save_fig (1,1) ="mapped_expression_" + reduction + ".png"
+               pat_rep_label (1,2) =["_" " "]
             end  
             
             sample_cat = string(obj.metadata.(colour_label));
+            if shape_label == "None"
+                shape_cat  = repmat("o",length(sample_cat),1);
+            else
+                shape_cat  = string(obj.metadata.(shape_label));   % NEW
+            end
+
             score = obj.(reduction).(data_slot).score;
             
             figure
-            hold on
-            for x = unique(sample_cat)'
-                %disp(x);
-                idx = contains(sample_cat,x{:});
-                scatter(score(idx,vis_dim(2)),score(idx,vis_dim(1)))
-            end   
+            ax1 = axes; hold on
+            
+            % --- Plot scatter points ---
+            cats_color = unique(sample_cat)';
+            
+            cats_shape = unique(shape_cat)';
+            markers = {'o','s','^','d','v','p','h','x','+'};
+            colors = lines(numel(cats_color));
+            
+            for i = 1:numel(cats_color)
+                for j = 1:numel(cats_shape)
+                    idx = sample_cat == cats_color(i) & shape_cat == cats_shape(j);
+                    if any(idx)
+                        scatter(score(idx,vis_dim(2)), score(idx,vis_dim(1)), ...
+                                80, colors(i,:), 'filled', 'Marker', markers{mod(j-1,numel(markers))+1});
+                    end
+                end
+            end
+            
+            title(regexprep(reduction+" - " + data_slot, pat_rep_label(1) , pat_rep_label(2)))
+            
+            % --- Color legend ---
+            lgd1 = legend(arrayfun(@(i) plot(NaN,NaN,'o','MarkerFaceColor',colors(i,:),...
+                                'MarkerEdgeColor',colors(i,:),'LineStyle','none','MarkerSize',8), ...
+                                1:numel(cats_color)), cats_color, 'Location','northeast');
+            ldg1.Color = "none";
+            title(lgd1,regexprep(colour_label, pat_rep_label(1) , pat_rep_label(2)))
+            
+            % --- Shape legend (overlay axes) ---
+            if length(unique(cats_shape)) ~= 1
+            ax2 = copyobj(ax1,gcf); delete(ax2.Children); hold(ax2,'on')
+            lgd2 = legend(arrayfun(@(j) plot(ax2,NaN,NaN,'Marker',markers{mod(j-1,numel(markers))+1},...
+                                'LineStyle','none','MarkerSize',8,'Color','k'), 1:numel(cats_shape)), ...
+                          cats_shape, 'Location','northwest');
+            set(ax2,'Color','none','XTick',[],'YTick',[],'Box','off','Visible','off')
+            title(lgd2,regexprep(shape_label, pat_rep_label(1) , pat_rep_label(2))); set(lgd2,'Color','none')
 
-            title(regexprep(reduction+" - " + data_slot + " - " + colour_label, "_" , " "))
+            set(lgd2,'Color','none')  % transparent background
+            end
+
+            
             if reduction == "pca"
                 explained = obj.(reduction).(data_slot).explained;
                 xlabel(['PC ', num2str(vis_dim(2)), '  : ', num2str(explained(vis_dim(2)))])
                 ylabel(['PC ', num2str(vis_dim(1)), '  : ', num2str(explained(vis_dim(1)))])
             else
-                xlabel([reduction,' ', num2str(vis_dim(2))])
-                ylabel([reduction,' ', num2str(vis_dim(1))])
+                xlabel([reduction,'', num2str(vis_dim(2))])
+                ylabel([reduction,'', num2str(vis_dim(1))])
             end
-            legend(regexprep(unique(sample_cat)', pat_rep_label(1), pat_rep_label(2)) , ...
-                   'location','best')
+      
             hold off
             saveas(gcf, regexprep(save_fig,"PCA.png","PCA_label.png"));
         end
