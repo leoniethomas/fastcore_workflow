@@ -31,19 +31,22 @@ classdef fastcore_experiment
             %UNTITLED4 Construct an instance of this class
             %   Detailed explanation goes here
             
-            % disp("Running fastcc and getting rid of unconsistent rxns!")
-            % A = fastcc(model, 1e-4, 1);
+            disp("Running fastcc and getting rid of unconsistent rxns!")
+            A = fastcc(model, 1e-4, 1);
             % 
             % % remove non consistent reactions from model
-            % model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
+            model=removeRxns(model, model.rxns(setdiff(1:numel(model.rxns),A)));
             % % check if the biomass reactions are still there
-            % consistency_check(model);
+            consistency_check(model);
             
             obj.original_model = model;
             obj.dico = dico;
             
         end
-        
+        function obj = add_expression_data(obj,data, disc_data)
+            obj.data = data;
+            obj.data.source = disc_data;
+        end
         
         function [obj,fluxsum] = compute_flux_sum(obj,slot, figflag,compute_based_on_incoming_flux)
             %COMPUTE_FLUX_SUM this function calculates the fluxsum based on all the
