@@ -5,13 +5,13 @@ This repository provides a workflow going from the preprocessing of the RNA-Seq 
 ## 5 steps of the pipeline
   1. RNA preprocessing
   2. Quality control
-  3. **Model building**
-  4. **Single-model analysis**
-  5. **Models comparison**
+  **3. Model building**
+  **4. Single-model analysis**
+  **5. Models comparison**
 
 ## Storing of the data
 
-│  ├──  └──
+Everything is stored in a structure named `project`
 
 ```
 project/
