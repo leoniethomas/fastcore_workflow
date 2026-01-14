@@ -1,10 +1,43 @@
 # Metabolic network analysis workflow
 
-This repository provides a workflow for the preprocessing as well as the analysis of the context specific metabolic models created by fastcormics. 
+This repository provides a workflow going from the preprocessing of the RNA-Seq data to the analysis and comparison of the context specific metabolic models created by rFastcormics_v2. 
 
-There are two main parts of this workflow: 
-+ Preprocessing of the transcriptomics data + QC 
-+ Analysis of the constructed models, including an approach to quantify the difference between models from different conditions
+## 5 steps of the pipeline
+  1. RNA preprocessing
+  2. Quality control
+  3. **Model building**
+  4. **Single-model analysis**
+  5. **Models comparison**
+
+## Storing of the data
+
+│  ├──  └──
+
+project/
+├── dico/
+├── models/
+|   ├── orig_model/
+|   ├── consistent_medium_constrained_model/
+|   ├── context_specific_model_A/
+|   |   ├── discretization/
+|   |   ├── model/
+|   |   ├── reactions/
+|   |   ├── core_reactions/
+|   |   ├── settings/
+|   |   |   ├── medium/
+|   |   |   ├── obj_function/
+|   |   |   └── optional_settings/
+|   |   └── analysis/
+|   |   |   ├── FBA/
+|   |   |   ├── FVA/
+|   |   |   ├── flux_sum/
+|   |   |   ├── sampling/
+|   |   |   ├── single_gene_deletion/
+|   |   |   └── double_gene_deletion/
+|   └── context_specific_model_B/
+└── comparisons/
+
+Object-oriented code
 
 
 
