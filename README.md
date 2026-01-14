@@ -37,6 +37,7 @@ project/
 |   |   |   └── double_gene_deletion/
 |   └── context_specific_model_B/
 └── comparisons/
+    └── modelA_vs_modelB/
 ```
 
 
