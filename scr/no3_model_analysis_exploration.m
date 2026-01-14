@@ -24,12 +24,12 @@ changeCobraSolver("gurobi");
 % define script PARAMETERS
 
 % define which of the models in your consistent model directory you want to read in 
-model_id = "20251117_0439";
+model_id = "20260113_0514";
 % do you work on a fastcore experiment object, which is created by the
 % scripts in this workflow, or are you reading in your own models ? 
 work_on_fastcore_exp = 1;
 % path to your working directory - where your scr folder is located as well
-project_path = "/Users/leonie.thomas/Documents/fastcore_workflow";
+project_path = "/Users/leonie.thomas/Documents/GSNOR_metab_models/fastcore_workflow";
 %project_path = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model";
 path_to_model_to_analyse = project_path + filesep + "context_specific_models" + filesep + model_id;
 cd (project_path)
@@ -63,9 +63,11 @@ if work_on_fastcore_exp
 else
     load(path_to_model_to_analyse + filesep +   model_id + "_cond_models.mat")
     load(path_to_model_to_analyse + filesep +   model_id + "_workspace_cond_models.mat")
-    
+    load(scr_para.gene_dic_file, "dico")
+
     exp = fastcore_experiment(model_orig,dico);
     exp.condition_models = condition_models;
+    clear condition_models dico model_orig
 end
 
 scr_para.results_path = project_path + filesep + "analysis" + filesep + model_id;
@@ -73,23 +75,43 @@ scr_para.objective = 'biomass';
 scr_para.remove_unused_genes = 1;
 
 mkdir(scr_para.results_path);
-results = struct();
 
 % export models to different formats
 %writeCbModel(condition_models.MDA_MB231_Cont_NO,'format', 'json','fileName','model_Cont_NO.json')
 %writeCbModel(condition_models.MDA_MB231_Cont_VC,'format', 'json','fileName','model_Cont_VC.json')
 
 %% 
-analysis_results = model_analysis(exp); 
+analysis_results = model_analysis(exp);
+
+
+%% 
+%exp.data = exp.data.perform_pca_kmeans("model_presence",3,1);
+%exp.data = exp.data.perform_umap("model_presence",3,[0,1,1,1,1,1,1,1]); % without first PC
+
+%exp.data.visualize_dimreduction("condition","umap","model_presence", "kmeans_k3_model_presence_features_10600")
+%exp.data.visualize_dimreduction("sample","umap","model_presence", "kmeans_k3_model_presence_features_10600")
+
+%exp.data.visualize_dimreduction("sample","pca","model_presence", "condition",[2,3])
+
+
+%%
+%exp.data.visualize_dimreduction("sample","pca","model_presence", "condition")
+
+%loadings_PC1 = exp.data.pca.model_presence.coeff(:,1);
+%subsystems   = string(exp.original_model.subSystems);
+%rownames     = exp.data.rxn_names;
+
+%T = table(loadings_PC1, subsystems, 'RowNames', rownames, ...
+%          'VariableNames', {'PC1_Loading', 'Subsystem'});
+
 
 %% plot jaccard similarity score for rxn presence 
 
-[fig,J] = get_jaccard_similarity(analysis_results)
+[fig,J] = analysis_results.jaccard_similarity("reaction_presence")
 
 saveas(fig,scr_para.results_path + "\rxn_occurence_jaccard_distance.png");
 results.jaccard = J;
 clear J
-
 
 %% visualize intersections rxn presence 
 
@@ -99,7 +121,7 @@ idx = analysis_results.get_intersection_plot("reaction_presence");
 %% Pathway analysis
 
 % get count of rxn per pathway per model -> pathway presence
-analysis_results = analysis_results.get_pathway_activity(exp);
+analysis_results = analysis_results.get_pathway_prescence(exp);
 % visualize pathway presence
 analysis_results.get_pathway_plot(1:15,"")
 
@@ -107,27 +129,25 @@ analysis_results.get_pathway_plot(1:15,"")
 
 %% scatter plot based on pathway activity 
 
-models_to_compare = string(analysis_results.model_names(1:2));
+
 plotting_data = analysis_results.get_pathway_plot(1:200,"relative");
 labeling_data = analysis_results.get_pathway_plot(1:20,"relative");
 
-figure
-scatter(plotting_data.(models_to_compare(1)), plotting_data.(models_to_compare(2)))
-hold on 
-text(labeling_data.(models_to_compare(1)), labeling_data.(models_to_compare(2)),...
-                         labeling_data.Properties.RowNames, ...
-                         'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center');
+models_to_compare = string(analysis_results.model_names);  
+models_to_compare = models_to_compare(1:3);
+analysis_results.scatter_plot_pathway_presence(models_to_compare,plotting_data,labeling_data);
+
                      
 %% FBA 
 
-exp.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
-                             exp.condition_models,'UniformOutput',false);
-exp.fba        = structfun(@(x) optimizeCbModel(x,'max','zero'),...
-                                 exp.condition_models,'UniformOutput',false);
+analysis_results.fastcore_models.condition_models = structfun(@(x) changeObjective(x,'biomass_reaction'),...
+                                                              analysis_results.fastcore_models.condition_models,'UniformOutput',false);
+analysis_results.fba              = structfun(@(x) optimizeCbModel(x,'max','zero'),...
+                                              analysis_results.fastcore_models.condition_models,'UniformOutput',false);
                          
-fba_flux_matrix = exp.join_fba_output();
+fba_flux_matrix = analysis_results.join_fba_output();
 
-ex_rxns = exp.original_model.rxns(find(findExcRxns(exp.original_model)));
+ex_rxns = analysis_results.fastcore_models.original_model.rxns(find(findExcRxns(analysis_results.fastcore_models.original_model)));
 fba_exchange = fba_flux_matrix(ex_rxns(find(ismember(ex_rxns, fba_flux_matrix.Properties.RowNames))),:);
 fba_exchange = fba_exchange(find(sum(abs(fba_exchange{:,:}),2) > 0),:)
 fba_exchange.rxns = fba_exchange.Properties.RowNames;
@@ -147,11 +167,26 @@ analysis_results.get_fba_plot(fba_flux_matrix)
 
 %% get fluxsum 
 
-exp.fba = fba_flux_matrix;
-fluxsum_metabolites = exp.compute_flux_sum();
+
+fluxsum_metabolites = analysis_results.compute_flux_sum();
+
+%% visualize fluxsum of proline 
+
+ind_pro_L = find(startsWith(fluxsum_metabolites.original_model.mets,"pro_L"));
+
+%% try FVA with boundaries for the biomass 
+
+KO = exp.condition_models.KO;
+
+solution = optimizeCbModel(KO,'max','zero');
+KO = changeRxnBounds(KO,"biomass_reaction",solution.f,"b");
+[fva_min, fva_max] = fluxVariability(KO);
+
 
 
 %% Flux Variability Analysis
+
+%constrain for the FBA solution 
 
 [exp.fva.minFlux, exp.fva.maxFlux] = structfun(@(x) fluxVariability(x),...
                                                exp.condition_models,'UniformOutput',false);

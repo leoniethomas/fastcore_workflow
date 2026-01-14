@@ -3,18 +3,6 @@ classdef fastcore_experiment
     %   Detailed explanation goes here
     
     properties
-        sample_labels
-        rxn_names
-        samples
-        run_names
-        fastcore_runs
-        transformed_samples
-        fluxsum
-        fba
-        fva
-        fva_similarity
-        fva_similarity_rxns
-        met_names
         original_model
         medium_constrained_model
         condition_models
@@ -48,49 +36,6 @@ classdef fastcore_experiment
             obj.data.source = disc_data;
         end
         
-        function [obj,fluxsum] = compute_flux_sum(obj,slot, figflag,compute_based_on_incoming_flux)
-            %COMPUTE_FLUX_SUM this function calculates the fluxsum based on all the
-            %rxns producing a metabolite, using the sampling data and the stochiometric
-            %matrix from the model!
-            
-            arguments
-               obj (1,1) 
-               slot (1,1) ="fba"
-               figflag (1,1) double {mustBeMember(figflag,[1,0])} =1
-               compute_based_on_incoming_flux (1,1) double {mustBeMember(compute_based_on_incoming_flux,[1,0])} =1
-            end
-
-            solutions = obj.(slot);
-            stochiomet = obj.original_model.S;
-            obj.fluxsum=zeros(size(stochiomet,1),size(solutions,2));
-            for counter=1:size(solutions,2)
-                v=solutions{:,counter}; % one sample
-                temp=repmat(v',size(stochiomet,1),1); %
-                fluxes=stochiomet.*temp;
-                if compute_based_on_incoming_flux
-                    fluxSumP=full(sum((fluxes>0).*fluxes,2));
-                else
-                    fluxSumP=full(sum((fluxes<0).*fluxes,2));
-                end
-                
-                obj.fluxsum(:,counter)=fluxSumP;
-            end
-            disp('... fluxSum calculated ...')
-            fluxsum = obj.fluxsum;
-            
-            [~,b] = sort(var(obj.fluxsum,0,2),'descend'); % compute the variance over the samples per metabolite
-            
-            top30_fluxsum = obj.fluxsum(b(1:30),:);
-            top30_met_names = obj.original_model.metNames(b(1:30));
-            
-            if figflag
-                figure
-                boxplot( top30_fluxsum','Labels',top30_met_names)
-                set(gca,'FontSize',10,'XTickLabelRotation',45)
-                title("30 metabolites with the highest variance for the fluxsum in the samples")
-                
-            end
-        end
         
         function obj = medium_constrain(obj,medium_data,mode,close_all_exchange_rxns, column_media_rxn_abbr)
             
@@ -217,23 +162,7 @@ classdef fastcore_experiment
             min_out = array2table(cell2mat(min_ordered'), 'VariableNames', fieldnames(obj.condition_models));
             min_out.Properties.RowNames = all_rxns;
         end
-        function joined_output = join_fba_output(obj)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            %all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
-            %all_rxns = unique(vertcat(all_rxns{:}));
-            all_rxns = obj.original_model.rxns;
 
-            samples_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fba.(x).v,all_rxns), ...
-                                              string(fieldnames(obj.condition_models)),...
-                                              'UniformOutput',false);
-            biomass_idx = find(ismember(all_rxns, "biomass_reaction"))
-
-            fba_solution = array2table(cell2mat(samples_ordered'), 'VariableNames', fieldnames(obj.condition_models));
-            fba_solution.Properties.RowNames = all_rxns;
-            %fba_solution = fba_solution(obj.original_model.rxns,:);
-            joined_output = fba_solution;
-        end
         function obj = join_fluxsum_output(obj)
             %all_mets = cellfun(@(x) obj.fastcore_runs.(x).model.mets, string(fieldnames(obj.fastcore_runs)),'UniformOutput',false);
             %all_mets = unique(vertcat(all_mets{:}));

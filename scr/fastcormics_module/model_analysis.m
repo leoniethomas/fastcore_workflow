@@ -5,11 +5,12 @@ classdef model_analysis
  
     properties
         model_names % names of context specific models, for example named after SampleID or Treatment regime
-        model_size % 
-        reaction_presence
         pathway_counts
         gene_essentiality
         enrichment
+        fastcore_models
+        fba
+        fva
     end
     
     methods
@@ -26,27 +27,40 @@ classdef model_analysis
                exp (1,1) struct
             end
             
-            disp("Removing unused genes!")
-            condition_models = exp.condition_models;
-            obj.model_names = fieldnames(condition_models);
-            condition_models = structfun(@(x) removeUnusedGenesFastbox(x,1), ... % remove unused genes to get model size in terms of genes active 
-                             condition_models,'UniformOutput',false);
-            disp("Getting model sizes! -> model size objects slot!")
-            % simple quantities per model - #rxns #genes #metabolites in the models
-            obj.model_size = array2table(struct2array(structfun(@(x) {numel(x.rxns);numel(x.mets);numel(x.genes)}, ...
-                                                                    condition_models,'UniformOutput',false))',...
-                                             'VariableNames',{'count_reactions','count_metabolites','count_genes'},...
-                                             'RowNames',obj.model_names);
-            disp("Put reaction prescense of all models in one dataframe!")
-            % get reaction precense
-            retainedRxns_keep = struct2array(structfun(@(x) get_feature_presence(length(exp.original_model.rxns),x.retainedRxns), ...
-                                   condition_models,'UniformOutput',false));
-            obj.reaction_presence = retainedRxns_keep;
-
-
+            obj.fastcore_models = exp;
+            obj.model_names = fieldnames(obj.fastcore_models.condition_models);
             
         end
+
         
+        
+        function disp(obj)
+            % silently process all condition models
+            condition_models = structfun(@(x) suppressOutput(x), ...
+                                         obj.fastcore_models.condition_models, ...
+                                         'UniformOutput', false);
+            
+            % convert to table
+            data = struct2array(structfun(@(x) {numel(x.rxns); numel(x.mets); numel(x.genes)}, ...
+                                          condition_models, 'UniformOutput', false))';
+            
+            T = array2table(data, ...
+                            'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
+                            'RowNames', obj.model_names);
+            disp(T)
+        
+            % --- nested function to suppress output ---
+            function model = suppressOutput(x)
+                [~, model] = evalc('removeUnusedGenesFastbox(x,1)');
+            end
+        end
+
+        function react_presence = reaction_presence(obj)
+            % get reaction precense
+            react_presence = struct2array(structfun(@(x) get_feature_presence(length(obj.fastcore_models.original_model.rxns),x.retainedRxns), ...
+                                   obj.fastcore_models.condition_models,'UniformOutput',false));
+        end
+
         function enrichment = perform_gene_enrichment(obj,exp, threshold)
             %threshold = 0.5;
             data = obj.gene_essentiality.ratio;
@@ -68,12 +82,14 @@ classdef model_analysis
             
         end
         
-        function [fig,J] = get_jaccard_similarity(obj)
+        function [fig,J] = jaccard_similarity(obj,slot)
            % this function computes the jaccard similarity between the
            % models based on the reaction presence. 
-            
+           
+           
+           integrated_slot_matrix = feval(slot, obj);   % call the function with arguments
 
-           J = squareform(pdist(obj.reaction_presence','jaccard'));
+           J = squareform(pdist(integrated_slot_matrix','jaccard'));
            disp("Jaccard similarity:")
            1-J
            fig = plot_clustergram(1-J,...
@@ -114,12 +130,12 @@ classdef model_analysis
                 error('models_to_compare can have at most 4 elements.');
             end
             
-            M = obj.(slot_name);
+            M = feval(slot_name, obj);  
             [~, idx] = ismember(models_to_compare,string(obj.model_names));
             M = M(:,idx);
             idx = plot_flexible_venn(M, models_to_compare);
         end
-        function [obj] = get_pathway_activity(obj,exp,slot)
+        function [obj] = get_pathway_prescence(obj,exp,slot)
             arguments
                     obj
                     exp
@@ -129,7 +145,7 @@ classdef model_analysis
            
             % get pathway ids in model 
             set_labels = string(obj.model_names)';
-            M = obj.(slot);
+            M = feval(slot, obj); 
             pathways = string(exp.original_model.subSystems);
             unique_pathways = unique(pathways);
 
@@ -156,6 +172,139 @@ classdef model_analysis
             
             obj.pathway_counts = T
         end
+
+        function scatter_plot_pathway_presence(obj,models_to_compare,plotting_data,labeling_data)
+
+        n = numel(models_to_compare);
+
+        figure
+        for i = 1:n
+            for j = 1:n
+                if i <= j
+                    % skip diagonal and upper triangle
+                    continue
+                end
+                
+                % create subplot at the correct position
+                subplot(n-1, n-1, ((j)+(i-2)*(n-1)))
+                
+                x = plotting_data.(models_to_compare(j));
+                y = plotting_data.(models_to_compare(i));
+                scatter(x, y, 20, 'filled')
+                axis tight
+                
+                if i == n
+                    xlabel(models_to_compare(j))
+                end
+                if j == 1
+                    ylabel(models_to_compare(i))
+                end
+                % add text labels for selected pathways
+                text(labeling_data.(models_to_compare(j)), labeling_data.(models_to_compare(i)), ...
+                     labeling_data.Properties.RowNames, ...
+                     'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'center', ...
+                     'FontSize', 8, 'FontWeight', 'bold')
+            end
+        end
+        end
+
+        function joined_output = join_fba_output(obj)
+            %METHOD1 Summary of this method goes here
+            %   Detailed explanation goes here
+            %all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
+            %all_rxns = unique(vertcat(all_rxns{:}));
+            all_rxns = obj.fastcore_models.original_model.rxns;
+
+            samples_ordered = arrayfun(@(x) get_sampling_orig_order(obj.fastcore_models.condition_models.(x),obj.fba.(x).v,all_rxns), ...
+                                              string(fieldnames(obj.fastcore_models.condition_models)),...
+                                              'UniformOutput',false);
+
+            
+            biomass_idx = find(ismember(all_rxns, "biomass_reaction"))
+
+            fba_solution = array2table(cell2mat(samples_ordered'), 'VariableNames', fieldnames(obj.fastcore_models.condition_models));
+            fba_solution.Properties.RowNames = all_rxns;
+            %fba_solution = fba_solution(obj.original_model.rxns,:);
+            joined_output = fba_solution;
+        end
+
+        function [obj,fluxsum] = compute_flux_sum(obj,slot, figflag,compute_based_on_incoming_flux)
+            %COMPUTE_FLUX_SUM this function calculates the fluxsum based on all the
+            %rxns producing a metabolite, using the sampling data and the stochiometric
+            %matrix from the model!
+            
+            arguments
+               obj (1,1) 
+               slot (1,1) ="join_fba_output"
+               figflag (1,1) double {mustBeMember(figflag,[1,0])} =1
+               compute_based_on_incoming_flux (1,1) double {mustBeMember(compute_based_on_incoming_flux,[1,0])} =1
+            end
+
+            solutions = feval(slot, obj); 
+            stochiomet = obj.fastcore_models.original_model.S;
+            fluxsum=zeros(size(stochiomet,1),size(solutions,2));
+            for counter=1:size(solutions,2)
+                v=solutions{:,counter}; % one sample
+                temp=repmat(v',size(stochiomet,1),1); %
+                fluxes=stochiomet.*temp;
+                if compute_based_on_incoming_flux
+                    fluxSumP=full(sum((fluxes>0).*fluxes,2));
+                else
+                    fluxSumP=full(sum((fluxes<0).*fluxes,2));
+                end
+                
+                fluxsum(:,counter)=fluxSumP;
+            end
+            disp('... fluxSum calculated ...')
+            
+            
+            [~,b] = sort(var(fluxsum,0,2),'descend'); % compute the variance over the samples per metabolite
+            
+            top30_fluxsum = fluxsum(b(1:30),:);
+            top30_met_names = obj.fastcore_models.original_model.mets(b(1:30));
+            
+            if figflag
+                figure
+                h = boxplot(top30_fluxsum','Labels',top30_met_names);
+                set(gca,'FontSize',10,'XTickLabelRotation',45)
+                title("30 metabolites with the highest variance for the fluxsum in the samples")
+                hold on
+            
+                numMet = size(top30_fluxsum,1);
+                numSamples = size(top30_fluxsum,2);
+            
+                % Define colors for samples
+                colors = lines(numSamples); 
+            
+                % Sample names for legend
+                sampleNames = arrayfun(@(x) sprintf('Sample %d',x), 1:numSamples, 'UniformOutput', false);
+            
+                % Get x positions of boxes
+                bx = findobj(gca,'Tag','Box'); % get all boxes
+                xCenters = zeros(numMet,1);
+                for k = 1:numMet
+                    verts = get(bx(numMet-k+1),'XData'); 
+                    xCenters(k) = mean(verts(1:4)); % center of each box
+                end
+            
+                % Overlay scatter points and store handles for legend
+                scatterHandles = gobjects(numSamples,1); % initialize
+                for j = 1:numSamples
+                    for i = 1:numMet
+                        scatterHandles(j) = scatter(xCenters(i) + (j-1)*0.05 - 0.025, top30_fluxsum(i,j), ...
+                                                    50, colors(j,:), 'filled', 'MarkerEdgeColor','k');
+                    end
+                end
+            
+                % Add legend
+                legend(scatterHandles, string(obj.model_names), 'Location','best')
+                hold off
+            end
+
+            
+        end
+
+
         function get_essentiallity_plots(obj,file_path_figure)
             measures = ["rate", "ratio"];  % list of measures to loop over
 
@@ -720,6 +869,22 @@ function [sampling_fluxsum_ordered] = get_order_from_orig_model(m,s,mets_all,fil
                                         sampling_fluxsum_values(mapping_mets_in_orig_idx,:) = s;
                                         sampling_fluxsum_ordered = sampling_fluxsum_values;
                                
+end
+
+function [sampling_ordered] = get_sampling_orig_order(m,s,rxns_orig)
+                                [~,mapping_rxns_in_orig_idx] = ismember(m.rxns,rxns_orig);
+                                sampling_values = zeros(length(rxns_orig),size(s,2));
+                                sampling_values(mapping_rxns_in_orig_idx,:) = s;
+                                sampling_ordered = sampling_values;
+%                                 id_biomass_ordered = find(matches(rxns_orig,"biomass_reaction"));
+%                                 id_biomass = find(matches(m.rxns,"biomass_reaction"));
+                                
+%                                 min(sampling_values(id_biomass_ordered,:))
+%                                 max(sampling_values(id_biomass_ordered,:))
+%                                 
+%                                 min(s(id_biomass,:))
+%                                 max(s(id_biomass,:))
+                                
 end
 
 function [enrichment] = GeneEnrichments(GeneList,GeneList_all)
