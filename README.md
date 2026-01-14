@@ -13,6 +13,7 @@ This repository provides a workflow going from the preprocessing of the RNA-Seq 
 
 │  ├──  └──
 
+```
 project/
 ├── dico/
 ├── models/
@@ -36,8 +37,8 @@ project/
 |   |   |   └── double_gene_deletion/
 |   └── context_specific_model_B/
 └── comparisons/
+```
 
-Object-oriented code
 
 
 
