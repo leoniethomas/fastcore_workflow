@@ -19,7 +19,8 @@ project
 |   ├── orig_model
 |   ├── consistent_medium_constrained_model
 |   ├── context_specific_model_A
-|   |   ├── discretization
+|   |   ├── expression_data
+|   |   ├── discretized_data
 |   |   ├── model
 |   |   ├── reactions
 |   |   ├── core_reactions
