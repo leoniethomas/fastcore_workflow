@@ -26,7 +26,6 @@ project
 |   |   ├── expression_data
 |   |   ├── discretized_data
 |   |   ├── model
-|   |   ├── reactions
 |   |   ├── core_reactions
 |   |   ├── settings
 |   |   |   ├── dico
