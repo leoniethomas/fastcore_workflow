@@ -3,9 +3,9 @@ classdef fastcore_experiment
     %   Detailed explanation goes here
     
     properties
-        original_model
-        medium_constrained_model
-        condition_models
+        orig_model
+        consistent_medium_constrained_model
+        condition_specific_models
         dico
         medium
         data
@@ -33,7 +33,7 @@ classdef fastcore_experiment
             % % check if the biomass reactions are still there
             consistency_check(model);
             
-            obj.original_model = model;
+            obj.orig_model = model;
             obj.dico = dico;
             
         end
@@ -54,7 +54,7 @@ classdef fastcore_experiment
             medium_data = obj.medium;
             
             % find rxns defined in media composition
-            model = obj.original_model;
+            model = obj.orig_model;
             
             [~,idx, idx_fluxes_in_model] = intersect(medium_data.medium_composition.(column_media_rxn_abbr),...
                                                      model.rxns); 
@@ -77,10 +77,7 @@ classdef fastcore_experiment
             model.ub(find(ismember(model.rxns,split(medium_data.manual_set_boundaries.unwanted_export, ";"))))=0; 
             model.lb(find(ismember(model.rxns,split(medium_data.manual_set_boundaries.unwanted_import, ";"))))=0; 
 
-            % close all the exchange rxns which are not in the medium, 
-            % but this results in losing the biomass when running fastcc 
-            % also the constrain_model_rFASTCORMICS can force in the medium 
-            % by putting it into the optional_settings.func
+            
             if close_all_exchange_rxns
                 disp("All the exchange rxns not defined in the medium will be closed!")
                 model.lb(findRxnIDs(model, Ex_to_close))=0; 
@@ -96,7 +93,7 @@ classdef fastcore_experiment
             % check if the biomass reactions are still there
             consistency_check(model);
             
-            obj.medium_constrained_model = model;
+            obj.consistent_medium_constrained_model = model;
         end
 
          function obj = add_sampling_to_fastcore_experiment(obj,sampling_files,run_fluxsum)
@@ -153,7 +150,7 @@ classdef fastcore_experiment
             %   Detailed explanation goes here
             %all_rxns = cellfun(@(x) obj.condition_models.(x).rxns, string(fieldnames(obj.condition_models)),'UniformOutput',false);
             %all_rxns = unique(vertcat(all_rxns{:}));
-            all_rxns = obj.original_model.rxns;
+            all_rxns = obj.orig_model.rxns;
 
             max_ordered = arrayfun(@(x) get_sampling_orig_order(obj.condition_models.(x),obj.fva.maxFlux.(x),all_rxns), ...
                                               string(fieldnames(obj.condition_models)),...
@@ -171,7 +168,7 @@ classdef fastcore_experiment
         function obj = join_fluxsum_output(obj)
             %all_mets = cellfun(@(x) obj.fastcore_runs.(x).model.mets, string(fieldnames(obj.fastcore_runs)),'UniformOutput',false);
             %all_mets = unique(vertcat(all_mets{:}));
-            all_mets = obj.original_model.mets;
+            all_mets = obj.orig_model.mets;
             
             %x = 'samplingResults_MDA_MB231_Cont_NO_model_20250602_090252';
             fluxsum = arrayfun(@(x) get_sampling_orig_order_mets(obj.fastcore_runs.(x).model,...
