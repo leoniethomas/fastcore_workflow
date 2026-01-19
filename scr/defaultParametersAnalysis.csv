@@ -1,0 +1,24 @@
+Parameter,Analysis,Value
+obj_function,FBA,obj_function
+osenseStr,FBA,"""max"""
+minNorm,FBA,"""zero"""
+obj_function,FVA,obj_function
+optPercentage,FVA,90
+obj_function,Sampling,"""biomass_reaction"""
+osenseStr,Sampling,"""max"""
+minNorm,Sampling,"""zero"""
+obj_threshold,Sampling,0.9
+sampleFile,Sampling,
+samplerName,Sampling,"""ACHR"""
+options.nPointsReturned,Sampling,2000
+options.nFiles,Sampling,10
+options.maxTime,Sampling,36000
+options.nWarmupPoints,Sampling,"2*size(model.S, 2)"
+options.nStepsPerPoint,Sampling,"size(model.S, 2)"
+modelSampling,Sampling,model
+path,Sampling,"""samplingResults/"""
+method,singleGeneDeletion,"""FBA"""
+geneList,singleGeneDeletion,""""""
+method,doubleGeneDeletion,"""FBA"""
+geneList1,doubleGeneDeletion,""""""
+geneList2,doubleGeneDeletion,""""""
