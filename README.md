@@ -17,7 +17,11 @@ Everything is stored in a structure named `project`
 project
 ├── models
 |   ├── orig_model
+|   |   └── model
 |   ├── consistent_medium_constrained_model
+|   |   ├── model
+|   |   └── seetings
+|   |       └── medium
 |   ├── context_specific_model_A
 |   |   ├── expression_data
 |   |   ├── discretized_data
@@ -29,7 +33,8 @@ project
 |   |   |   ├── medium
 |   |   |   ├── obj_function
 |   |   |   └── optional_settings
-|   |   └── analysis
+|   |   └── analysis_name (objFunction_date ?)
+|   |       ├── parameters
 |   |       ├── FBA
 |   |       ├── FVA
 |   |       ├── flux_sum
