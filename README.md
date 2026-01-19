@@ -36,7 +36,6 @@ project
 |   |       ├── parameters
 |   |       ├── FBA
 |   |       ├── FVA
-|   |       ├── flux_sum
 |   |       ├── sampling
 |   |       ├── single_gene_deletion
 |   |       └── double_gene_deletion
