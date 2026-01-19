@@ -108,6 +108,7 @@ analysis_results = model_analysis(exp);
 %% plot jaccard similarity score for rxn presence 
 
 [fig,J] = analysis_results.jaccard_similarity("reaction_presence")
+[fig,J] = analysis_results.jaccard_similarity("metabolite_presence")
 
 saveas(fig,scr_para.results_path + "\rxn_occurence_jaccard_distance.png");
 results.jaccard = J;
@@ -116,6 +117,7 @@ clear J
 %% visualize intersections rxn presence 
 
 % get indices of outer and intersections
+idx = analysis_results.get_intersection_plot("metabolite_presence");
 idx = analysis_results.get_intersection_plot("reaction_presence");
 
 %% Pathway analysis
@@ -137,6 +139,9 @@ models_to_compare = string(analysis_results.model_names);
 models_to_compare = models_to_compare(1:3);
 analysis_results.scatter_plot_pathway_presence(models_to_compare,plotting_data,labeling_data);
 
+%% 
+
+labeling_data = analysis_results.get_pathway_plot(1:20,"absolute");
                      
 %% FBA 
 
@@ -247,6 +252,9 @@ fig = analysis_results.plot_clustergram(double(drug_deletion_res.grRatio(drugidx
                      {'Drugdeletion - grRatio KO/WT'},...
                      [100 100 800 600]);
 saveas(fig,scr_para.results_path + "\drug_deletion_growthRateKO_WT.png");
+
+
+
 
 
 

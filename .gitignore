@@ -1,4 +1,5 @@
 .vscode/
+.gitignore
 Figures/
 analysis/
 context_specific_models/
@@ -8,8 +9,14 @@ slides/
 data/
 *.png
 *.csv
-scr/downloaded_functions
+scr/downloaded_functions/
 scr/inbox_code_to_integrate
 scr/fastcormics_module/.DS_Store*
 scr/.DS_Store*
+scr/fastcormics_module/private
 .DS_Store*
+scr/fastcormics_module/FVAsimilarity.m
+scr/.*.asv
+.*.asv
+scr/fastcormics_module/discretize_FPKM.m
+scr/fastcormics_module/visualize_sampling.ipynb

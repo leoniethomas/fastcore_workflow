@@ -1,4 +1,4 @@
-classdef model_analysis
+classdef model_comparison
     % This object class is meant to store the analysis results that are
     % obtained when analysing and comparing context specific metabolic
     % models. 
@@ -61,6 +61,19 @@ classdef model_analysis
                                    obj.fastcore_models.condition_models,'UniformOutput',false));
         end
 
+        function met_presence = metabolite_presence(obj)
+            % get metabolite precense
+            
+            met_presence = struct2array(structfun(@(x) get_feature_presence(length(obj.fastcore_models.original_model.mets),helper(x.mets)), ...
+                                   obj.fastcore_models.condition_models,'UniformOutput',false));
+
+            
+            function b = helper(s)
+                [~, b] = ismember(s, obj.fastcore_models.original_model.mets);
+            end
+
+        end
+
         function enrichment = perform_gene_enrichment(obj,exp, threshold)
             %threshold = 0.5;
             data = obj.gene_essentiality.ratio;
@@ -92,10 +105,11 @@ classdef model_analysis
            J = squareform(pdist(integrated_slot_matrix','jaccard'));
            disp("Jaccard similarity:")
            1-J
+           title = "Jaccard similarity of " + strrep(slot,"_", "\_") + " between models [# existing " + extractBefore(slot,"_") + "s]" 
            fig = plot_clustergram(1-J,...
                      obj.model_names,...
                      obj.model_names,...
-                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
+                     title,...
                      [100 100 800 600]);   
         end
         
@@ -120,7 +134,7 @@ classdef model_analysis
             % intersection of up to 4 models
             arguments
                obj 
-               slot_name
+               slot_name (1,:) string ="reaction_presence"
                models_to_compare (1,:) string = string(obj.model_names(1:min(4,end)))
             end
             [~,idx] = ismember(string(obj.model_names), models_to_compare);
@@ -133,7 +147,8 @@ classdef model_analysis
             M = feval(slot_name, obj);  
             [~, idx] = ismember(models_to_compare,string(obj.model_names));
             M = M(:,idx);
-            idx = plot_flexible_venn(M, models_to_compare);
+            title = "Inter and outersection of " + strrep(slot_name,"_", "\_") + " between models [#" + extractBefore(slot_name,"_") + "s]" 
+            idx = plot_flexible_venn(M, models_to_compare,title);
         end
         function [obj] = get_pathway_prescence(obj,exp,slot)
             arguments
@@ -370,7 +385,7 @@ classdef model_analysis
             fig = plot_clustergram(data{top20Idx,:},...
                      data.Properties.RowNames(top20Idx),...
                      data.Properties.VariableNames,...
-                     {'Model similarity based on Jaccard distance of rxns existence in the model!'},...
+                     {'Model similarity based on rxns presence per pathway!'},...
                      [100 100 800 600],...
                      value_label);   
                  
@@ -523,7 +538,7 @@ end
 
  end
  
- function idx = plot_flexible_venn(M, set_names)
+ function idx = plot_flexible_venn(M, set_names, title)
 % M: binary matrix (rows = items, cols = sets)
 % set_names: cell array of strings (e.g., {'A','B','C','D'})
 
@@ -561,6 +576,16 @@ venn(n, ...
     'alpha', 0.5, ...
     'edgeC', [1 1 1], ...
     'edgeW', 2);
+% add title to the venn diagramm, below the circles
+x = 0.5;  % centered horizontally
+y = -0.05; % slightly below the figure
+
+text(x, y, title, ...
+    'Units', 'normalized', ...  % use figure-relative units
+    'HorizontalAlignment', 'center', ...
+    'FontSize', 18, ...
+    'FontWeight', 'bold');
+
 
  end
 
