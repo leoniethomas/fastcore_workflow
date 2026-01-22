@@ -21,7 +21,7 @@ addpath(genpath(working_path))
 
 
 % read in project object
-project = load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
+load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
 
 %% First the STRUCTURAL comparison of the choosen models
 
@@ -32,10 +32,21 @@ project = load(working_path + filesep + "context_specific_models" + filesep + "2
 % structureComparison function does:
 %   + check if the models specified have all the needed fields ->
 %     checkRequiredFieldsForModelComparison
-%   + 
+%   + then it returns the 
 
+%% For every analysis you need to define a list of models first which are meant to be compared 
 
+list_model_names = ["KO","PLV", "WT", "exclude"];
+
+modelsComparison(project,list_model_names)
 
 %% Then Functional Comparison
 
+% Steps of the functional comparison 
+% - size of the models
+% - presence in the model per subsystem 
+
+% show size of the models
+
+% show compute model presence in comparison to the input model
 
