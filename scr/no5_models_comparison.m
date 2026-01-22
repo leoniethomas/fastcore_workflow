@@ -36,17 +36,50 @@ load(working_path + filesep + "context_specific_models" + filesep + "20260119_10
 
 %% For every analysis you need to define a list of models first which are meant to be compared 
 
-list_model_names = ["KO","PLV", "WT", "exclude"];
+list_model_names = ["KO","PLV", "WT"];
+reference_model = "orig_model";
 
-modelsComparison(project,list_model_names)
+project = modelsComparison(project,list_model_names,reference_model,["modelStructureComparison"],"");
+% modelsComparison is the function that is run once to return a set of
+% predefined figures, outputs to get an overall picture of how the models
+% look like in relation to each other, but the user will also be able to
+% depending on this more general report do more in depth invesitgation 
 
 %% Then Functional Comparison
 
 % Steps of the functional comparison 
 % - size of the models
 % - presence in the model per subsystem 
+%   - once in absoute measure -> # oversections / outersections
+%   - Jaccard distance 
+%   - be able to specify different subsystems in the venn diagramm
+%   - then visualize all of that on a heatmap with the Jaccard distance per
+%   subsystem
 
 % show size of the models
 
 % show compute model presence in comparison to the input model
+
+
+%% Investigations up to the user (for example for specific subsystems)
+
+
+% run a venn for a specific subsystem
+choosen_subsystem = "Glycolysis/gluconeogenesis";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+% create the rxns presence table from it
+subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
+plotFlexibleVenn(subsystem_feature_presence,...
+                 project.comparisons.KO_vs_PLV_vs_WT.modelNames, ... 
+                 "Structural model comparison: rxns presence in the " + choosen_subsystem);
+
+choosen_subsystem = "Exchange rxns";
+idx_subsystem_reference_model = find(findExcRxns(project.models.orig_model.model));
+subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
+plotFlexibleVenn(subsystem_feature_presence,...
+                 project.comparisons.KO_vs_PLV_vs_WT.modelNames, ... 
+                 "Structural model comparison: rxns presence in the " + choosen_subsystem);
+
+
 

@@ -1,4 +1,4 @@
-function [idx, labels, allElems] = plotFlexibleVenn(ordered_feature_matrix, set_names, title)
+function [idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot)
 % ordered_feature_matrix : cell array of vectors (strings/chars/numerics)
 % set_names              : cell array of set names
 % title                  : figure title
@@ -9,18 +9,15 @@ function [idx, labels, allElems] = plotFlexibleVenn(ordered_feature_matrix, set_
 % allElems   : universe of elements
 
 %% --- Input checks
-%n = numel(setElements);
 n = size(ordered_feature_matrix,2);
 if n < 2 || n > 4
-    error('Only supports 2 to 4 sets.');
-end
-
-%% --- Build membership matrix (THIS is the key addition)
-%allElems = unique([setElements{:}]);
-%M = cell2mat(cellfun( ...
-%    @(s) ismember(allElems, s), ...
-%    setElements, 'UniformOutput', false));
-% M = ordered_feature_matrix;
+    disp('Only supports 2 to 4 sets. Therefore a simple intersection heatmap will be plotted here!');
+    M = ordered_feature_matrix' * ordered_feature_matrix;
+    figure
+    h = heatmap(set_names,set_names, M);
+    title(title_plot);
+   
+else
 
 %% --- Generate exclusive intersections
 labels = strings(2^n - 1, 1);
@@ -47,7 +44,7 @@ venn(n, ...
     'edgeW', 2);
 
 %% --- Add title
-text(0.5, -0.05, title, ...
+text(0.5, -0.05, title_plot, ...
     'Units', 'normalized', ...
     'HorizontalAlignment', 'center', ...
     'FontSize', 18, ...
@@ -336,6 +333,6 @@ d = 2*r;
 fC = [faceC alpha];
 rectangle('Position',[x y d d],'Curvature',1,'FaceColor',fC,'LineStyle','none');
 end
-
+ end
  end
 
