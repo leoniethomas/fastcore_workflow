@@ -39,14 +39,48 @@ function project = modelsComparison(project, modelList,reference_model,analyses,
     comparison_name = join(modelList, "_vs_") + identifier;
 
     % run structural model comparison
-    project.comparisons.(comparison_name) = modelStructureComparison(project,modelList,reference_model);
+    project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
     project.comparisons.(comparison_name).reference_model = reference_model; 
     % run functional model comparison
+    project.comparisons.(comparison_name) = modelFunctionalComparison(project, comparison_name,analyses);
+
+
+end
+
+function structure_analysis = modelFunctionalComparison(project, comparison_name,analyses)
+    % The structure comparison is a function that compares the models
+    % listed on structural differences. Structural differences in the
+    % context of Fastcore can be defined as the set of reactions that are
+    % kept when running fastcore. This means we check for the existence of
+    % rxns, metabolites and genes in the model, and their overlap between
+    % models.
+
+    arguments
+        project
+        comparison_name
+        analyses
+    end
+
+    modelList = project.comparisons.(comparison_name).modelNames;
+    field_to_investigate = "rxns"; % the fba solution values are measurements belonging to the rxns
+    reference_model = project.comparisons.(comparison_name).reference_model;
+    % first visualize the fba solution 
+    % what are the variables I need from the fba solution 
+    
+    replacement_value = "FBA.v"; % get the fba solution values
+    ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,field_to_investigate,reference_model,replacement_value);
+    replacement_value = "FBA.basis.reducedcost"; % get the fba solution values
+    ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,field_to_investigate,reference_model,replacement_value);
+    replacement_value = "FBA.basis.dual"; % get the fba solution values
+    field_to_investigate = "mets"; % shadow prices are measured for every metabolite therefore mapped according to the mets field
+    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,field_to_investigate,reference_model,replacement_value);
+
+
 
 end
 
 
-function structure_analysis = modelStructureComparison(project, modelList,reference_model)
+function structure_analysis = modelStructuralComparison(project, modelList,reference_model)
     % The structure comparison is a function that compares the models
     % listed on structural differences. Structural differences in the
     % context of Fastcore can be defined as the set of reactions that are
@@ -379,7 +413,7 @@ function [ordered_feature_matrix,ordered_rxn_matrix_idx] = getOrderedFeatureMatr
     end
 
     models = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
-    models = structfun(@(x) x.model, models, 'UniformOutput',false);
+    %models = structfun(@(x) x.model, models, 'UniformOutput',false);
 
     ordered_feature_matrix = struct2array(structfun(@(x) getOrderedFeature(x,reference_model,field_to_investigate,replacement_value), ...
                                              models,'UniformOutput',false));
@@ -423,8 +457,8 @@ function ordered_feature = getOrderedFeature(model,reference_model,field_to_inve
     end
 
     ordered_feature_idx = zeros(length(reference_model.(field_to_investigate)),1);
-    [~,idx] = ismember(model.(field_to_investigate),reference_model.(field_to_investigate));
-    ordered_feature_idx(idx) = 1:numel(model.(field_to_investigate));
+    [~,idx] = ismember(model.model.(field_to_investigate),reference_model.(field_to_investigate));
+    ordered_feature_idx(idx) = 1:numel(model.model.(field_to_investigate));
     
     % now we have a matrix that stores the idx of the features of the
     % models on the position of where the feature is in the reference
@@ -433,7 +467,17 @@ function ordered_feature = getOrderedFeature(model,reference_model,field_to_inve
     if isnumeric(replacement_value)
         ordered_feature(ordered_feature_idx >0) = replacement_value;
     elseif isstring(replacement_value) || ischar(replacement_value)
-       %replacement_values = model.analysis.(replacement_value).v;
+        if replacement_value ~= "idx"
+            replacement_value = strsplit(replacement_value,".");
+            replacement_values = model.analysis.(replacement_value(1));
+            for x = replacement_value(2:end)
+                replacement_values = replacement_values.(x);
+            end
+            if length(replacement_values) ~= length(model.model.(field_to_investigate))
+                error("The size of the slot you have choosen (rxns, genes) does not aggree with the replacement value slot! Are you sure the replacement slot you choose really contains information about the choosen slot (genes, rxns,mets) ??")
+            end
+            ordered_feature(idx) = replacement_values;
+        end
     end
 
 end

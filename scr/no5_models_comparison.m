@@ -21,8 +21,8 @@ addpath(genpath(working_path))
 
 
 % read in project object
-load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
-
+%load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
+load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_from_vanille_fba_fva.mat");
 %% First the STRUCTURAL comparison of the choosen models
 
 % structureComparison executed on the project generating the structural
