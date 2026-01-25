@@ -129,7 +129,7 @@ for cond = unique(exp.data.metadata.(condition_column))'
                                                                                     exp.script_parameters.consensus_proportion, ...
                                                                                     exp.script_parameters.epsilon,...
                                                                                     optional_settings, biomass_rxn, 0, 0);
-        model_cond.core_reactions = string(exp.consistent_medium_constrained_model.rxns(core_reaction_indices));
+        model_cond.core_reactions = string(exp.(reference_model).rxns(core_reaction_indices));
         model_cond.settings = struct();
         
         %% put dico in the same order as model.genes slot 

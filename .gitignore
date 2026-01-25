@@ -16,7 +16,6 @@ scr/.DS_Store*
 scr/fastcormics_module/private
 .DS_Store*
 scr/fastcormics_module/FVAsimilarity.m
-scr/.*.asv
-.*.asv
+*.asv
 scr/fastcormics_module/discretize_FPKM.m
 scr/fastcormics_module/visualize_sampling.ipynb

@@ -1,4 +1,4 @@
-function [idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot)
+function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot)
 % ordered_feature_matrix : cell array of vectors (strings/chars/numerics)
 % set_names              : cell array of set names
 % title                  : figure title
@@ -14,7 +14,7 @@ if n < 2 || n > 4
     disp('Only supports 2 to 4 sets. Therefore a simple intersection heatmap will be plotted here!');
     M = ordered_feature_matrix' * ordered_feature_matrix;
     figure
-    h = heatmap(set_names,set_names, M);
+    fig = heatmap(set_names,set_names, M);
     title(title_plot);
    
 else
@@ -36,7 +36,7 @@ for i = 1:(2^n - 1)
 end
 
 %% --- Plot Venn diagram
-venn(n, ...
+fig = venn(n, ...
     'sets', set_names, ...
     'labels', labels, ...
     'alpha', 0.5, ...

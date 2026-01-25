@@ -61,8 +61,8 @@ function structure_analysis = modelStructureComparison(project, modelList,refere
     end
 
     % extract models you want to compare from the project object
-    models = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
-    models = structfun(@(x) x.model, models, 'UniformOutput',false);
+    models_list = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
+    models = structfun(@(x) x.model, models_list, 'UniformOutput',false);
     structure_analysis.modelNames = string(fieldnames(models));
 
 
@@ -105,9 +105,9 @@ function structure_analysis = modelStructureComparison(project, modelList,refere
         heatmap(structure_analysis.modelNames,structure_analysis.modelNames, Jacc_distance);
         title(title_fig);
     end
-
-    % get the presence of rxns per subsystem in relation to the reference model
     
+    %%%%%%%%%%%%%%%%%%%%% get presence of rxns in each subsytem/pathway
+        
     pathways = string(project.models.(reference_model).model.subSystems); % get pathways from reference model
     unique_pathways = unique(pathways); 
 
@@ -133,23 +133,204 @@ function structure_analysis = modelStructureComparison(project, modelList,refere
     relative_counts = array2table(pathway_counts{:,1:end-1} ./ pathway_counts.reference_model, ...
                                  'VariableNames', structure_analysis.modelNames,...
                                  'RowNames',cellstr(unique_pathways));
-    pathway_counts = pathway_counts(:,1:end-1);
     
     % get the idx of the most variant pathways in terms of rxns presence
-    row_var = var(relative_counts{:,:}, 0, 2);
+    relative_counts.row_var = var(relative_counts{:,:}, 0, 2);
+    pathway_counts.row_var = var(pathway_counts{:,1:end-1},0,2);
+    pathway_counts = pathway_counts(pathway_counts.reference_model < 1000,:);
     % Get indices of top n highest variance rows
-    [~, sortedIdx] = sort(row_var, 'descend');
-    top_var_pathways = relative_counts(sortedIdx(1:20),:);
-    
-    % plot top 20 most variant pathways between the choosen models
-    figure
-    heatmap(structure_analysis.modelNames,...
-            string(top_var_pathways.Properties.RowNames),...
-            top_var_pathways{:,:})
-    title("relative counts of subsystem rxn occurence/reference model");
 
     
-                
+    pathway_counts = sortrows(pathway_counts,"row_var","descend");
+    pathway_counts = pathway_counts(find(pathway_counts.row_var ~= 0),:);
+    relative_counts = relative_counts(pathway_counts.Properties.RowNames,:);
+    % plot top 20 most variant pathways between the choosen models
+    data = relative_counts{:,1:end-1};
+    rowNames = string(relative_counts.Properties.RowNames);
+    colNames = structure_analysis.modelNames;
+
+    figure
+    tiledlayout(1,4, ...
+        'TileSpacing','compact', ...
+        'Padding','compact')
+    
+    % ---- Bar plot (LEFT) ----
+    ax1 = nexttile(1);
+    barh(pathway_counts.reference_model)
+    title('Subsystem size in the reference model')
+    xlabel('# rxns in the reference model')
+    
+    ax1.YTick = 1:numel(rowNames);
+    ax1.YTickLabel = rowNames;
+    ax1.YDir = 'reverse';
+    ax1.YAxisLocation = 'right';   % ⭐ labels between plots
+    ax1.TickLength = [0 0];        % removes tick marks
+    %ax1.XTick = [];               % remove x ticks
+    ax1.YTick = 1:numel(rowNames);
+    ax1.YTickLabel = rowNames;    % keep labels
+    ax1.YAxisLocation = 'right';  % labels between plots
+    ax1.FontSize = 12;   % bar plot labels
+    % Flip the horizontal axis
+    ax1.XDir = 'reverse';
+
+
+
+    
+    % ---- Heatmap (RIGHT, spanning 2 tiles) ----
+    ax2 = nexttile(2,[1 3]);
+    
+    imagesc(data)
+    nColors = 256;
+    whiteToBlue = [linspace(1,0,nColors)', linspace(1,0,nColors)', ones(nColors,1)];
+    colormap(ax2, whiteToBlue)
+    colorbar
+    title("relative counts of subsystem rxn occurence/reference model" )    % grayscale
+    ax2.XTick = 1:numel(colNames);
+    ax2.XTickLabel = colNames;
+    
+    ax2.YTick = 1:numel(rowNames);
+    ax2.YTickLabel = [];    % labels shown only once
+
+    ax2.TickLength = [0 0];
+    
+    xlabel('Models')
+    ax2.FontSize = 12;   % heatmap labels
+
+    % Get size of the data
+    [nRows, nCols] = size(data);
+    
+
+    % Loop over every cell and place the absolute number from pathway_counts
+    for i = 1:nRows
+        for j = 1:nCols
+            % You want absolute numbers, not relative counts, so use pathway_counts
+            % (or multiply relative_counts by reference_model if needed)
+            value = pathway_counts{i,j}; % +1 because first column is reference_model
+            % Place text at the center of the tile
+            text(ax2, j, i, num2str(value), ...
+                'HorizontalAlignment','center', ...
+                'VerticalAlignment','middle', ...
+                'Color','k', ...          % black text
+                'FontSize',10)
+        end
+    end
+
+    
+    % ---- Align rows ----
+    linkaxes([ax1 ax2],'y')
+
+    %%% Visualize the core reaction per model
+    data = struct2cell(structfun(@(x) [ length(x.core_reactions) - sum(ismember(x.core_reactions, x.model.rxns)); ...
+                                            sum(ismember(x.core_reactions, x.model.rxns));...
+                                            length(x.model.rxns) - sum(ismember(x.core_reactions, x.model.rxns));...
+                                            length(x.model.rxns)], ...
+                                            models_list, 'UniformOutput', false));
+    data = [data{:}];
+    
+    % ---- Create layout ----
+    upper_data = data(2:3,:);
+
+    %figure
+    categories = fieldnames(models_list)';  % model names
+    %t = tiledlayout(1,2, 'TileSpacing','compact', 'Padding','compact');
+
+    figure
+    tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
+    
+    % --- first barplot
+    ax1 = nexttile(1);
+    bar(upper_data', 'stacked')
+    
+    
+    % Labels
+    set(gca, 'XTickLabel', categories, 'FontSize', 14)  % increase tick labels font
+    xlabel('Models', 'FontSize', 14)
+    ylabel('# rxns', 'FontSize', 14)
+    
+    % Legend
+    legend({"non-core reactions", "core reactions"}, 'Location','northwest', 'FontSize', 14)
+    
+    % Title
+    title('Core and non-core reactions per model', 'FontSize', 14)
+
+    % ---- Compute percentages of upper stack ----
+    total = sum(upper_data,1);                   % total per model
+    percent_upper = 100 * upper_data(2,:) ./ total;  % percentage of upper bar
+    
+    % ---- Add text labels on top of upper bars ----
+    for i = 1:size(upper_data,2)  % loop over models
+        % x-position is the bar center, y-position is height of lower + upper
+        x = i;
+        y = upper_data(1,i) + upper_data(2,i)/2;  % middle of upper stack
+        text(x, y, sprintf('%.1f%%', percent_upper(i)), ...
+             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+             'FontSize', 12, 'Color', 'w', 'FontWeight', 'bold');
+    end
+
+    
+    
+    
+     % --- second barplot
+     data = data(1:2,:);  % only core vs non-core counts
+    ax2 = nexttile(2);
+    hb = bar(data', 'stacked');
+    
+    % Labels
+    set(gca, 'XTickLabel', categories, 'FontSize', 14)
+    xlabel('Models', 'FontSize', 14)
+    ylabel('# rxns', 'FontSize', 14)
+    
+    % Legend
+    legend({ "not included","included"}, 'Location','northwest', 'FontSize', 14)
+    
+    % Title
+    title('Core reactions used to construct the models.', 'FontSize', 14)
+    
+    % ---- Compute percentages of upper stack ----
+    total = sum(data,1);                   % total per model
+    percent_upper = 100 * data(2,:) ./ total;  % percentage of upper bar
+    
+    % ---- Add text labels on top of upper bars ----
+    for i = 1:size(data,2)  % loop over models
+        % x-position is the bar center, y-position is height of lower + upper
+        x = i;
+        y = data(1,i) + data(2,i)/2;  % middle of upper stack
+        text(x, y, sprintf('%.1f%%', percent_upper(i)), ...
+             'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+             'FontSize', 12, 'Color', 'w', 'FontWeight', 'bold');
+    end
+
+    % Tile 3 (THIS IS THE KEY)
+    ax3 = nexttile(3,[1 2]);   % column 2, span both rows
+    axis(ax3,'off')
+    hold(ax3,'on')
+
+    core_reactions_included = struct2cell(structfun(@(x) x.core_reactions(find(ismember(x.core_reactions, x.model.rxns)))', ...
+                                            models_list, 'UniformOutput', false));
+    core_reactions_included = unique([core_reactions_included{:}]);
+    
+    core_presence = structure_analysis.rxn_mapping_table{core_reactions_included,:} ~= 0;
+    figV = plotFlexibleVenn(core_presence, structure_analysis.modelNames, ... 
+                     "Structural model comparison: core rxns presence");
+
+    % Find axes inside Venn figure
+    axV = findobj(figV,'Type','axes','-not','Tag','legend');
+    axV = axV(1);
+    
+    % Copy graphics
+    copyobj(allchild(axV), ax3)
+
+    
+    
+    % Fix geometry
+    axis(ax3,'tight')
+    axis(ax3,'equal')
+    ax3.Clipping = 'off';
+
+    
+    close(figV)
+
+
 end
 
 

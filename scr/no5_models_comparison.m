@@ -70,7 +70,7 @@ choosen_subsystem = "Glycolysis/gluconeogenesis";
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
 % create the rxns presence table from it
 subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
-plotFlexibleVenn(subsystem_feature_presence,...
+fig = plotFlexibleVenn(subsystem_feature_presence,...
                  project.comparisons.KO_vs_PLV_vs_WT.modelNames, ... 
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
 
@@ -80,6 +80,12 @@ subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT.rxn_mapping_tab
 plotFlexibleVenn(subsystem_feature_presence,...
                  project.comparisons.KO_vs_PLV_vs_WT.modelNames, ... 
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
+
+
+
+
+
+
 
 
 
