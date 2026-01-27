@@ -81,9 +81,13 @@ plotFlexibleVenn(subsystem_feature_presence,...
                  project.comparisons.KO_vs_PLV_vs_WT.modelNames, ... 
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
 
+%% get the rxns overview with FVA,FBA and reduced cost for a specified subsystem
 
-
-
+choosen_subsystem = "Glycolysis/gluconeogenesis";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT",idx_subsystem_reference_model,...
+              'title_plots',"Functional model comparison: FBA values in " + choosen_subsystem);
 
 
 
