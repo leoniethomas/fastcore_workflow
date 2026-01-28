@@ -86,8 +86,33 @@ plotFlexibleVenn(subsystem_feature_presence,...
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT",idx_subsystem_reference_model,...
+get_flux_plot(project,"KO_vs_PLV_vs_WT",idx_subsystem_reference_model, "FVA",true,"reducedCost",true,...
               'title_plots',"Functional model comparison: FBA values in " + choosen_subsystem);
+
+
+
+%% get rxns which show a reduced cost ~= 0 
+
+replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
+ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,project.comparisons.KO_vs_PLV_vs_WT.modelNames,"rxns","orig_model",replacement_value);
+reduced_cost_idx = find(sum(ordered_reducedCost_matrix,2) ~= 0);
+get_flux_plot(project,"KO_vs_PLV_vs_WT",reduced_cost_idx, ...
+              "threshold_flux","all","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions with a ~= 0 reduced cost");
+ 
+
+%% get rxns associated with a specific metabolite 
+
+met_name_pattern = "^pyr[.*";
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(reference_model).model.mets(idx_met_matches);
+
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT",rxns_met_id, ...
+              "threshold_flux","none","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions including pyruvate");
 
 
 

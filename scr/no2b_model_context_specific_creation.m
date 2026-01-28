@@ -103,7 +103,9 @@ optional_settings.not_medium_constrained = exp.script_parameters.not_medium_cons
                         
 condition_models = struct();
 condition_models.orig_model.model = exp.orig_model;
+condition_models.orig_model.settings.dico = exp.dico;
 condition_models.consistent_medium_constrained_model.model = exp.consistent_medium_constrained_model;
+condition_models.consistent_medium_constrained_model.settings.dico = exp.dico;
 
 condition_column = exp.script_parameters.columns_to_define_model_samples_on;
 % get the index of the samples in every defined group
@@ -120,8 +122,12 @@ for cond = unique(exp.data.metadata.(condition_column))'
         model_cond = struct();
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        model_cond.expression_data = exp.data.FPKM(:,idx); % add the data used for the model to the resulting model
-        model_cond.discretized_data = exp.data.discretized(:,idx);
+        model_cond.expression_data = table(cellstr(exp.data.feature_names_norm),...
+                                            exp.data.FPKM(:,idx),...
+                                            'VariableNames',["gene_names","values"]);% add the data used for the model to the resulting model
+        model_cond.discretized_data = table(cellstr(exp.data.feature_names_norm),...
+                                            exp.data.discretized(:,idx),...
+                                            'VariableNames',["gene_names","values"]);
         model_cond.sample_metadata = exp.data.metadata(idx,:); % add metadta of the samples used to compute the model!s
         reference_model = "consistent_medium_constrained_model";
         [model_cond.model,~, core_reaction_indices] = rFastcormics4cobra_v2(exp.(reference_model),exp.data.discretized(:,idx), ...

@@ -21,7 +21,8 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     %                             cost values for every reaction as the color
     %                             of the FBA dot.
     %                           - threshold_flux= wether to apply an upper
-    %                             lower or no threshold to the selected
+    %                             lower ,no upper or lower or to include 
+    %                             also the fba =0 reactions(all) to the selected
     %                             reaction fba values
     %                           - 
     % 
@@ -34,7 +35,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
         idx_to_vis
         options.FVA  (1,1) logical = false
         options.reducedCost (1,1) logical = false
-        options.threshold_flux (1,1) string {mustBeMember(options.threshold_flux,["lower", "upper","none"])} ="none" 
+        options.threshold_flux (1,1) string {mustBeMember(options.threshold_flux,["lower", "upper","none","all"])} ="none" 
         options.title_plots = ""
     end
 
@@ -44,24 +45,33 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
     replacement_value = "analysis.FBA.v"; % get the fba solution values
     ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    replacement_value = "mappedDiscRxns"; % get the fba solution values
+    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    replacement_value = "mappedDiscRxns"; % get the fba solution values
+    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
     
     
     if options.threshold_flux == "upper"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) <0), ...
                                           idx_to_vis);  
-        title_word = "positive flux reactions";
+        title_word = "negative flux reactions";
     elseif options.threshold_flux == "lower"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) > 0), ...
                                                       idx_to_vis); 
-        title_word = "negative flux reactions";
+        title_word = "positive flux reactions";
     elseif options.threshold_flux == "none"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0), ...
                                                       idx_to_vis);
+
+        title_word = options.title_plots;
+    elseif options.threshold_flux == "all"
+        get_exchange_rxns_idx = idx_to_vis;
         title_word = options.title_plots;
     else
         error("wrong value for threshold choosen. Possible values: lower, upper, none")
     end
     ordered_fba_matrix_ex = ordered_fba_matrix(get_exchange_rxns_idx,:);
+    ordered_mapping_rxn_matrix_ex = ordered_mapping_rxn_matrix(get_exchange_rxns_idx,:);
 
     rxn_names = project.models.(reference_model).model.rxns(get_exchange_rxns_idx);
     rxn_formulas = printRxnFormula(project.models.(reference_model).model, 'rxnAbbrList', rxn_names, 'printFlag', false);
@@ -89,8 +99,15 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
         ordered_ub = ordered_ub(get_exchange_rxns_idx,:);
         ordered_lb = ordered_lb(get_exchange_rxns_idx,:);
 
-        T = table(rxn_formulas, medium_constrained, ...
-                  'VariableNames', {'Reaction Formula','medium constrained'}, ...
+        % get rxn gene rules to add to the table
+        symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference_model),...
+                                                   rxnName),string(rxn_names),'UniformOutput', false));
+
+        T = table(rxn_formulas, medium_constrained,...
+            join(string(ordered_mapping_rxn_matrix_ex), "|", 2),symbol_gpr_rules,...
+                  'VariableNames', ["Reaction Formula","medium constrained",...
+                                    join(string(project.comparisons.(comparison_name).modelNames),"_"),...
+                                    "symbol gpr rules"], ...
                   'RowNames',rxn_names);
         T = T(flip(string(T.Properties.RowNames)),:);
         T.lb = flip(ordered_lb);
@@ -117,201 +134,413 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     %    % shadow prices are measured for every metabolite therefore mapped according to the mets field
     %    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,"mets",reference_model,replacement_value);
     %end
+
+    %%% Parameters for the figure 
+
+    %%% =========================
+    % Threshold & masks
+    % =========================
+    mu = mean(ordered_fba_matrix_ex, 2);
+    
+    x  = abs(mu);
+    
+    % 1D k-means to minimize within-group distances
+    [idx, C] = kmeans(x, 2, 'Replicates', 10);
+    
+    % Identify low-flux (dense) cluster
+    [~, lowCluster] = min(C);
+    
+    isLow  = idx == lowCluster;
+    isHigh = ~isLow;
+    
+    % Derive lowRange for documentation
+    %lowRange = [-2 2];
+    lowRange = [-max(x(isLow)), max(x(isLow))];
+
+    
+    isLow  = mu > lowRange(1) & mu < lowRange(2);
+    isHigh = ~isLow;
+    
+    dataLow  = ordered_fba_matrix_ex(isLow , :);
+    dataHigh = ordered_fba_matrix_ex(isHigh, :);
+    
+    rxn_names_low  = rxn_names(isLow);
+    rxn_names_high = rxn_names(isHigh);
+    
+    %%% =========================
+    % Adaptive relative heights
+    % =========================
+    alpha = 0.75;
+    nLow  = numel(rxn_names_low);
+    nHigh = numel(rxn_names_high);
+    
+    w = [nLow nHigh].^alpha;
+    usableHeight = 1 - 0.08 - 0.10 - 0.03;
+    
+    heightLow  = usableHeight * w(1) / sum(w);
+    heightHigh = usableHeight * w(2) / sum(w);
+    
+    bottomLow  = 0.10;
+    bottomHigh = bottomLow + heightLow + 0.03;
+    %%%
+    
+
+    fig = uifigure('Name', title_word + " with Table", ...
+                       'Position',[100 100 1000 450]);
+        
+    plotWidth = 0.52;
+    
+    %%% =========================
+    % Helper for axes formatting
+    % =========================
+    fmtAxes = @(ax) set(ax, ...
+        'FontSize',16, ...
+        'PositionConstraint','outerposition', ...
+        'GridColor',[.8 .8 .8], ...
+        'GridAlpha',.5);
     
     if ~options.FVA & ~options.reducedCost % specify which of the fields need to be true and false!!!
         % in the case that only the FBA solution should be visualized we
         % use a grouped horizontal barplot to do so
-       
-        nRxns = size(ordered_fba_matrix_ex,1);
+
         
-        % Create a UI figure
-        fig = uifigure('Name', title_word + " with Table",'Position',[100 100 1000 450]);
         
-        % Left plot area width (normalized)
-        plotWidth = 0.65;  % 65% for plot, 35% for table
-        
-        % Create axes for horizontal grouped bar plot
-        ax = uiaxes(fig);
-        %ax.Layout.Tile = [];  % not using grid, manual positioning below
-        ax.Units = 'normalized';
-        ax.Position = [0.02 0.1 plotWidth 0.85];  % left, bottom, width, height
-        
-        % Plot horizontal grouped bars
-        barh(ax, ordered_fba_matrix_ex, 'grouped');  
-        grid(ax,'on')
-        ax.GridColor = [0.8 0.8 0.8];
-        ax.GridAlpha = 0.5;
-        if options.threshold_flux == "upper"
-            ax.XDir = 'reverse';
+        %%% =========================
+        % TOP AXIS — high values
+        % =========================
+        if heightHigh ~= 0
+            axTop = uiaxes(fig,'Units','normalized', ...
+                'Position',[0.02 bottomHigh plotWidth heightHigh]);
+            fmtAxes(axTop)
+            
+            barh(axTop, dataHigh, 'grouped');
+            grid(axTop,'on')
+            
+            %axTop.YTick = [];
+            %axTop.YColor = 'none';
+            
+            yticks(axTop, 1:numel(rxn_names_high))
+            yticklabels(axTop, strrep(rxn_names_high, "_", "\_"))
+            title(axTop, title_word)
+            if heightLow == 0
+                xlabel(axTop, 'Flux value [mMol/(gDW*h)]')
+            end
+            
         end
-        ax.FontSize = 14;
+
+        %%% =========================
+        % BOTTOM AXIS — low values
+        % =========================
+        if heightLow ~= 0
+            axBottom = uiaxes(fig,'Units','normalized', ...
+                'Position',[0.02 bottomLow plotWidth heightLow]);
+            fmtAxes(axBottom)
+            
+            barh(axBottom, dataLow, 'grouped');
+            grid(axBottom,'on')
+            
+            yticks(axBottom, 1:numel(rxn_names_low))
+            yticklabels(axBottom, strrep(rxn_names_low, "_", "\_"))
+            if heightHigh == 0
+                title(axBottom, title_word)
+            end
+            xlabel(axBottom, 'Flux value [mMol/(gDW*h)]')
+        end
         
-        % Labels and title
-        yticks(ax, 1:nRxns)
-        yticklabels(ax, strrep(rxn_names, "_", "\_"))
-        xlabel(ax, 'Flux value [mMol/(gDW*h)]')
-        title(ax, title_word)
-        legend(ax, modelList, 'Location','best')
+        %%% =========================
+        % Reverse direction if needed
+        % =========================
+        if options.threshold_flux == "upper"
+            set([axTop axBottom], 'XDir','reverse')
+        end
         
-        % --- Create UITable beside the bar chart ---
-        tbl = uitable(fig, ...
-            'Data', T, ...
-            'ColumnName', T.Properties.VariableNames, ...
-            'Units','normalized', ...
-            'Position',[plotWidth+0.05 0.1 0.30 0.85]);  % position to the right
+        %%% =========================
+        % Legend
+        if nHigh < nLow
+            legend(axBottom, modelList, 'Location','best');
+        else
+            legend(axTop, modelList, 'Location','best');
+        end
         
-        tbl.FontSize = 14;
+        
+        
 
 
     else
-        Q1  = ordered_fva_min_matrix_ex; %FVAmin
-        MED = ordered_fba_matrix_ex; %FBA sol
-        Q3  = ordered_fva_max_matrix_ex; %FVAmax
-    
-        if options.reducedCost
-            add_color_legend = 1;
-            cmap = colormap('cool')
+        Q1_low  = ordered_fva_min_matrix_ex(isLow , :);
+        MED_low = ordered_fba_matrix_ex(isLow , :);
+        Q3_low  = ordered_fva_max_matrix_ex(isLow , :);
+        
+        Q1_high  = ordered_fva_min_matrix_ex(isHigh , :);
+        MED_high = ordered_fba_matrix_ex(isHigh , :);
+        Q3_high  = ordered_fva_max_matrix_ex(isHigh , :);
+            
+        % =========================
+        % Check if reduced cost coloring is enabled
+        % =========================
+        add_color_legend = options.reducedCost;
+        
+        if add_color_legend
+            cmap = colormap('cool');  % N colors
             N = size(cmap,1);
-            % check if you have any values for the reduced cost 
-            if length(unique(ordered_reducedCost_matrix_ex)) == 1
-                % if there is only one value in the dataframe just set
-                % the scaledIdx to be that value
-                scaledIdx  = ordered_reducedCost_matrix_ex + 1; 
+        
+            % Split reduced cost into high and low
+            reducedCost_low  = ordered_reducedCost_matrix_ex(isLow, :);
+            reducedCost_high = ordered_reducedCost_matrix_ex(isHigh, :);
+        
+            % Helper function to scale matrix to colormap indices
+            scaleToCmap = @(mat) round( (mat - min(mat(:))) / (max(mat(:)) - min(mat(:))) * (N-1) ) + 1;
+        
+            if length(unique(ordered_reducedCost_matrix_ex(:))) == 1
+                % Only one value, all same color
+                scaledIdx_low  = ones(size(reducedCost_low));
+                scaledIdx_high = ones(size(reducedCost_high));
                 valMin = unique(ordered_reducedCost_matrix_ex);
-                valMax = unique(ordered_reducedCost_matrix_ex) + 1;
-                
+                valMax = valMin;
             else
-                % Example variable to color medians (normalized 0–1)
-                
-                valMin = min(ordered_reducedCost_matrix_ex(:));   % e.g., 0
-                valMax = max(ordered_reducedCost_matrix_ex(:));   % e.g., ~11.45 in your data
-                % Map each value into [1, N] range
-                scaledIdx = round( (ordered_reducedCost_matrix_ex - valMin) / (valMax - valMin) * (N-1) ) + 1;
-                
-                % Clip to valid range
-                scaledIdx(scaledIdx < 1)   = 1;
-                scaledIdx(scaledIdx > N)   = N;
-                
+                scaledIdx_low  = scaleToCmap(reducedCost_low);
+                scaledIdx_high = scaleToCmap(reducedCost_high);
+                valMin = min(ordered_reducedCost_matrix_ex(:));
+                valMax = max(ordered_reducedCost_matrix_ex(:));
             end
-
         else
             add_color_legend = 0;
         end
 
-        %%
+       
 
+       %%
         
-        % --- Create UI figure and UIAxes
-        fig = uifigure('Name','Plot Left + Table Right','Position',[100 100 900 400]);
-        % Size settings
-        margin     = 20;     % space around components
-        tableWidth = 300;    % width allocated for the table
-        figWidth   = fig.Position(3);
-        figHeight  = fig.Position(4);
-        
-        plotWidth  = figWidth - tableWidth - 3*margin;  % remaining width
-        plotHeight = figHeight - 2*margin;              % full height minus margins
+        % --- TOP AXES: high flux ---
+        %%% =========================
+        % Plot high reactions
+        %%% =========================
+        if nHigh > 0
+            axTop = uiaxes(fig,'Units','normalized','Position',[0.02 bottomHigh plotWidth heightHigh]);
+            hold(axTop,'on'); fmtAxes(axTop);
 
+            % --- Grid & font ---
+            grid(axTop,'on')
+            axTop.GridColor = [0.8 0.8 0.8];
+            axTop.GridAlpha = 0.5;
+            axTop.FontSize = 16;
         
-        % Set up axes on left (adjust sizes as needed)
-        ax = uiaxes(fig, ...
-                    'Position', [20 50 550 330]);
+            nGroups = nHigh;
+            nPerGroup = size(Q1_high,2);
+            boxHeight = 0.2; groupSep = 1;
+            greyLevels = linspace(0.9,0.6,nPerGroup);
+            greyRGBs = [greyLevels', greyLevels', greyLevels'];
         
-        % Important: hold on *the UIAxes*, not default axes
-        hold(ax, 'on')
-        
-        % Plot your custom graphic on the UIAxes
-        boxHeight = 0.2;
-        groupSep  = 1;
-        [nGroups,nPerGroup] = size(Q1);
-        
-        greyLevels = linspace(0.9, 0.6, nPerGroup);
-        greyRGBs = [greyLevels', greyLevels', greyLevels'];
-        
-        for i = 1:nGroups
-            yBase = i * groupSep;  % base y for this category
-            for j = 1:nPerGroup
-                offset = (j - (nPerGroup+1)/2) * (boxHeight * 1.3);
-        
-                % Draw grey box
-                rectangle(ax, ...
-                  'Position',[Q1(i,j), yBase+offset - boxHeight/2, ...
-                              Q3(i,j)-Q1(i,j), boxHeight], ...
-                  'FaceColor', greyRGBs(j,:), ...
-                  'EdgeColor', 'none');
-                
-                if add_color_legend
-                    % Plot median dot
-                    plot(ax, MED(i,j), yBase+offset, 'o', ...
-                         'MarkerSize', 5 , ...
-                         'MarkerFaceColor', cmap(scaledIdx(i,j),:), ...
-                         'MarkerEdgeColor', cmap(scaledIdx(i,j),:));
-                else
-                    plot(ax, MED(i,j), yBase+offset, 'o', ...
-                         'MarkerSize', 5 , ...
-                         'MarkerFaceColor', 'k', ...
-                         'MarkerEdgeColor', 'k');
+            for i = 1:nGroups
+                yBase = i * groupSep;
+                for j = 1:nPerGroup
+                    offset = (j-(nPerGroup+1)/2)*(boxHeight*1.3);
+                    rectangle(axTop, 'Position',[Q1_high(i,j), yBase+offset-boxHeight/2, Q3_high(i,j)-Q1_high(i,j), boxHeight],...
+                              'FaceColor',greyRGBs(j,:),'EdgeColor','none');
+                    % Median dot
+                    if add_color_legend
+                        plot(axTop, MED_high(i,j), yBase+offset, 'o', ...
+                        'MarkerSize',5, ...
+                        'MarkerFaceColor', cmap(scaledIdx_high(i,j),:), ...
+                        'MarkerEdgeColor', cmap(scaledIdx_high(i,j),:));
+
+                    else
+                        plot(axTop, MED_high(i,j), yBase+offset,'o','MarkerSize',5,'MarkerFaceColor','k','MarkerEdgeColor','k')
+                    end
                 end
             end
+        
+            yticks(axTop, 1:nGroups*groupSep)
+            yticklabels(axTop, strrep(rxn_names_high,"_","\_"))
+            title(axTop, title_word)
+        end
+        
+        %%% =========================
+        % Plot low reactions
+        %%% =========================
+        if nLow > 0
+            
+            axBottom = uiaxes(fig,'Units','normalized','Position',[0.02 bottomLow plotWidth heightLow]);
+            hold(axBottom,'on'); fmtAxes(axBottom);
+            
+            % --- Grid & font ---
+            grid(axBottom,'on')
+            axBottom.GridColor = [0.8 0.8 0.8];
+            axBottom.GridAlpha = 0.5;
+            axBottom.FontSize = 16;
+        
+            nGroups = nLow;
+            nPerGroup = size(Q1_low,2);
+            boxHeight = 0.2; groupSep = 1;
+            greyLevels = linspace(0.9,0.6,nPerGroup);
+            greyRGBs = [greyLevels', greyLevels', greyLevels'];
+            
+            for i = 1:nGroups
+                yBase = i * groupSep;
+                for j = 1:nPerGroup
+                    offset = (j-(nPerGroup+1)/2)*(boxHeight*1.3);
+                    rectangle(axBottom, 'Position',[Q1_low(i,j), yBase+offset-boxHeight/2, Q3_low(i,j)-Q1_low(i,j), boxHeight],...
+                              'FaceColor',greyRGBs(j,:),'EdgeColor','none');
+                    % Median dot
+                    if add_color_legend
+                        plot(axBottom, MED_low(i,j), yBase+offset, 'o', ...
+                        'MarkerSize',5, ...
+                        'MarkerFaceColor', cmap(scaledIdx_low(i,j),:), ...
+                        'MarkerEdgeColor', cmap(scaledIdx_low(i,j),:));
+                    else
+                        plot(axBottom, MED_low(i,j), yBase+offset,'o','MarkerSize',5,'MarkerFaceColor','k','MarkerEdgeColor','k')
+                    end
+                end
+            end
+
+        
+            yticks(axBottom, 1:nGroups*groupSep)
+            yticklabels(axBottom, strrep(rxn_names_low,"_","\_"))
+            xlabel(axBottom,'Flux value [mMol/(gDW*h)]')
         end
 
-        % --- Set ticks and labels on UIAxes
-        yticks(ax, (1:nGroups)*groupSep)
-        yticklabels(ax, strrep(rxn_names, "_", "\_"))
+        %%% =========================
+        % Set axes limits based on MED only
+        %%% =========================
+        if exist('axTop','var')
+            % X limits
+            xMinHigh = min(MED_high(:));
+            xMaxHigh = max(MED_high(:));
+            % Add small padding
+            xPad = (xMaxHigh - xMinHigh) * 0.05;
+            xlim(axTop, [xMinHigh-xPad, xMaxHigh+xPad]);
         
-        xlabel(ax, 'Flux Value [mMol/(gDW*h)]', 'FontSize', 16)
-        title(ax, "FVA, FBA + Reduced cost for the " + title_word, 'FontSize', 18)
-        
-       
-        
-        % Reverse x direction (if intended)
-        if options.threshold_flux == "upper"
-            ax.XDir = 'reverse';
-            xlim(ax, [-8 0.1])
-        else
-            xlim(ax, [-0.1 8])
+            % Y limits
+            yMinHigh = 0.5;  % first y
+            yMaxHigh = nHigh * groupSep + 0.5;
+            ylim(axTop, [yMinHigh, yMaxHigh]);
         end
         
-        % Apply grid
-        grid(ax, 'on')
-        ax.GridColor = [0.8 0.8 0.8]
-        ax.GridAlpha = 0.5
-        ax.FontSize = 16
+        if exist('axBottom','var')
+            % X limits
+            xMinLow = min(MED_low(:));
+            xMaxLow = max(MED_low(:));
+            xPad = (xMaxLow - xMinLow) * 0.05;
+            if xMinLow-xPad == xMaxLow-xPad
+                xlim(axBottom, [-1, 1]);
+            else
+                xlim(axBottom, [xMinLow-xPad, xMaxLow+xPad]);
+            end
+        
+            % Y limits
+            yMinLow = 0.5;
+            yMaxLow = nLow * groupSep + 0.5;
+            ylim(axBottom, [yMinLow, yMaxLow]);
+        end
+        
+
+        
         
         % --- Add colorbar if needed
         if add_color_legend
-            colormap(ax, cmap)            % colormap for UIAxes
-            caxis(ax, [valMin valMax])    % set real data range for color mapping
-            cb = colorbar(ax)             % attach to UIAxes
+            % Choose axTop if it exists, else axBottom
+            if exist('axTop','var')
+                cbAx = axTop;
+            else
+                cbAx = axBottom;
+            end
+            
+            colormap(cbAx, cmap);          % Set colormap for chosen axis
+            % --- Set caxis safely
+            if valMin == valMax
+                caxis(cbAx, [valMin-0.5, valMax+0.5]);  % small padding if single value
+            else
+                caxis(cbAx, [valMin, valMax]);
+            end
+
+            
+            cb = colorbar(cbAx);           % Attach colorbar
             cb.Label.String = ...
-               'Sensitivity of objective function to changes in the flux boundaries'
+               'Reduced Cost';
             cb.FontSize = 14;
         end
         
+        % --- Grey patches legend (for models)
+        % Choose axTop if it exists, else axBottom
+        if exist('axTop','var')
+            lgdAx = axTop;
+        else
+            lgdAx = axBottom;
+        end
         
         hGrey = gobjects(nPerGroup, 1);
         for j = 1:nPerGroup
-            hGrey(j) = patch(ax, NaN, NaN, greyRGBs(j,:), 'EdgeColor', 'none');
+            hGrey(j) = patch(lgdAx, NaN, NaN, greyRGBs(j,:), 'EdgeColor', 'none');
         end
         
-        % Add legend *on UIAxes*
-        lgd = legend(ax, hGrey, modelList, 'Location', 'northeastoutside');
+        % Add legend
+        lgd = legend(lgdAx, hGrey, modelList, 'Location','northeastoutside');
+        % lgd = legend(lgdAx, hGrey, modelList, 'Location','northeast');
         lgd.FontSize = 16;
+        lgd.Box = 'off';
+        lgd.Color = 'none';
         lgd.Title.String = "Models";
 
-        %%
-        % Create uitable ON THE RIGHT
-        tbl = uitable(fig, ...
-                      'Data', T, ...
-                      'ColumnName', T.Properties.VariableNames, ...
-                      'Position', [plotWidth + 2*margin, margin, tableWidth, plotHeight]);
-        
-        % Optional: adjust font sizes
-        tbl.FontSize = 14;
-        ax.FontSize = 12;
-    
     end
+
+    % --- Reverse direction if needed ---
+    if options.threshold_flux=="upper"
+        set([axTop axBottom],'XDir','reverse')
+    end
+
+    %%% =========================
+    % Table
+    % =========================
+    % resort the table according to the order in the plots
+    T = T([flip(string(rxn_names_high));flip(string(rxn_names_low))],:);
+    tbl = uitable(fig, ...
+                    'Data', T, ...
+                    'ColumnName', T.Properties.VariableNames, ...
+                    'Units','normalized', ...
+                    'Position',[plotWidth+0.05 0.10 0.40 0.85], ... % width increased from 0.30 → 0.40
+                    'FontSize',16, ...
+                    'ColumnWidth','auto');
+
     
+     tbl.FontSize = 16; 
+     
 
 end
+
+
+function rxn_gene_rule = get_rxn_symbol_rule(model,rxnName)
+        % --- Get gene association for reaction ---
+        %rxnName = "ME2";
+        %model   = project.models.(reference_model);
+        
+        rxnIdx = find(strcmp(model.model.rxns, rxnName), 1);
+        assert(~isempty(rxnIdx), 'Reaction not found in the model.');
+        
+        geneAssociation = model.model.grRules{rxnIdx};
+        geneTable       = model.settings.dico;
+        
+        % --- Extract numeric gene IDs ---
+        ids_with_postfix = regexp(geneAssociation, '\d+\.\d+', 'match');
+        ids_numeric      = string(regexp(ids_with_postfix, '^\d+', 'match'));
+        
+        % --- Find best-matching ID column ---
+        cols = {string(geneTable.ENTREZ), string(geneTable.HGNC), ...
+                string(geneTable.ENSG),   string(geneTable.SYMBOL)};
+        
+        [~, idxMax] = max(cellfun(@(c) sum(ismember(ids_numeric, c)), cols));
+        
+        % --- Map to symbols ---
+        [~, idx] = ismember(ids_numeric, geneTable{:, idxMax});
+        symbols  = string(geneTable.SYMBOL(idx));
+        
+        % --- Replace IDs in gene association string ---
+        geneAssocOut = geneAssociation;
+        for k = 1:numel(ids_with_postfix)
+            geneAssocOut = regexprep(geneAssocOut, ...
+                ['\<' ids_with_postfix{k} '\>'], symbols(k));
+        end
+
+        rxn_gene_rule = geneAssocOut;
+end
+
 

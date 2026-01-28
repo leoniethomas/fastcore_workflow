@@ -43,6 +43,10 @@ function project = modelsComparison(project, modelList,reference_model,analyses,
     project.comparisons.(comparison_name).reference_model = reference_model; 
     % run functional model comparison
 
+    project.models = structfun(@(x) getMappedStatus(x), ...
+                          project.models, ...
+                          'UniformOutput', false);
+
 
     modelFunctionalComparison(project, comparison_name,analyses);
     
@@ -76,6 +80,8 @@ function modelFunctionalComparison(project, comparison_name,analyses)
 
     %%% barplot for the biomass/defined objective 
 
+    
+
     nexttile(1);
     bar(fba_objective_values)
     title('Model comparison: flux of optimized reaction')
@@ -85,16 +91,34 @@ function modelFunctionalComparison(project, comparison_name,analyses)
     
     % import rxns -> upper limit applied to function
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx, ...
-                  'threshold_flux','upper','FVA',true,'reducedCost',true)
+                  'threshold_flux','upper','FVA',false,'reducedCost',false)
     % expor rxns -> upper limit applied to function
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx,...
-                  'threshold_flux','lower','FVA',true,'reducedCost',true)
+                  'threshold_flux','lower','FVA',false,'reducedCost',false)
     
 
     % compute Fluxvariability display in heatmap 
     %%% -> model wide 
 
+    [fva_sim,fva_sim_rxns, fva_sim_pathways] = compute_fva_similariy(project,comparison_name);
+
+    plot_clustergram(fva_sim,...
+                             modelList,...
+                             modelList,...
+                             {'Similarity of FVA boundaries'},...
+                             "FVA similarity",...
+                             [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255);
+    disp(fva_sim)
+
     %%% -> per subsystem
+    % a boxplot per subsystem, displaying the FVA values for the pairwise
+    % comparisons
+    fva_sim_rxns;
+    
+
+    
+    
+    
 
     % compute Fluxsum 
 
@@ -134,6 +158,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     array2table(data, ...
                     'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
                     'RowNames', string(fieldnames(models))')
+
+    %%% rxn mapping from discretized data
+
+    
+    
    
     %%%% get the indices of all the rxns from the different models
     %%%% specified to put them into one table
@@ -393,12 +422,77 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     close(figV)
 
 
+
 end
 
+function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_fva_similariy(project,comparison)
+            
+            modelList = project.comparisons.(comparison).modelNames;
+            reference_model = project.comparisons.(comparison).reference_model;
 
+            replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
+            ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
+            ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            
+            n = numel(modelList);
+            
+            fva_similarity = eye(n); % Diagonal is 1
+            fva_similarity_rxns = cell(n);
+            
+            fvaData = cell(1, n);
+            for i = 1:n
+                fvaData{i} = [ordered_fva_min_matrix(:, i), ordered_fva_max_matrix(:, i)];
+            end
 
+            
+            indexPairs = find(triu(true(n), 1)); % Upper triangle linear indices
+            [rowIdx, colIdx] = ind2sub([n, n], indexPairs);
 
+            for k = 1:length(indexPairs)
+                y = rowIdx(k);
+                x = colIdx(k);
 
+                [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
+
+                % Fill both [y,x] and [x,y] due to symmetry
+                fva_similarity(y,x) = overallSim;
+                fva_similarity(x,y) = overallSim;
+
+                fva_similarity_rxns{y,x} = rxnSim;
+                fva_similarity_rxns{x,y} = rxnSim;
+            end
+
+            n_models = size(fva_similarity_rxns,2);
+
+            fva_similarity_pathways = cell(n_models);
+        
+            
+            pathways = string(project.models.(reference_model).model.subSystems); % get pathways from reference model
+            unique_pathways = unique(pathways); 
+        
+            % for every pathway get the matrix identifying the rnxs from reference
+            % model in this pathway
+            groups = arrayfun(@(x) find(pathways == x), unique_pathways, 'UniformOutput', false);
+            num_groups = length(groups);
+        
+            indexPairs = find(triu(true(n_models), 1)); % Upper triangle linear indices
+            [rowIdx, colIdx] = ind2sub([n_models, n_models], indexPairs);
+        
+            for k = 1:length(indexPairs)
+                        y = rowIdx(k);
+                        x = colIdx(k);
+        
+                        matrix_fva_rxns = fva_similarity_rxns{y,x};
+                        G = zeros(num_groups, size(matrix_fva_rxns,1));
+                    
+                        for g = 1:num_groups
+                            G(g, groups{g}) = matrix_fva_rxns(groups{g},1);
+                        end
+                        fva_similarity_pathways{y,x} = mean(G,2);
+                        fva_similarity_pathways{x,y} = mean(G,2);
+            end
+end
 
 
 function essential_pathway_metabolites = get_essential_pathway_metabolites(pathway,project,reference_model)
@@ -437,3 +531,22 @@ end
 
 
 
+
+
+
+
+
+function modelStruct = getMappedStatus(modelStruct)
+    if any(contains(fieldnames(modelStruct),"discretized_data"))
+        mapping = mapExpressionToModel( ...
+            modelStruct.model, ...
+            modelStruct.discretized_data.values, ...
+            modelStruct.settings.dico, ...
+            string(modelStruct.discretized_data.gene_names), ...
+            1);
+    
+        numberOfSamples = size(mapping, 2);
+    
+        modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
+    end
+end
