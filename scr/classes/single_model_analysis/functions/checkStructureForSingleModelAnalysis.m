@@ -2,6 +2,8 @@ function [structureOk] = checkStructureForSingleModelAnalysis(proj, modelList)
 % Validates that proj is a structure containing a field "models"
 % which is a structure containing model objects listed in modelList
 
+% add something for checking by default all the models in models ?
+
     structureOk = false;
 
     % Check proj is a structure
@@ -53,7 +55,8 @@ function [structureOk] = checkStructureForSingleModelAnalysis(proj, modelList)
 
         % Check type of model
         modelObj = modelStruct.model;
-        if ~isa(modelObj, 'model')
+        if ~isstruct(modelObj) || ...
+           ~all(isfield(modelObj, {'S','rxns','mets','lb','ub', 'genes', 'subSystems'})) % see if other fields are required
             invalidModels{end+1} = name;
         end
     end
