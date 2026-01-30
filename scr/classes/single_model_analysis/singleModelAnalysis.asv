@@ -28,6 +28,13 @@ for i = 1:numel(modelList)
     if ~isfield(project.models.(name), 'analysis')
         project.models.(name).analysis = struct();
     end
+    
+    % Analysis id
+    id = ['analysis_' char(datetime("now", "Format", "yyyyMMdd_HHmm"))];
+    project.models.(name).analysis.(id) = struct();
+    
+    % Store the settings
+    project.models.(name).analysis.(id).parameters = parameterTable;
 
     model = project.models.(name).model;
     
@@ -98,13 +105,14 @@ for i = 1:numel(modelList)
         if ~isfield(params, 'sampleFile') || (isfield(params, 'sampleFile') && isempty(params.sampleFile))
             sampleFile = char("sampleFile" + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
         else
-            sampleFile = char(params.path params.sampleFile + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
+            sampleFile = char(string(params.path) + string(params.sampleFile) + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
         end
         
-        if isfield(params, 'samplerName') || (isfield(params, 'samplerName') && isempty(params.samplerName))
+        if ~isfield(params, 'samplerName') || (isfield(params, 'samplerName') && isempty(params.samplerName))
             samplerName = 'ACHR';
         else
             samplerName = params.samplerName;
+            disp(samplerName);
         end
         
         if isfield(params, 'options')
