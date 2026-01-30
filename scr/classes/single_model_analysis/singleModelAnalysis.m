@@ -28,6 +28,13 @@ for i = 1:numel(modelList)
     if ~isfield(project.models.(name), 'analysis')
         project.models.(name).analysis = struct();
     end
+    
+    % Analysis id
+    id = ['analysis_' char(datetime("now", "Format", "yyyyMMdd_HHmm"))];
+    project.models.(name).analysis.(id) = struct();
+    
+    % Store the settings
+    project.models.(name).analysis.(id).parameters = parameterTable;
 
     model = project.models.(name).model;
     
@@ -53,7 +60,7 @@ for i = 1:numel(modelList)
         FBA = optimizeCbModelParams(model, params);
 
         % Storing results
-        project.models.(name).analysis.FBA = FBA;
+        project.models.(name).analysis.(id).FBA = FBA;
         %analysis.FBA = FBA;
     end
 
@@ -69,21 +76,21 @@ for i = 1:numel(modelList)
         FVA = table(FVAmin, FVAmax, 'VariableNames', {'minFlux', 'maxFlux'});
         
         % Storing the results
-        project.models.(name).analysis.FVA = FVA;
+        project.models.(name).analysis.(id).FVA = FVA;
         
     end
     
     % sampling
     if any(strcmp(analyses, 'sampling'))
         
-        project.models.(name).analysis.sampling = struct();
+        project.models.(name).analysis.(id).sampling = struct();
         
         % Loading parameters
         params = tableToParamsStruct(parameterTable, 'sampling', model);
         
         if ~isfield(params, 'osenseStr') && ~isfield(params, 'minNorm')
             if isfield(analysis, 'FBA')
-                FBA = project.models.(name).analysis.FBA;
+                FBA = project.models.(name).analysis.(id).FBA;
             else
                 FBA = optimizeCbModel(model, 'max', 'zero');
             end
@@ -98,13 +105,14 @@ for i = 1:numel(modelList)
         if ~isfield(params, 'sampleFile') || (isfield(params, 'sampleFile') && isempty(params.sampleFile))
             sampleFile = char("sampleFile" + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
         else
-            sampleFile = char(params.path + params.sampleFile + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
+            sampleFile = char(string(params.path) + string(params.sampleFile) + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
         end
         
-        if isfield(params, 'samplerName') || (isfield(params, 'samplerName') && isempty(params.samplerName))
+        if ~isfield(params, 'samplerName') || (isfield(params, 'samplerName') && isempty(params.samplerName))
             samplerName = 'ACHR';
         else
             samplerName = params.samplerName;
+            disp(samplerName);
         end
         
         if isfield(params, 'options')
@@ -141,8 +149,8 @@ for i = 1:numel(modelList)
         save(params.path + "sampling_" + name + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmmss")) + ".mat", 'modelSampling', 'samples');
         
         % Storing the results
-        project.models.(name).analysis.sampling.modelSampling = modelSampling;
-        project.models.(name).analysis.sampling.samples = samples;
+        project.models.(name).analysis.(id).sampling.modelSampling = modelSampling;
+        project.models.(name).analysis.(id).sampling.samples = samples;
         
     end
     % singleGeneDeletion

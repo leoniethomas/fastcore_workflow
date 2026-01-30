@@ -6,15 +6,15 @@ optPercentage,FVA,90
 osenseStr,sampling,max
 minNorm,sampling,zero
 obj_threshold,sampling,0.9
-sampleFile,sampling,
-samplerName,sampling,ACHR
-options.nPointsReturned,sampling,5
-options.nFiles,sampling,1
-options.maxTime,sampling,60
-options.nWarmupPoints,sampling,5
-options.nStepsPerPoint,sampling,5
+sampleFile,sampling,sampleFile
+samplerName,sampling,CHRR
+options.nPointsReturned,sampling,2000
+options.nFiles,sampling,10
+options.maxTime,sampling,36000
+options.nWarmupPoints,sampling,"2*size(model.S, 2)"
+options.nStepsPerPoint,sampling,"size(model.S, 2)"
 modelSampling,sampling,model
-path,sampling,/samplingResults/
+path,sampling,/samplingResults/CHRR/
 method,singleGeneDeletion,FBA
 geneList,singleGeneDeletion,
 method,doubleGeneDeletion,FBA
