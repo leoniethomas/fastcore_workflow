@@ -35,19 +35,24 @@ function project = modelsComparison(project, modelList,reference_model,analyses,
         modelList = project.models;
     end
     
+    % get the mapping data from the disc data
+    project.models = structfun(@(x) getMappedStatus(x), ...
+                          project.models, ...
+                          'UniformOutput', false);
+    % get the disc data into the same order as in the Model
+    project.models = structfun(@(x) reorderDiscretizedToMatchGeneOrder(x), ...
+                              project.models, ...
+                              'UniformOutput', false);
+
+    
     % give the comparison the name of all models + a identifier choosen
     comparison_name = join(modelList, "_vs_") + identifier;
-
+    
     % run structural model comparison
     project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
     project.comparisons.(comparison_name).reference_model = reference_model; 
     % run functional model comparison
-
-    project.models = structfun(@(x) getMappedStatus(x), ...
-                          project.models, ...
-                          'UniformOutput', false);
-
-
+    
     modelFunctionalComparison(project, comparison_name,analyses);
     
 
@@ -74,6 +79,8 @@ function modelFunctionalComparison(project, comparison_name,analyses)
     
     fba_objective_values = cell2mat(cellfun(@(x) project.models.(x).analysis.FBA.f(1,1) ,modelList,"UniformOutput",false));
     get_exchange_rxns_idx = find(findExcRxns(project.models.(reference_model).model));    
+
+
     
     figure
     tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
@@ -159,17 +166,160 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
                     'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
                     'RowNames', string(fieldnames(models))')
 
-    %%% rxn mapping from discretized data
+    %%% rxn mapping from discretized data + visualization of both 
+    replacement_value = "mappedDiscRxns_sample"; % get the fba solution values
+    ordered_mapping_rxn_matrix_sample_wise = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    replacement_value = "mappedDiscRxns"; % get the fba solution values
+    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    replacement_value = "discretized_data.values"; % get the fba solution values
+    ordered_mapping_expr_disc_matrix = getOrderedFeatureMatrix(project,modelList,"genes",reference_model,replacement_value);
 
+    % once with all samples, once applying the consensus proportion
+    columnnames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
+                                  string(x.sample_metadata.(x.settings.script_parameters.columns_to_define_model_samples_on)),...
+                            models_list,"UniformOutput",false));
+    columnnames = vertcat(columnnames{:});
+
+
+    %%
+
+
+    datasets = { ordered_mapping_expr_disc_matrix,ordered_mapping_rxn_matrix_sample_wise, ordered_mapping_rxn_matrix};   % replace with your actual dataset variables
+    dataset_names = ["ordered_mapping_rxn_matrix_sample_wise", "ordered_mapping_expr_disc_matrix", "ordered_mapping_rxn_matrix"];  % optional titles
+    xlabels_plots = ["Samples", "Samples", "Models"]; 
+    xticks_plots = {columnnames, columnnames, string(fieldnames(models_list))}; 
+    ylabels_plots = ["# genes for genes which are in the context specific models", "# reactions for reactions which are in the context specific models", "# reactions for reactions which are in the context specific models"];  
+    title_plots = ["after discretization: ", "after mapping the gpr rules: ", "after applying " + project.models.(modelList(1)).settings.script_parameters.consensus_proportion + " consensus proportion"];  
+
+    numDatasets = length(datasets);
+
+    % Determine all unique discretization values across datasets (excluding 13)
+    all_values = [];
+    for k = 1:numDatasets
+        all_values = union(all_values, setdiff(unique(datasets{k}), 13));
+    end
+    all_values = sort(all_values);  % e.g., [-1 0 1]
     
+    % Define a colormap with one color per value
+    cmap = lines(length(all_values));
     
-   
-    %%%% get the indices of all the rxns from the different models
-    %%%% specified to put them into one table
+    % Create figure
+    figure('Color','w','Position',[100 100 300*numDatasets 500])
+    
+    for k = 1:numDatasets
+        dataset = datasets{k};
+        xlabel_plot = xlabels_plots(k);
+        xtick_plot = xticks_plots{k};
+        ylabel_plot = ylabels_plots(k);
+        title_plot = title_plots(k);
+        
+        % counts per category per sample (make sure all_values are included)
+        counts = zeros(length(all_values), size(dataset,2));
+        for i = 1:length(all_values)
+            counts(i,:) = sum(dataset == all_values(i), 1);
+        end
+    
+        % stacked barplot in subplot
+        ax = subplot(1, numDatasets, k);
+        b = bar(ax, counts', 'stacked');
+    
+        % Assign consistent colors
+        for i = 1:length(all_values)
+            b(i).FaceColor = cmap(i,:);
+        end
+    
+        % percentages
+        tot = sum(counts,1);
+        pct = 100 * counts ./ tot;
+    
+        % write percentages inside bars
+        for i = 1:size(counts,2)
+            y0 = 0;
+            for j = 1:size(counts,1)
+                if counts(j,i) > 0
+                    text(i, y0 + counts(j,i)/2, ...
+                        sprintf('%.1f', pct(j,i)), ...
+                        'HorizontalAlignment','center', ...
+                        'VerticalAlignment','middle', ...
+                        'FontSize',15,'Color','w','FontWeight','bold');
+                end
+                y0 = y0 + counts(j,i);
+            end
+        end
+    
+        % axes labels and formatting
+        ax.FontSize = 14;
+        xlabel(xlabel_plot,'FontSize',16)
+        ylabel(ylabel_plot,'FontSize',16)
+        title(title_plot,'FontSize',18)
+    
+        xticks(1:length(xtick_plot))
+        xticklabels(regexprep(xtick_plot, "_", "-"))
+    end
+    
+    % Single legend for the whole figure
+    lgd = legend(string(all_values), 'Location','northeastoutside');
+    lgd.FontSize = 14;
+    lgd.Title.String = "Discretization status";
+
+
+
+    %%
+    for k = 1:length(datasets)
+        dataset = datasets{k};
+        
+        % get unique values, ignoring 13
+        unique_disc_values = unique(dataset);
+        unique_disc_values = setdiff(unique_disc_values, 13);
+    
+        % counts per category per sample
+        counts = cell2mat(arrayfun(@(v) sum(dataset == v, 1), ...
+                                   unique_disc_values, 'UniformOutput', false));
+    
+        % stacked barplot
+        figure
+        bar(counts', 'stacked')
+    
+        % percentages
+        tot = sum(counts,1);
+        pct = 100 * counts ./ tot;
+    
+        % write percentages inside bars
+        for i = 1:size(counts,2)          % per bar (sample)
+            y0 = 0;
+            for j = 1:size(counts,1)      % per stack (category)
+                if counts(j,i) > 0
+                    text(i, y0 + counts(j,i)/2, ...
+                        sprintf('%.1f%%', pct(j,i)), ...
+                        'HorizontalAlignment','center', ...
+                        'VerticalAlignment','middle', ...
+                        'FontSize',20,'Color','w','FontWeight','bold');
+                end
+                y0 = y0 + counts(j,i);
+            end
+        end
+    
+        % axes and labels
+        ax = gca;
+        ax.FontSize = 18;
+    
+        xlabel('Samples','FontSize',20)
+        ylabel('# Genes','FontSize',20)
+        title("Discretization of genes per sample: " + dataset_names(k))
+    
+        % x-axis labels
+        xticks(1:length(columnnames))
+        xticklabels(regexprep(columnnames, "_", "-"))
+    
+        % legend
+        lgd = legend(string(unique_disc_values));
+        lgd.FontSize = 20;
+        lgd.Title.String = "Discretization status";
+    end
 
     
     [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
-    structure_analysis.rxn_mapping_table = array2table(rxn_mapping,"VariableNames",modelList,"RowNames",string(project.models.(reference_model).model.rxns))
+    structure_analysis.rxn_mapping_table = array2table(rxn_mapping,"VariableNames",modelList,"RowNames",string(project.models.(reference_model).model.rxns));
     
     %%%%%%%%%%%%%%%%%%%% get the intersections/outersection 
     %%%%%% similarities between models based on rxns,genes, mets
@@ -183,18 +333,18 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
             ordered_feature, ...
             structure_analysis.modelNames, ...
             "Structural model comparison: " + field_to_investigate + " presence");
-        % plot Venn/Heatmap of the overall intersection/outersection of the
-        % models based on rxn prescence 
-        plotFlexibleVenn(ordered_feature,...
-                             structure_analysis.modelNames, ... 
-                             "Structural model comparison: " + field_to_investigate + " presence");
     
         % get the jaccard distances - based on reaction presence
+        % Compute Jaccard distances
         Jacc_distance = 1 - squareform(pdist(ordered_feature','jaccard'));
-        title_fig = "Jaccard similarity of " + field_to_investigate + " presence (0 or 1) between models ";
-        figure
-        heatmap(structure_analysis.modelNames,structure_analysis.modelNames, Jacc_distance);
-        title(title_fig);
+        title_fig = "Jaccard similarity of " + field_to_investigate + " presence (0 or 1) between models";
+        
+        % Create heatmap
+        h = heatmap(structure_analysis.modelNames, structure_analysis.modelNames, Jacc_distance);
+        
+        % Set font sizes
+        h.FontSize = 20;           
+        h.Title = title_fig;    
     end
     
     %%%%%%%%%%%%%%%%%%%%% get presence of rxns in each subsytem/pathway
@@ -239,6 +389,8 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     data = relative_counts{:,1:end-1};
     rowNames = string(relative_counts.Properties.RowNames);
     colNames = structure_analysis.modelNames;
+
+    %%%%%%%%%%
 
     figure
     tiledlayout(1,4, ...
@@ -401,9 +553,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     core_reactions_included = unique([core_reactions_included{:}]);
     
     core_presence = structure_analysis.rxn_mapping_table{core_reactions_included,:} ~= 0;
-    figV = plotFlexibleVenn(core_presence, structure_analysis.modelNames, ... 
-                     "Structural model comparison: core rxns presence");
+    [figV,idx_inter_outersections,~] = plotFlexibleVenn(core_presence, structure_analysis.modelNames, ... 
+                                                        "Structural model comparison: core rxns presence");
 
+    
+    
     % Find axes inside Venn figure
     axV = findobj(figV,'Type','axes','-not','Tag','legend');
     axV = axV(1);
@@ -421,6 +575,82 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     
     close(figV)
 
+    % create an upsetr plot for the all the inter and outersections
+    % filter out the main intersection -> the one with the longest name
+    names_intersections = fieldnames(idx_inter_outersections);
+    [~,all_intersection] = max(cellfun(@(x) length(x), names_intersections));
+    idx_inter_outersections = rmfield(idx_inter_outersections, names_intersections(all_intersection));
+    % now get the pathway of every entry
+    inter_outersections_pathways = structfun(@(x) string(project.models.(reference_model).model.subSystems(x)),...
+                                             idx_inter_outersections,'UniformOutput',false);
+    C = struct2cell(inter_outersections_pathways);
+    unique_pathways = unique(vertcat(C{:}));
+    
+
+    % Preprocess pathways: collapse transport
+    S = structfun(@(x) regexprep(x,"^Transport.*","Transport"), inter_outersections_pathways, 'UniformOutput', false);
+    pathways_unique = unique(regexprep(unique_pathways,"^Transport.*","Transport"));
+    
+    barNames = string(fieldnames(S))
+    nBars = numel(barNames);
+    
+    % Build count matrix
+    Y = cellfun(@(b) sum(S.(b)' == pathways_unique, 2)', barNames', 'UniformOutput', false);
+    Y = cat(1, Y{:});
+    
+    % Sort bars by total counts (descending)
+    [~, sortIdx] = sort(sum(Y,2), 'descend');
+    Y = Y(sortIdx,:);
+    barNames_sorted = barNames(sortIdx);
+    
+    % Plot
+    figure
+    b = bar(Y, 'stacked');
+    
+    % Generate a qualitative colormap with enough colors
+    numColors = size(Y,2);
+    % Example 20-color qualitative palette (from ColorBrewer / Tableau)
+    cmap = [ ...
+        166 206 227;
+        31 120 180;
+        178 223 138;
+        51 160 44;
+        251 154 153;
+        227 26 28;
+        253 191 111;
+        255 127 0;
+        202 178 214;
+        106 61 154;
+        255 255 153;
+        177 89 40;
+        141 211 199;
+        255 255 179;
+        190 186 218;
+        251 128 114;
+        128 177 211;
+        253 180 98;
+        179 222 105;
+        252 205 229] / 255;  % Normalize 0-1
+    
+    % Apply colors to each category
+    for k = 1:numColors
+        b(k).FaceColor = cmap(mod(k-1,size(cmap,1))+1,:);
+    end
+    
+    
+    % Labels and legend
+    ax = gca;
+    ax.XTickLabel = regexprep(barNames_sorted, "_", " ");
+    ax.FontSize = 20;
+    xlabel('Model intersections/outersections','FontSize',20)
+    ylabel('# Core Reactions','FontSize',20)
+    title('Count of Core reactions per pathway and intersection/outersection','FontSize',20)
+    
+    lgd = legend(pathways_unique, 'Location','northeast');
+    lgd.FontSize = 20;
+
+
+    
 
 
 end
@@ -546,7 +776,26 @@ function modelStruct = getMappedStatus(modelStruct)
             1);
     
         numberOfSamples = size(mapping, 2);
-    
+        
+        modelStruct.mappedDiscRxns_sample = mapping;
         modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
+    end
+end
+
+
+function modelStruct = reorderDiscretizedToMatchGeneOrder(modelStruct)
+    if any(contains(fieldnames(modelStruct),"discretized_data"))
+        gene_symbol = string(modelStruct.settings.dico.SYMBOL);
+        gene_id_in_model = string(modelStruct.settings.dico.gene_id_in_model);
+        discTbl     = modelStruct.discretized_data;   % table with gene_names + data
+        % Map discretized genes into full gene list
+        [isPresent, idx] = ismember(gene_symbol, string(discTbl.gene_names));
+        % Preallocate output table with NaNs
+        outTbl = zeros(numel(gene_symbol), size(discTbl.values,2));
+        % Fill rows that exist
+        outTbl(isPresent,:) = discTbl{idx(isPresent), 2:end};
+        % Add gene names as first column
+        modelStruct.discretized_data = table(gene_id_in_model,gene_symbol,outTbl, 'VariableNames',...
+                                             ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
     end
 end

@@ -85,8 +85,12 @@ function ordered_feature = getOrderedFeature(model,reference_model,field_to_inve
         field_to_investigate (1,1) string ="rxns"
         replacement_value (1,1) =1
     end
-
-    ordered_feature_idx = zeros(size(reference_model.(field_to_investigate),1),size(reference_model.(field_to_investigate),2));
+    if contains(string(replacement_value), "discretized") | contains(string(replacement_value), "mappedDiscRxns")
+        % do not replace with 0 when values are not there, cause 0 means something in the discretization
+        ordered_feature_idx = zeros(size(reference_model.(field_to_investigate),1),size(reference_model.(field_to_investigate),2)) + 13;
+    else
+        ordered_feature_idx = zeros(size(reference_model.(field_to_investigate),1),size(reference_model.(field_to_investigate),2));
+    end
     [~,idx] = ismember(model.model.(field_to_investigate),reference_model.(field_to_investigate));
     ordered_feature_idx(idx) = 1:numel(model.model.(field_to_investigate));
     
@@ -103,10 +107,15 @@ function ordered_feature = getOrderedFeature(model,reference_model,field_to_inve
             for x = replacement_value(2:end)
                 replacement_values = replacement_values.(x);
             end
-            if length(replacement_values) ~= length(model.model.(field_to_investigate))
+            if size(replacement_values,1) ~= length(model.model.(field_to_investigate))
                 error("The size of the slot you have choosen (rxns, genes) does not aggree with the replacement value slot! Are you sure the replacement slot you choose really contains information about the choosen slot (genes, rxns,mets) ??")
             end
-            ordered_feature(idx) = replacement_values;
+            if size(replacement_values,2) ==1
+                ordered_feature(idx) = replacement_values;
+            else
+                ordered_feature = repmat(ordered_feature, 1, size(replacement_values,2));
+                ordered_feature(idx,:) = replacement_values;
+            end
         end
     end
 

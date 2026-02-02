@@ -22,7 +22,11 @@ addpath(genpath(working_path))
 
 % read in project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
-load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_from_vanille_fba_fva.mat");
+% load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_from_vanille_fba_fva.mat");
+% old_project = project;
+% load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_28012026_1508_obj_vanille_sampling.mat");
+% samp_project = project;
+load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
 %% First the STRUCTURAL comparison of the choosen models
 
 % structureComparison executed on the project generating the structural
@@ -97,7 +101,7 @@ replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution val
 ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,project.comparisons.KO_vs_PLV_vs_WT.modelNames,"rxns","orig_model",replacement_value);
 reduced_cost_idx = find(sum(ordered_reducedCost_matrix,2) ~= 0);
 get_flux_plot(project,"KO_vs_PLV_vs_WT",reduced_cost_idx, ...
-              "threshold_flux","all","FVA", true ,...
+              "threshold_flux","all","FVA", true,'reducedCost',true ,...
               'title_plots',"Functional model comparison: all reactions with a ~= 0 reduced cost");
  
 
@@ -114,7 +118,9 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT",rxns_met_id, ...
               "threshold_flux","none","FVA", true ,...
               'title_plots',"Functional model comparison: all reactions including pyruvate");
 
+%% SAMPLING ANALYSIS
 
 
+project = modelsComparisonSampling(project,list_model_names,reference_model);
 
 
