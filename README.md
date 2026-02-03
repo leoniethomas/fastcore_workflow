@@ -26,7 +26,6 @@ project
 |   |   ├── expression_data
 |   |   ├── discretized_data
 |   |   ├── model
-|   |   ├── reactions
 |   |   ├── core_reactions
 |   |   ├── settings
 |   |   |   ├── dico
@@ -37,7 +36,6 @@ project
 |   |       ├── parameters
 |   |       ├── FBA
 |   |       ├── FVA
-|   |       ├── flux_sum
 |   |       ├── sampling
 |   |       ├── single_gene_deletion
 |   |       └── double_gene_deletion
