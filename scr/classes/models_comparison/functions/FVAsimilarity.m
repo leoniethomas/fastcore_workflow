@@ -6,10 +6,10 @@ v2maxs=fva2(:,2);
 
 rxnSim=[];
 for counter=1:numel(v1mins)
-    v1min=v1mins(counter)
-    v1max=v1maxs(counter)
-    v2min=v2mins(counter)
-    v2max=v2maxs(counter)
+    v1min=v1mins(counter);
+    v1max=v1maxs(counter);
+    v2min=v2mins(counter);
+    v2max=v2maxs(counter);
     si=max(0,(min(v1max,v2max)-max(v1min,v2min)+eps)/(max(v1max,v2max)-min(v1min,v2min)+eps));
     rxnSim=[rxnSim; si];
 end

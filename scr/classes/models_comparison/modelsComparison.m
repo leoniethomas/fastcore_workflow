@@ -98,10 +98,10 @@ function modelFunctionalComparison(project, comparison_name,analyses)
     
     % import rxns -> upper limit applied to function
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx, ...
-                  'threshold_flux','upper','FVA',false,'reducedCost',false)
+                  'threshold_flux','upper','FVA',false,'reducedCost',false);
     % expor rxns -> upper limit applied to function
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx,...
-                  'threshold_flux','lower','FVA',false,'reducedCost',false)
+                  'threshold_flux','lower','FVA',false,'reducedCost',false);
     
 
     % compute Fluxvariability display in heatmap 
@@ -591,7 +591,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     S = structfun(@(x) regexprep(x,"^Transport.*","Transport"), inter_outersections_pathways, 'UniformOutput', false);
     pathways_unique = unique(regexprep(unique_pathways,"^Transport.*","Transport"));
     
-    barNames = string(fieldnames(S))
+    barNames = string(fieldnames(S));
     nBars = numel(barNames);
     
     % Build count matrix
