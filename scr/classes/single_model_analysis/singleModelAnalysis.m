@@ -168,19 +168,29 @@ for i = 1:numel(modelList)
     end
 
     % FDR correction for sampling results
-    if any(strcmp(analyses, 'sampling'))
+    if any(strcmp(analyses, 'kld'))
         % Performing the FDR correction shown by Bruno G. Galuzzi et al 2024 
         %-> link to paper: https://www.sciencedirect.com/science/article/pii/S1532046424000157?via%3Dihub
+        
+        project.models.(name).analysis.(id).kld = struct();
+        
+        % Loading parameters
+        params = tableToParamsStruct(parameterTable, 'kld', model);
+        
         if any(strcmp(analyses, 'sampling'))
             % add the sampling to be one of the sets 
             sampling_matrix = project.models.(name).analysis.(id).sampling.samples;
-            [kld_matrix,p_value_kld,sampling_sets] = perform_kdl_divergence_analysis(model,sampling_matrix);
-        else
-            [kld_matrix,p_value_kld,sampling_sets] = perform_kdl_divergence_analysis(model);
+        else 
+            sampling_matrix = [];
         end
+        [kld_matrix,...
+            p_value_kld,sampling_sets,fdr] = perform_kdl_divergence_analysis(model,sampling_matrix,...
+                                                     'nPointsReturned',params.nPointsReturned,'number_of_ind_samplings',params.number_of_ind_samplings);
+        
         project.models.(name).analysis.(id).kld.sampling_sets = sampling_sets;
-        project.models.(name).analysis.(id).kld.kld_matrix = kdl_matrix;
+        project.models.(name).analysis.(id).kld.kld_matrix = kld_matrix;
         project.models.(name).analysis.(id).kld.p_value_kld = p_value_kld;
+        project.models.(name).analysis.(id).kld.fdr = fdr;
 
     end
     % singleGeneDeletion

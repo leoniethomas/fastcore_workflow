@@ -16,6 +16,8 @@ options.nWarmupPoints,sampling,"2*size(model.S, 2)"
 options.nStepsPerPoint,sampling,"size(model.S, 2)"
 modelSampling,sampling,model
 path,sampling,./samplingResults/CHRR/
+nPointsReturned,kld,1000
+number_of_ind_samplings,kld,8
 method,singleGeneDeletion,FBA
 geneList,singleGeneDeletion,
 method,doubleGeneDeletion,FBA
