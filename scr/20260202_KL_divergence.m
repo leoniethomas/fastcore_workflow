@@ -12,67 +12,62 @@ addpath(genpath(working_path))
 load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
 model = project.models.WT.model;
 
-
-
-%% Set sampling parameters
-
-options.nPointsReturned = 3000;
-options.nStepsPerPoint = size(model.S, 2); %thinning parameter
-options.toRound = 1;
-number_of_ind_samplings = 10;
-
-%% now run sampling 20 times and return it into a table, every column is a sampling run
-
-maxWorkers = parcluster('local').NumWorkers;
-disp("How many workers do I have ?")
-disp(maxWorkers);
-
-num_parallel_workers = 10;
-sampling_sets = run_chrr_sampling(model,options,number_of_ind_samplings, num_parallel_workers);
-
-%%
-
-pairs = nchoosek(1:number_of_ind_samplings, 2); 
-pairCell = num2cell(pairs, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
-pairwise_kdl = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, sampling_sets{x(2),1}), pairCell, 'UniformOutput', false);
-pairwise_kdl = cell2mat(pairwise_kdl)'; 
-
-
-%% 
-
-save(string(datetime('now','Format','yyyyMMdd_HHmmss_'))  + "kdl_10sets_3000samples.mat" )
-
-
-%% 
-%load("20260203_kdl_20sets_1000samples.mat")
-
-%%
-% now pull out 20% of your kld values as test 
-% the rest is training 
-% perform wilcoxon rank to compare for one rxn the training and text kld
-% values 
+[kdl_matrix,p_value_kdl] = perform_kdl_divergence_analysis(model);
 
 
 
-N = size(pairwise_kdl, 2);        % total number of elements
-numSamples = round(0.2 * N);      % number of 1s (20%)
-binaryVec = zeros(1, N);
-randIdx = randperm(N, numSamples); % Randomly choose positions to set to 1
-binaryVec(randIdx) = 1;
-train_data = pairwise_kdl(:, find(~binaryVec));
-test_data = pairwise_kdl(:, find(binaryVec));
-
-p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwise_kdl, 1))',"UniformOutput",false));
-p_adj_kdl = mafdr(p_value_kdl,'BHFDR', true);
-
-%%
-figure
-hist(p_value_kdl,100)
-sum( p_value_kdl < 0.05)
-sum( p_value_kdl < 0.05)/size(pairwise_kdl,1)
 
 
-%% 
+%% -------------------- DEFINE FUNCTIONS -------------------
+
+
+function [kdl_matrix,p_value_kdl] = perform_kdl_divergence_analysis(model,options)
+        % This function 
+        arguments
+            model
+            options.num_parallel_workers =10
+            options.nPointsReturned =3000
+            options.nStepsPerPoint =2000
+            options.toRound =1
+            options.number_of_ind_samplings =10
+        end
+        maxWorkers = parcluster('local').NumWorkers;
+        disp("How many workers do I have ?")
+        disp(maxWorkers);
+        if maxWorkers < options.num_parallel_workers
+            options.num_parallel_workers = maxWorkers -2;
+        end
+        
+        sampling_sets = run_chrr_sampling(model,options,options.number_of_ind_samplings, options.num_parallel_workers);
+        
+        pairs = nchoosek(1:number_of_ind_samplings, 2); 
+        pairCell = num2cell(pairs, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
+        pairwise_kdl = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, sampling_sets{x(2),1}), pairCell, 'UniformOutput', false);
+        pairwise_kdl = cell2mat(pairwise_kdl)'; 
+        
+
+        N = size(pairwise_kdl, 2);        % total number of elements
+        numSamples = round(0.2 * N);      % number of 1s (20%)
+        binaryVec = zeros(1, N);
+        randIdx = randperm(N, numSamples); % Randomly choose positions to set to 1
+        binaryVec(randIdx) = 1;
+        train_data = pairwise_kdl(:, find(~binaryVec));
+        test_data = pairwise_kdl(:, find(binaryVec));
+        
+        p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwise_kdl, 1))',"UniformOutput",false));
+        %p_adj_kdl = mafdr(p_value_kdl,'BHFDR', true);
+        
+        
+        figure
+        hist(p_value_kdl,100)
+        sum( p_value_kdl < 0.05)
+        sum( p_value_kdl < 0.05)/size(pairwise_kdl,1)
+
+        kdl_matrix = pairwise_kdl;
+
+
+
+end
 
 function [kld_vector] = get_kld_value_pairs(X,Y)
 
