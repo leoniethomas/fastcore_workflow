@@ -121,6 +121,9 @@ for i = 1:numel(modelList)
             if ~isfield(options, 'nPointsReturned')
                 options.nPointsReturned = 2000;
             end
+            if ~isfield(options, 'nPointsReturned') & samplerName == "CHRR"
+                options.toRound = 1;
+            end
             if ~isfield(options, 'nFiles')
                 options.nFiles = 10;
             end
@@ -140,10 +143,20 @@ for i = 1:numel(modelList)
             options.maxTime = 36000;  % 10 hours
             options.nWarmupPoints = 2*size(model.S, 2);
             options.nStepsPerPoint = size(model.S, 2);
+            if samplerName == "CHRR"
+                options.toRound = 1;
+            end
         end
         
+        
         disp("Running sampling.")
-        [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options, model);
+        if params.samplerName == "ACHR"
+            [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options, model);
+        elseif params.samplerName == "CHRR"
+            [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options);
+        else
+            error("Currently this pipeline only allows the use of 2 samplers: ACHR and CHRR!")
+        end
         disp("Sampling done.")
         
         save(params.path + "sampling_" + name + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmmss")) + ".mat", 'modelSampling', 'samples');
