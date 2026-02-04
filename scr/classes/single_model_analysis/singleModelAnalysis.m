@@ -166,6 +166,23 @@ for i = 1:numel(modelList)
         project.models.(name).analysis.(id).sampling.samples = samples;
         
     end
+
+    % FDR correction for sampling results
+    if any(strcmp(analyses, 'sampling'))
+        % Performing the FDR correction shown by Bruno G. Galuzzi et al 2024 
+        %-> link to paper: https://www.sciencedirect.com/science/article/pii/S1532046424000157?via%3Dihub
+        if any(strcmp(analyses, 'sampling'))
+            % add the sampling to be one of the sets 
+            sampling_matrix = project.models.(name).analysis.(id).sampling.samples;
+            [kld_matrix,p_value_kld,sampling_sets] = perform_kdl_divergence_analysis(model,sampling_matrix);
+        else
+            [kld_matrix,p_value_kld,sampling_sets] = perform_kdl_divergence_analysis(model);
+        end
+        project.models.(name).analysis.(id).kld.sampling_sets = sampling_sets;
+        project.models.(name).analysis.(id).kld.kld_matrix = kdl_matrix;
+        project.models.(name).analysis.(id).kld.p_value_kld = p_value_kld;
+
+    end
     % singleGeneDeletion
     % doubleGeneDeletion
     

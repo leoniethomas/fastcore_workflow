@@ -21,10 +21,11 @@ model = project.models.WT.model;
 %% -------------------- DEFINE FUNCTIONS -------------------
 
 
-function [kdl_matrix,p_value_kdl] = perform_kdl_divergence_analysis(model,options)
+function [kdl_matrix,p_value_kdl,sampling_sets] = perform_kdl_divergence_analysis(model,sampling_matrix,options)
         % This function 
         arguments
             model
+            sampling_matrix =[]
             options.num_parallel_workers =10
             options.nPointsReturned =3000
             options.nStepsPerPoint =2000
@@ -39,20 +40,39 @@ function [kdl_matrix,p_value_kdl] = perform_kdl_divergence_analysis(model,option
         end
         
         sampling_sets = run_chrr_sampling(model,options,options.number_of_ind_samplings, options.num_parallel_workers);
-        
-        pairs = nchoosek(1:number_of_ind_samplings, 2); 
+
+        % distance between sets 
+        pairs = nchoosek(1:options.number_of_ind_samplings, 2); 
         pairCell = num2cell(pairs, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
-        pairwise_kdl = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, sampling_sets{x(2),1}), pairCell, 'UniformOutput', false);
+        pairwise_kdl = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, ...
+                                                        sampling_sets{x(2),1}),...
+                               pairCell, 'UniformOutput', false);
         pairwise_kdl = cell2mat(pairwise_kdl)'; 
         
+        if ~isempty(sampling_matrix)
+            % distance between sets and sampling 
 
-        N = size(pairwise_kdl, 2);        % total number of elements
-        numSamples = round(0.2 * N);      % number of 1s (20%)
-        binaryVec = zeros(1, N);
-        randIdx = randperm(N, numSamples); % Randomly choose positions to set to 1
-        binaryVec(randIdx) = 1;
-        train_data = pairwise_kdl(:, find(~binaryVec));
-        test_data = pairwise_kdl(:, find(binaryVec));
+            pairCell_sampling_matrix = num2cell(options.number_of_ind_samplings, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
+            pairwise_kdl_sampling_matrix = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, ...
+                                                                            sampling_matrix),...
+                                                   pairCell_sampling_matrix, 'UniformOutput', false);
+            pairwise_kdl_sampling_matrix = cell2mat(pairwise_kdl_sampling_matrix)'; 
+            train_data = pairwise_kdl;
+            test_data = pairwise_kdl_sampling_matrix;
+        else
+            % in case sampling was not performed the disance measures of
+            % the sets itself are split into train and test to get a
+            % measure of how much we can trust a given rxn sampling
+            % distribution
+
+            N = size(pairwise_kdl, 2);        % total number of elements
+            numSamples = round(0.1 * N);      % number of 1s (20%)
+            binaryVec = zeros(1, N);
+            randIdx = randperm(N, numSamples); % Randomly choose positions to set to 1
+            binaryVec(randIdx) = 1;
+            train_data = pairwise_kdl(:, find(~binaryVec));
+            test_data = pairwise_kdl(:, find(binaryVec));
+        end
         
         p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwise_kdl, 1))',"UniformOutput",false));
         %p_adj_kdl = mafdr(p_value_kdl,'BHFDR', true);
@@ -61,7 +81,10 @@ function [kdl_matrix,p_value_kdl] = perform_kdl_divergence_analysis(model,option
         figure
         hist(p_value_kdl,100)
         sum( p_value_kdl < 0.05)
-        sum( p_value_kdl < 0.05)/size(pairwise_kdl,1)
+        FDR = sum( p_value_kdl < 0.05)/size(pairwise_kdl,1)
+        if FDR > 0.05
+            error("The False Discovery rate is lower than 5 % for the testing of sampling results that are obtained on the same model! Cause to worry, check again your samples, maybe increase sample number of samples sets?")
+        end
 
         kdl_matrix = pairwise_kdl;
 
