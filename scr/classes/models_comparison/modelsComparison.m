@@ -115,18 +115,107 @@ function modelFunctionalComparison(project, comparison_name,analyses)
                              {'Similarity of FVA boundaries'},...
                              "FVA similarity",...
                              [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255);
-    disp(fva_sim)
-
+    
     %%% -> per subsystem
     % a boxplot per subsystem, displaying the FVA values for the pairwise
     % comparisons
     fva_sim_rxns;
     
+    % get an overview of which FVA value distribution we have comparing
+    % different models
+    
+    fva_lower2x2 = getLowerTriangleBlock(fva_sim_rxns);
+    
+    modelPairs = cell(numel(modelList));  % preallocate
+    
+    for i = 1:numel(modelList)
+        for j = 1:numel(modelList)
+            modelPairs{i,j} = {};
+            if i ~= j
+                modelPairs{i,j} = {modelList{i}, modelList{j}};
+            end
+        end
+    end
+    modelPairs2x2 = getLowerTriangleBlock(modelPairs);
+    
+    [nRows, nCols] = size(fva_lower2x2);
+    
+    % Create tiled layout
+    t = tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
+    
+    for i = 1:nRows
+        for j = 1:nCols
+            nexttile((i-1)*nCols + j)
+    
+            data = fva_lower2x2{i,j};
+
+            if ~isempty(data)
+                data = data(data ~= 1);  % remove trivial values
+            end
+        
+            if ~isempty(data)
+                histogram(data,100)
+                set(gca, 'FontSize', 18)
+            else
+                axis off  % empty tile
+            end
+    
+            % Label axes
+            if ~isempty(data)
+                if i ~= 1
+                    xlabel(modelPairs2x2{i,j}{1,2}, 'Interpreter','none')
+                end
+                if j == 1
+                    ylabel(modelPairs2x2{i,j}{1,1}, 'Interpreter','none')
+                end
+            end
+            box on
+        end
+    end
+    
+    sgt = sgtitle('Histogram of FVA similarity values between models per rxns (<1)');
+    sgt.FontSize = 20;
+    % compute enrichment of pathways in top FVA similarity rxns
+
+    [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
+    idx_to_keep = find(sum(rxn_mapping ~=0,2) > 0);
+    
+
+    res_enrichment = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_keep,reference_model,[]);
+    % put the results of FDR and NES in one matrix each
+
+    comparisons = fieldnames(res_enrichment);
+    
+    % All unique pathways
+    allPathways = unique(vertcat(res_enrichment.(comparisons{1}).Subsystem));
+    for k = 2:numel(comparisons)
+        allPathways = unique([allPathways; res_enrichment.(comparisons{k}).Subsystem]);
+    end
+    
+    % Preallocate tables
+    NES_tbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
+        'RowNames', allPathways, 'VariableNames', comparisons);
+    FDR_tbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
+        'RowNames', allPathways, 'VariableNames', comparisons);
+    
+    % Fill tables
+    for c = 1:numel(comparisons)
+        comp = comparisons{c};
+        idx = ismember(allPathways, res_enrichment.(comp).Subsystem);
+        [~, loc] = ismember(allPathways(idx), res_enrichment.(comp).Subsystem);
+        NES_tbl{idx, comp} = res_enrichment.(comp).NES(loc);
+        FDR_tbl{idx, comp} = res_enrichment.(comp).FDR(loc);
+    end
+
+    filter_for_sig = find((sum(FDR_tbl{:,:} < 0.05,2) > 0) & (sum(NES_tbl{:,:} > 0,2) >0));
+    FDR_tbl = FDR_tbl(filter_for_sig,:);
+    NES_tbl = NES_tbl(filter_for_sig,:);
+
+    dotplot(NES_tbl,FDR_tbl)
 
     
+    % do based on the enrichment
     
-    
-
     % compute Fluxsum 
 
     %%% -> show the top 20 most variant metabolites excluding known cofactors 
@@ -666,6 +755,8 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
             ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
             
             n = numel(modelList);
+
+            
             
             fva_similarity = eye(n); % Diagonal is 1
             fva_similarity_rxns = cell(n);
@@ -684,6 +775,7 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
                 x = colIdx(k);
 
                 [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
+                
 
                 % Fill both [y,x] and [x,y] due to symmetry
                 fva_similarity(y,x) = overallSim;
@@ -798,4 +890,259 @@ function modelStruct = reorderDiscretizedToMatchGeneOrder(modelStruct)
         modelStruct.discretized_data = table(gene_id_in_model,gene_symbol,outTbl, 'VariableNames',...
                                              ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
     end
+end
+
+
+
+function fva_lower = getLowerTriangleBlock(fva_sim_rxns)
+    % fva_sim_rxns: n x n cell array of comparisons
+    % Returns a compact lower-triangle block cell array
+
+    n = size(fva_sim_rxns,1);
+    if n ~= size(fva_sim_rxns,2)
+        error('Input must be a square cell array');
+    end
+
+    % Count how many rows/columns to keep: remove first row if needed
+    % General: keep lower-triangle below the first row
+    rowsToKeep = 2:n;       % always skip the first row
+    colsToKeep = 1:(n-1);   % always skip the last column
+
+    % Take the lower-triangle block
+    fva_lower = fva_sim_rxns(rowsToKeep, colsToKeep);
+end
+
+function results = pathway_enrichment(sets, metric_matrix,feature_names)
+
+
+    [metricSorted, sortIdx] = sort(metric_matrix,'descend');
+    rxnsSorted = feature_names(sortIdx);
+    N = numel(feature_names);
+    nPerm = 1000;   % permutations
+    p = 1;          % weight exponent (0 = unweighted)
+    weights = abs(metricSorted).^p;
+
+
+    subNames = fieldnames(sets);
+    nSets = numel(subNames);
+    
+    ES   = nan(nSets,1);
+    NES  = nan(nSets,1);
+    pval = nan(nSets,1);
+    setSize = nan(nSets,1);
+    
+    for s = 1:nSets
+    
+        subField = subNames{s};
+        subRxns  = sets.(subField).rxns;
+        setSize(s) = numel(subRxns);
+    
+        % Skip very small subsystems
+        if setSize(s) < 5
+            continue
+        end
+    
+        % Hits in ranked list
+        hits = ismember(rxnsSorted, subRxns);
+        Ns = sum(hits);
+    
+        % ----- observed enrichment score -----
+        Phit  = weights .* hits;
+        Phit  = Phit / sum(Phit);
+        Pmiss = (~hits) / (N - Ns);
+    
+        runningSum = cumsum(Phit - Pmiss);
+    
+        [~, imax] = max(abs(runningSum));
+        ES(s) = runningSum(imax);
+    
+        % ----- permutation test -----
+        ESnull = zeros(nPerm,1);
+    
+        for k = 1:nPerm
+            permHits = hits(randperm(N));
+    
+            Phit_p  = weights .* permHits;
+            Phit_p  = Phit_p / sum(Phit_p);
+            Pmiss_p = (~permHits) / (N - Ns);
+    
+            rs_p = cumsum(Phit_p - Pmiss_p);
+            ESnull(k) = max(abs(rs_p));
+        end
+    
+        % empirical p-value
+        pval(s) = mean(abs(ESnull) >= abs(ES(s)));
+    
+        % normalized enrichment score
+        NES(s) = ES(s) / mean(abs(ESnull));
+    end
+
+    qval = mafdr(pval, 'BHFDR', true);
+    results = table( ...
+    subNames, setSize, ES, NES, pval, qval, ...
+    'VariableNames', {'Subsystem','Size','ES','NES','pValue','FDR'} );
+
+    results = sortrows(results, 'NES', 'descend');
+
+
+    %results = results(results.FDR < 0.05, :);
+
+
+    % Choose subsystem to plot
+    % subField = 'HeparanSulfateDegradation'; 
+    % subRxns  = sets.(subField).rxns;
+    % 
+    % % Compute hits
+    % hits = ismember(rxnsSorted, subRxns);
+    % Ns = sum(hits);
+    % 
+    % % Compute running sum for enrichment
+    % Phit  = weights .* hits;
+    % Phit  = Phit / sum(Phit);
+    % Pmiss = (~hits) / (N - Ns);
+    % 
+    % runningSum = cumsum(Phit - Pmiss);
+    % 
+    % % Plot
+    % figure('Color','w','Position',[200 200 600 400])
+    % plot(runningSum, 'b', 'LineWidth', 2)
+    % hold on
+    % yline(0,'k--','LineWidth',1)
+    % 
+    % % Mark hits as vertical lines along x-axis
+    % hitIdx = find(hits);
+    % for i = 1:numel(hitIdx)
+    %     x = hitIdx(i);
+    %     line([x x], [min(runningSum) 0], 'Color',[0.7 0.7 0.7],'LineStyle','-')
+    % end
+    % 
+    % xlabel('Reactions ranked by FVA similarity')
+    % ylabel('Running enrichment score')
+    % title(['Enrichment of ', sets.(subField).name])
+    % grid on
+
+
+end
+
+
+function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_keep,reference_model, subSystems)
+arguments
+    project
+    modelList
+    fva_sim_rxns 
+    idx_to_keep
+    reference_model
+    subSystems =[]
+end
+    if isempty(subSystems)
+        subSystems = string(project.models.(reference_model).model.subSystems(idx_to_keep)); 
+    end
+    rxns       = string(project.models.(reference_model).model.rxns(idx_to_keep));        
+
+    [uniqSubs, ~, idx] = unique(subSystems);
+
+    subStruct = struct();
+
+    for k = 1:numel(uniqSubs)
+        subName = uniqSubs{k};
+        fieldName = matlab.lang.makeValidName(subName);
+    
+        % Collect reactions belonging to this subsystem
+        subStruct.(fieldName).name = subName;
+        subStruct.(fieldName).rxns = rxns(idx == k);
+    end
+    
+    fvaSim = getLowerTriangleBlock(fva_sim_rxns);
+ 
+    modelPairs = cell(numel(modelList));  % preallocate
+    
+    for i = 1:numel(modelList)
+        for j = 1:numel(modelList)
+            modelPairs{i,j} = {};
+            if i ~= j
+                modelPairs{i,j} = {modelList{i}, modelList{j}};
+            end
+        end
+    end
+    modelPairs2x2 = getLowerTriangleBlock(modelPairs);
+    
+    
+    Results    = struct();
+    for k = 1:numel(fvaSim)
+
+        x = fvaSim{k};
+        y = strjoin(modelPairs2x2{k},'_');
+    
+        if isempty(x) || isempty(y)
+            continue
+        end
+        
+        Results.(string(y)) = pathway_enrichment(subStruct , x(idx_to_keep),rxns);
+
+    end
+     
+end
+
+function dotplot(NES_tbl,FDR_tbl)
+
+    % Extract pathways and comparisons
+    pathways = regexprep(string(NES_tbl.Properties.RowNames), "_", " ");
+    comparisons = string(NES_tbl.Properties.VariableNames);
+    
+    % Extract numeric matrices
+    NES = NES_tbl{:,:};
+    FDR = FDR_tbl{:,:};
+    
+    nP = numel(pathways);
+    nC = numel(comparisons);
+
+    % Create grid coordinates
+    [X, Y] = meshgrid(1:nC, 1:nP);
+    x = X(:);
+    y = Y(:);
+    
+    nesVals = NES(:);
+    fdrVals = FDR(:);
+    
+    % Dot size proportional to |NES|
+    dotSize = abs(nesVals) * 200;   % increase for pronounced size differences
+    
+    % Prepare FDR for coloring
+    cVals = fdrVals;            % base colors from FDR
+    cVals(cVals > 0.05) = NaN;  % values >0.05 will be grey
+    
+    % Create figure
+    figure('Position',[100 100 900 500])
+    hold on
+    
+    % Scatter plot for FDR ≤ 0.05
+    scatter(x(~isnan(cVals)), y(~isnan(cVals)), dotSize(~isnan(cVals)), cVals(~isnan(cVals)), 'filled')
+    
+    % Scatter grey dots for FDR > 0.05
+    scatter(x(isnan(cVals)), y(isnan(cVals)), dotSize(isnan(cVals)), [0.7 0.7 0.7], 'filled')
+    
+    % Axes formatting
+    xticks(1:nC)
+    xticklabels(regexprep(comparisons,"_", " vs "))
+    yticks(1:nP)
+    yticklabels(pathways)
+    
+    xlabel('Model comparison')
+    ylabel('Pathway')
+    
+    xlim([0.5, nC + 0.5])
+    ylim([0.5, nP + 0.5])
+    set(gca,'YDir','reverse','FontSize',18)
+    title("Pathway enrichment (dot size = |NES|, color = FDR)")
+    
+    % Colorbar with red to blue
+    nColors = 256;
+    cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0,1,nColors)']; 
+    colormap(cmap)        % red (low) -> blue (high)
+    caxis([0 0.05])       % fix color scaling
+    cb = colorbar;
+    cb.Label.String = 'FDR';
+    cb.FontSize = 14;
+    
+    box on
 end
