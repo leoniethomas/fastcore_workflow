@@ -521,7 +521,7 @@ function consistency_check(model)
     %   Detailed explanation goes here    
 
     disp("Check consistency of input model!")
-    if isempty(model.rxns(find(contains(model.rxns,'biomass'))))
+    if isempty(model.rxns(find(contains(model.rxns,'biomass')))) & isempty(model.rxns(find(contains(model.rxns,'MAR13082'))))
         error("You lost your objective function, when running fastcc!")
     end
     % check if the created model is now really consistent
