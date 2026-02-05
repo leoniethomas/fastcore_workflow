@@ -121,7 +121,7 @@ for i = 1:numel(modelList)
             if ~isfield(options, 'nPointsReturned')
                 options.nPointsReturned = 2000;
             end
-            if ~isfield(options, 'nPointsReturned') & samplerName == "CHRR"
+            if ~isfield(options, 'toRound') & samplerName == "CHRR"
                 options.toRound = 1;
             end
             if ~isfield(options, 'nFiles')
