@@ -235,14 +235,10 @@ for i = 1:numel(modelList)
         elseif isfield(params, 'geneList1') && ~isfield(params, 'geneList2')
             geneList1 = params.geneList1;
             geneList2 = geneList1;
-            disp('By default, geneList2 will be equal to geneList1.');
-        elseif ~isfield(params, 'geneList1') && isfield(params, 'geneList2')
-            error("geneList1 is missing.")
-        else
-           geneList1 = params.geneList1;
-           geneList2 = params.geneList2;
+            disp('By default, geneList2 will be equal to geneList');
         end
        
+        
         if ~isfield(params, 'printLevel')
             printLevel = 0;
         else
