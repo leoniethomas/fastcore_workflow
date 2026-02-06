@@ -7,23 +7,15 @@ osenseStr,sampling,max
 minNorm,sampling,zero
 obj_threshold,sampling,0.9
 sampleFile,sampling,sampleFile
-<<<<<<< HEAD
-samplerName,sampling,ACHR
-=======
 samplerName,sampling,CHRR
 options.toRound,sampling,1
->>>>>>> 59a4d7f14c3c8646f9538cfb9e71463987a81ad5
 options.nPointsReturned,sampling,2000
 options.nFiles,sampling,10
 options.maxTime,sampling,36000
 options.nWarmupPoints,sampling,"2*size(model.S, 2)"
 options.nStepsPerPoint,sampling,"size(model.S, 2)"
 modelSampling,sampling,model
-<<<<<<< HEAD
-path,sampling,samplingResults/ACHR/
-=======
-path,sampling,./samplingResults/CHRR/
->>>>>>> 59a4d7f14c3c8646f9538cfb9e71463987a81ad5
+path,sampling,samplingResults/CHRR/
 method,singleGeneDeletion,FBA
 geneList,singleGeneDeletion,
 method,doubleGeneDeletion,FBA
