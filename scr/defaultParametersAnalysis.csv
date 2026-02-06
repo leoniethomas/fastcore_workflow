@@ -17,7 +17,7 @@ options.nStepsPerPoint,sampling,"size(model.S, 2)"
 modelSampling,sampling,model
 path,sampling,samplingResults/CHRR/
 method,singleGeneDeletion,FBA
-geneList,singleGeneDeletion,
+geneList,singleGeneDeletion,"{314.1', '127.1'}"
 method,doubleGeneDeletion,FBA
-geneList1,doubleGeneDeletion,
-geneList2,doubleGeneDeletion,
+geneList1,doubleGeneDeletion,"{'314.1', '127.1'}"
+geneList2,doubleGeneDeletion,"{'26.1', '218.1'}"
