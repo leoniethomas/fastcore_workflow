@@ -243,53 +243,29 @@ met_names = project.models.(reference_model).model.mets(idx_met_matches);
 [~,met_id] = ismember(met_names, project.models.(reference_model).model.mets);
 
 
-% matrix with the fluxsumvalues of interest 
-
-data = project.comparisons.(comparison_name).ordered_samples_fluxsum(met_id,:);
-data = data(find(any(data ~= 0,2)),:);
-
-samples_matrix = project.comparisons.(comparison_name).sample_model_labels;
+visualize_fluxsum(project,comparison_name,met_id)
 
 
-% Your data
-% data: 4 x 6000
-% met_names: 4x1 cell
-% samples_matrix: 1 x 6000, values like "KO","PLV","WT"
+%% Glycolysis specific glucose and pyruvate
 
-[nMet, nSamples] = size(data);
 
-% Step 1: x-axis grouping (metabolites)
-x = repmat(1:nMet, nSamples, 1); % size: nSamples x nMet
+coa = find(matches(string(project.models.(reference_model).model.subSystems),"CoA synthesis"));
+gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
+oxpho = find(matches(string(project.models.(reference_model).model.subSystems),"Oxidative phosphorylation"));
 
-% Step 2: y-values
-y = data'; % size: nSamples x nMet
-y = y(:);
+visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"])
 
-% Step 3: color grouping based on sample labels
-% Convert sample labels to numeric codes
-[~, c_numeric] = ismember(samples_matrix, unique(samples_matrix)); 
-% samples_matrix is 1x6000, unique(samples_matrix) = ["KO","PLV","WT"]
-% c_numeric will be 1 for KO, 2 for PLV, 3 for WT
 
-% Repeat c_numeric for each metabolite
-c = repmat(c_numeric', 1, nMet); % size: nSamples x nMet
-c = c(:);
-
-% Step 4: flatten x
-x = x(:) * 2; % optional: spread boxes
-
-% Step 5: plot
-boxchart(x, y, 'GroupByColor', c);
-
-% Step 6: x-tick labels for metabolites
-xticks((1:nMet)*2);
-xticklabels(met_names);
-
-ylabel('Value');
-title('Grouped Boxchart by Metabolite and Sample Type');
-
-% Optional: add legend
-legend(unique(samples_matrix));
+%% pathway fluxsum without coenzymes 
 
 
 
+%% pathway fluxsum with predefined metabolites!
+
+%% correlation analysis
+
+
+%% export to IDARE and escher!! 
+
+
+%% export to R

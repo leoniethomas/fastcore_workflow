@@ -25,45 +25,6 @@ end
 
 
     
-function project = compute_flux_sum(project,list_model_names,reference_model,compute_based_on_incoming_flux)
-            arguments
-                project
-                list_model_names
-                reference_model
-                compute_based_on_incoming_flux =0
-            end
-   
-    
-    for mod = list_model_names
-        model = project.models.(mod);
-        project.models.(mod).analysis.sampling.fluxsum = get_model_fluxsum(model,model.analysis.sampling.samples);
-    end
-    
-    function fluxsum = get_model_fluxsum(model,samples)
-            
-            fluxsum=zeros(size(model.model.S,1),size(samples,2));
-            for counter=1:size(samples,2)
-                v=samples(:,counter); % one sample
-                temp=repmat(v',size(model.model.S,1),1); %
-                fluxes=model.model.S.*temp;
-                
-                fluxSumP=full(sum((fluxes>0).*fluxes,2));
-                fluxSumN=full(sum((fluxes<0).*fluxes,2));
-
-                if abs(fluxSumP) ~= abs(fluxSumN)
-                    error("Your fluxes seem to be missassigned. There was some mix up, resulting in the incoming Fluxsum not being equal to the outgoing fluxsum. ")
-                end
-                if compute_based_on_incoming_flux
-                    fluxsum(:,counter)=fluxSumN;
-                else
-                    fluxsum(:,counter)=fluxSumP;
-                end
-            end
-    end
-end
-
-
-
 
 
 
