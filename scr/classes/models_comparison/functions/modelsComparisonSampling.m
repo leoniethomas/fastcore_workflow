@@ -1,16 +1,25 @@
-function project = modelsComparisonSampling(project,list_model_names,reference_model)
+function project = modelsComparisonSampling(project,comparison_name)
 
+
+    list_model_names = strsplit(comparison_name, "__"); 
+    list_model_names = strsplit(list_model_names(1),"_vs_");
     models_list = rmfield(project.models, setdiff(fieldnames(project.models), list_model_names));
+    % give the comparison the name of all models + a identifier choosen
+    reference_model = project.comparisons.(comparison_name).reference_model;
+    
+    % run structural model comparison
     project = compute_flux_sum(project,list_model_names,reference_model);
 
     replacement_value = "analysis.sampling.fluxsum"; % get the fba solution values
-    ordered_samples_fluxsum = getOrderedFeatureMatrix(project,list_model_names,"mets",reference_model,replacement_value);
+    project.comparisons.(comparison_name).ordered_samples_fluxsum = getOrderedFeatureMatrix(project,list_model_names,"mets",reference_model,replacement_value);
     replacement_value = "analysis.sampling.samples"; % get the fba solution values
-    ordered_samples = getOrderedFeatureMatrix(project,list_model_names,"rxns",reference_model,replacement_value);
+    project.comparisons.(comparison_name).ordered_samples = getOrderedFeatureMatrix(project,list_model_names,"rxns",reference_model,replacement_value);
     sample_count_models = structfun(@(x) size(x.analysis.sampling.samples,2), models_list);
-    sample_model_labels = repelem(list_model_names, sample_count_models);
+    project.comparisons.(comparison_name).sample_model_labels = repelem(list_model_names, sample_count_models);
     
-    
+    visualize_sampling_landscape(project,comparison_name)
+
+
 
 end
 

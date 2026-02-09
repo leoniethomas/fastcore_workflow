@@ -1,4 +1,4 @@
-function project = modelsComparison(project, modelList,reference_model,analyses,identifier)
+function [project, comparison_name] = modelsComparison(project, modelList,reference_model,analyses,identifier)
     % This function runs a set of analysis for the comparison of the
     % specified genes.
     % A number of analysis are run: 
@@ -46,7 +46,7 @@ function project = modelsComparison(project, modelList,reference_model,analyses,
 
     
     % give the comparison the name of all models + a identifier choosen
-    comparison_name = join(modelList, "_vs_") + identifier;
+    comparison_name = join(modelList, "_vs_") + "__" + identifier;
     
     % run structural model comparison
     project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);

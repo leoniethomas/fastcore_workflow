@@ -5,7 +5,7 @@ minNorm,FBA,zero
 optPercentage,FVA,90
 osenseStr,sampling,max
 minNorm,sampling,zero
-obj_threshold,sampling,0.9
+obj_threshold,sampling,1
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
 options.toRound,sampling,1
