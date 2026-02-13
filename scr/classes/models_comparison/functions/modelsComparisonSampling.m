@@ -14,17 +14,20 @@ function project = modelsComparisonSampling(project,comparison_name)
     project.comparisons.(comparison_name).ordered_samples_fluxsum = getOrderedFeatureMatrix(project,list_model_names,"mets",reference_model,replacement_value);
     replacement_value = "analysis.sampling.samples"; % get the fba solution values
     project.comparisons.(comparison_name).ordered_samples = getOrderedFeatureMatrix(project,list_model_names,"rxns",reference_model,replacement_value);
+    replacement_value = "analysis.FBA.v"; % get the fba solution values
+    project.comparisons.(comparison_name).ordered_fba = getOrderedFeatureMatrix(project,list_model_names,"rxns",reference_model,replacement_value);
+    
     sample_count_models = structfun(@(x) size(x.analysis.sampling.samples,2), models_list);
     project.comparisons.(comparison_name).sample_model_labels = repelem(list_model_names, sample_count_models);
     
     visualize_sampling_landscape(project,comparison_name)
 
 
-
 end
 
 
     
+
 
 
 
