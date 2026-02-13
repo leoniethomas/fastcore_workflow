@@ -7,7 +7,7 @@
 
 %% Set up 
 
-clearvars -except solverOK, close all, clc % clean environment
+%clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
 addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
@@ -19,7 +19,7 @@ working_path = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille";
 cd (working_path)
 addpath(genpath(working_path))
 
-
+%%
 % read in project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
 % load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_from_vanille_fba_fva.mat");
@@ -27,6 +27,17 @@ addpath(genpath(working_path))
 % load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_28012026_1508_obj_vanille_sampling.mat");
 % samp_project = project;
 load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
+
+%% perform new sampling 
+
+project = singleModelAnalysis(project,["WT","KO","PLV"],["FBA","FVA", "sampling"],defaultParametersAnalysis);
+
+%% move the wanted analysis to be used directly into the analysis slot for each model 
+
+% set the wanted analysis object from each model into the analysis slot
+% directly 
+project = set_analysis_to_compare(project,["WT", "KO", "PLV"]);
+
 %% First the STRUCTURAL comparison of the choosen models
 
 % structureComparison executed on the project generating the structural
@@ -49,6 +60,21 @@ identifier = "";
 % predefined figures, outputs to get an overall picture of how the models
 % look like in relation to each other, but the user will also be able to
 % depending on this more general report do more in depth invesitgation 
+
+
+%% SAMPLING ANALYSIS
+
+
+project = modelsComparisonSampling(project,comparison_name);
+
+
+%% Get cytoscape visualization 
+
+%% Get IDARE INPUT
+
+folder_path = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/idare/";
+comparison_name = "KO_vs_PLV_vs_WT__";
+prepareDataForIDAREVisualization(project, comparison_name,folder_path);
 
 %% Then Functional Comparison
 
@@ -86,6 +112,12 @@ plotFlexibleVenn(subsystem_feature_presence,...
                  project.comparisons.KO_vs_PLV_vs_WT__.modelNames, ... 
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
 
+%%
+
+subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT__.rxn_mapping_table{:,:} ~= 0;
+plotFlexibleVenn(subsystem_feature_presence,...
+                 project.comparisons.KO_vs_PLV_vs_WT__.modelNames, ... 
+                 "Rxn presence in different models");
 %% genes of interest 
 gene = "5831"; 
 genes_in_model = string(project.models.(reference_model).model.genes);
@@ -95,11 +127,31 @@ findRxnsFromGenes(project.models.(reference_model).model,char(genes_of_interest(
 
 %% get the rxns overview with FVA,FBA and reduced cost for a specified subsystem
 
-choosen_subsystem = "Exchange/demand reaction";
+
+idx_subsystem_reference_model = find(findExcRxns(project.models.(reference_model).model));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true, "threshold_flux","upper")
+
+visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
+                                 ["import"]);
+
+%%
+
+choosen_subsystem = "Pentose Phosphate Pathway";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",false)
+
+
+choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
+
+choosen_subsystem = "Arginine and proline metabolism";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
 
 %% get rxns which show a reduced cost ~= 0 
@@ -113,7 +165,7 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",reduced_cost_idx, ...
  
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^pro_L[*";
+met_name_pattern = "^4hpro_LT";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(reference_model).model.mets(idx_met_matches);
 
@@ -138,7 +190,7 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_id, ...
 
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^pyr[.*";
+met_name_pattern = "^glc_D[.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(reference_model).model.mets(idx_met_matches);
 
@@ -146,11 +198,11 @@ rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
 [~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
-              "threshold_flux","none","FVA", true ,...
+              "threshold_flux","all","FVA", true ,...
               'title_plots',"Functional model comparison: all reactions including pyruvate");
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^succ[.*";
+met_name_pattern = "^akg[.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(reference_model).model.mets(idx_met_matches);
 
@@ -158,12 +210,12 @@ rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
 [~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
-              "threshold_flux","none","FVA", true ,...
+              "threshold_flux","all","FVA", true ,...
               'title_plots',"Functional model comparison: all reactions including succinate");
 
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^lac.*";
+met_name_pattern = "^galgluside_hs.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(reference_model).model.mets(idx_met_matches);
 
@@ -174,77 +226,27 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","none","FVA", true ,...
               'title_plots',"Functional model comparison: all reactions including lactate");
 
-%% SAMPLING ANALYSIS
+%% get rxns associated with a specific metabolite 
 
-
-project = modelsComparisonSampling(project,comparison_name);
-
-
-%%
-
-rxn_color = ["EX_glc_D[e]", "EX_gln_L[e]", "EX_pyr[e]","EX_so3[e]", "EX_retfa[e]"];
-
-visualize_sampling_landscape(project,comparison_name,[1 2],rxn_color)
-
-%%
-met_name_pattern = "^lac_D[*";
-idx_mets_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_color = string(project.models.(reference_model).model.mets(idx_mets_matches));
-
-visualize_sampling_landscape(project,comparison_name,[1 2],met_color', "fluxsum")
-
-%% grouped boxplot for sampling results
-
-
-trial1 = rand(5,7);
-trial2 = rand(10,7);
-trial3 = rand(15,7);
-
-% These grouping matrices label the columns:
-grp1 = repmat(1:7,size(trial1,1),1);
-grp2 = repmat(1:7,size(trial2,1),1);
-grp3 = repmat(1:7,size(trial3,1),1);
-
-% These color matrices label the matrix id:
-clr1 = repmat(1,size(trial1));
-clr2 = repmat(2,size(trial2));
-clr3 = repmat(3,size(trial3));
-
-% Combine the above matrices into one for x, y, and c:
-x = [grp1;grp2;grp3];
-y = [trial1;trial2;trial3];
-c = [clr1;clr2;clr3];
-
-% Convert those matrices to vectors:
-x = x(:);
-y = y(:);
-c = c(:);
-
-% Multiply x by 2 so that they're spread out:
-x = x*2;
-
-% Make the boxchart, 
-boxchart(x(:),y(:),'GroupByColor',c(:))
-
-% Set the x ticks and labels, and add a legend
-xticks(2:2:14);
-xticklabels(1:7)
-xlabel('Category')
-legend(["Trial 1" "Trial 2" "Trial 3"],'Location','NorthOutside')
-
-
-
-%% 
-
-met_name_pattern = "^pyr[*";
+met_name_pattern = "^pep.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(reference_model).model.mets(idx_met_matches);
 
-[~,met_id] = ismember(met_names, project.models.(reference_model).model.mets);
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
+              "threshold_flux","all","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions including lactate");
 
 
-visualize_fluxsum(project,comparison_name,met_id)
 
+
+%%
+
+rxn_color = ["EX_glc[e]", "EX_gln_L[e]", "EX_pyr[e]","EX_so3[e]", "EX_retfa[e]"];
+
+visualize_sampling_landscape(project,comparison_name,[1 2],rxn_color)
 
 %% Glycolysis specific glucose and pyruvate
 
@@ -252,17 +254,397 @@ visualize_fluxsum(project,comparison_name,met_id)
 coa = find(matches(string(project.models.(reference_model).model.subSystems),"CoA synthesis"));
 gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
 oxpho = find(matches(string(project.models.(reference_model).model.subSystems),"Oxidative phosphorylation"));
+tca = find(matches(string(project.models.(reference_model).model.subSystems),"Citric acid cycle"));
 
-visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"])
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis"]);
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{tca},...
+                                 ["TCA"]);
+
+%%
+
+[exchange,uptake] = find(findExcRxns(project.models.(reference_model).model));
+fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
+                                 ["uptake"]);
 
 
-%% pathway fluxsum without coenzymes 
 
 
+%% 
+
+met_name_pattern = "^galglu.*";
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(reference_model).model.mets(idx_met_matches);
+
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,akg] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{akg},...
+                                 ["lactate"],"violin",true,false);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{akg},...
+                                 ["lactate"]);
+
+
+%%
+met_name_pattern = "^gluside_hs.*";
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(reference_model).model.mets(idx_met_matches);
+
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,pro] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{pro},...
+                                 ["lactate"]);
+%% pathway fluxsum with 
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap",true);
+
+% or without the coenzymes
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap",false);
 
 %% pathway fluxsum with predefined metabolites!
 
+pathways_with_metabolites = get_essential_pathway_metabolites(project,"orig_model");
+
+pathways_idx = structfun(@(x)find(matches(project.models.(reference_model).model.mets,x)),...
+                         pathways_with_metabolites, 'UniformOutput', false);
+fields = fieldnames(pathways_idx);
+idx_cell = cellfun(@(f) pathways_idx.(f), fields, 'UniformOutput', false);    
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],idx_cell,...
+                                 fields);
+
+
+
+%% summary figure letizia 
+
+% increase in proline export ? 
+% - how does proline get transported out of the cell -> do we have a EX_pro ? 
+% -> 'EX_pro_L[e]' is thrown out of the model for some reason 
+% -> instead the model uses 4hpro_LT -> pro + aKG -> succ + 4hproLT
+% -> put the wrong direction 
+
+% decrease in lactate excretion with KO  ? 
+
+% increase of glucose consumption ? 
+
+% decrease in NADP+ flux through the PPP
+
+% decrease in the activitiy of arginine to citrulline 
+
+
+% nucleotide biosynthesis goes down 
+
+% AKGDm -> decrease in activity-> upon KO -> According to FVA and FBA -> 
+
+
+%% arginine and proline metabolism
+
+choosen_subsystem = "Arginine and proline metabolism";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+
+ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+%% pentose phosphate pathway 
+
+choosen_subsystem = "Glycolysis/gluconeogenesis";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+
+ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+
+%% pentose phosphate pathway 
+
+choosen_subsystem = "Pentose phosphate pathway";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_WT__",idx_subsystem_reference_model, "FVA",false)
+
+ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
+                                 [choosen_subsystem]);
+
+%% TCA and alpha ketoglutarate 
+
+
+choosen_subsystem = "Citric acid cycle";
+% pull the subsystem presence from the stored rxns mapping table
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+
+tca = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{tca},...
+                                 [choosen_subsystem]);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{tca},...
+                                 [choosen_subsystem]);
+
+
+%% LACTATE FIGURE 
+
+
+% FBA values lactate 
+
+met_name_pattern = "^lac_L.*";
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(reference_model).model.mets(idx_met_matches);
+
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
+              "threshold_flux","all","FVA", false ,...
+              'title_plots',"Functional model comparison: all reactions including lactate");
+
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
+              "threshold_flux","none","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions including lactate");
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{rxns_met_id},...
+                                 ["lactate"],"violin",true,false);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{rxns_met_id},...
+                                 ["lactate"]);
+
+% FBA values pyruvate
+
+met_name_pattern = "^pro_L[.*";
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(reference_model).model.mets(idx_met_matches);
+
+rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
+              "threshold_flux","none","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions including proline");
+
+
+get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
+              "threshold_flux","none","FVA", true ,...
+              'title_plots',"Functional model comparison: all reactions including proline");
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{rxns_met_id},...
+                                 ["proline"],"violin",true,false);
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{rxns_met_id},...
+                                 ["proline"]);
+
+
+
+
+
+%% check how different fba solutions are 
+modelNames = ["KO","WT", "PLV"];
+reference = "orig_model";
+ordered_FBA_matrix = getOrderedFeatureMatrix(project,modelNames,...
+                                                             "rxns",reference,"analysis.FBA.v");
+
+length(find(sum(ordered_FBA_matrix ~= 0,2) > 0))
+length(find(sum(ordered_FBA_matrix ~= 0,2) == 1))
+length(find(sum(ordered_FBA_matrix ~= 0,2) == 2))
+
+
+
+%% ----------------------------------
+%%%%%%%%%% Correlation analysis 
+%%% ---------------------------------
+
+
+data = project.models.WT.analysis.analysis_20260211_1507.sampling.samples;
+
+biomass_id = find(matches(project.models.WT.model.rxns, "biomass_reaction"));
+export = find(findExcRxns(project.models.WT.model) & project.models.WT.analysis.FBA.v > 0);
+import = find(findExcRxns(project.models.WT.model) & project.models.WT.analysis.FBA.v < 0);
+% get glucose, lactose, h2o, o2
+
+
+
+% Inputs
+biomass_flux = data(biomass_id, :);   % 1 x nSamples
+rxn_fluxes   = data(import, :);       % nMet x nSamples
+nrxns = size(rxn_fluxes, 1);
+rxns_names = project.models.WT.model.rxns;
+
+% Determine a roughly square layout
+nCols = ceil(sqrt(nrxns));
+nRows = ceil(nrxns / nCols);
+
+figure
+tiledlayout(nRows, nCols, 'TileSpacing','compact','Padding','compact')
+
+for m = 1:nrxns
+    nexttile
+    scatter(biomass_flux, rxn_fluxes(m,:), 15, 'filled', 'MarkerFaceAlpha',0.6)
+    xlabel('Biomass flux')
+    ylabel('Metabolite flux')
+    if exist('met_names','var')
+        title(rxns_names(import(m)), 'Interpreter','none', 'FontSize',9)
+    else
+        title(sprintf('Metabolite %d', m), 'FontSize',9)
+    end
+    grid on
+end
+
+% Optional: link axes for all tiles
+ax = findall(gcf,'Type','axes');
+linkaxes(ax, 'x')  % link x-axis so all tiles share biomass scale
+
+% Optional overall title
+sgtitle('Metabolite fluxes vs biomass')
+
+
+
+
+
+
 %% correlation analysis
+% check first which rxns are structurally coupled
+[reduced_net, fctable, blocked] = QFCA(project.models.WT.model,0, "gurobi");
+%% just for one model at a time
+% then perform correlation analysis between for the sampling
+[correlation_coeff_matrix,pval] = corr(project.models.WT.analysis.sampling.samples','Type','Spearman');
+
+% correlation high coefficient, highly significant + check that they are
+% structurally coupled
+correlated_coulpled_rxns = abs(correlation_coeff_matrix) > 0.9 & pval < 0.001 & fctable ~= 0;
+
+%% which rxns are correlated + coupled to the biomass reaction 
+biomass_id = find(matches(project.models.WT.model.rxns, "biomass_reaction"));
+
+rxn_id = find(correlated_coulpled_rxns(biomass_id,:));
+
+% Inputs
+data = project.models.WT.analysis.sampling.samples;   % nRxns x nSamples
+biomass_flux = data(biomass_id, :);
+rxn_names = project.models.WT.model.rxns(rxn_id);
+
+nRxn = numel(rxn_id);
+
+% Choose a roughly square layout
+nCols = ceil(sqrt(nRxn));
+nRows = ceil(nRxn / nCols);
+
+figure
+tiledlayout(nRows, nCols, 'TileSpacing','compact','Padding','compact')
+
+for k = 1:nRxn
+    rxn_name = regexprep(rxn_names{k},"_"," ");
+    nexttile
+    scatter( ...
+        data(rxn_id(k), :), ...
+        biomass_flux, ...
+        12, ...
+        'filled', ...
+        'MarkerFaceAlpha', 0.6 ...
+    );
+
+    ylabel('Biomass flux')
+    xlabel(['Reaction flux '  rxn_name])
+
+    title(rxn_name, 'Interpreter','none', 'FontSize', 9)
+    grid on
+end
+
+% Optional overall title
+sgtitle('Correlated reactions vs biomass (WT sampling)')
+
+
+
+%% adjacency - shortest path
+
+% INPUTS 
+% S              : stoichiometric matrix (nMets x nRxns)
+% corrMat        : reaction–reaction correlation matrix from sampling (nRxns x nRxns)
+% rxn_idx_corr   : indices of reactions you identified as highly correlated
+% rxn_count      : number of reactions each metabolite participates in (for currency detection)
+
+% STEP 1 — Remove currency / coenzyme metabolites
+% Highly connected metabolites (ATP, NAD, CoA, etc.) create artificial shortcuts
+% Threshold must be tuned per model (50–100 is typical for Recon-scale models)
+
+currency_threshold = 50;
+currency_mets = rxn_count > currency_threshold;
+
+% Build binary metabolite–reaction participation matrix
+B = S ~= 0;
+
+% Remove currency metabolites BEFORE building the graph
+B(currency_mets, :) = false;
+
+% STEP 2 — Build reaction–reaction adjacency matrix
+% Two reactions are connected if they share at least one (non-currency) metabolite
+
+A = (B' * B) > 0;     % rxns x rxns adjacency
+A(eye(size(A))==1) = 0;  % remove self-loops
+
+% Create graph object
+G = graph(A);
+
+% STEP 3 — Compute shortest paths between correlated reactions
+% Shortest path = minimum number of reaction–reaction hops
+% This captures topological proximity in the metabolic network
+
+% Pairwise distances between all correlated reactions
+D = distances(G, rxn_idx_corr, rxn_idx_corr);
+
+% Example: shortest path between two specific correlated reactions
+i = rxn_idx_corr(1);
+j = rxn_idx_corr(2);
+
+[path, dist] = shortestpath(G, i, j);
+% path = sequence of reaction indices connecting i → j
+% dist = path length (number of edges)
+
+% STEP 4 — Interpret distances (conceptual guide)
+% dist = 1–3  → local pathway coupling
+% dist = 4–6  → mid-range network coordination
+% dist = Inf  → correlation not explainable by network topology
+%
+% IMPORTANT:
+% - Short paths do NOT prove mechanistic coupling
+% - They provide topological context for correlations
+% - Always interpret together with qFCA results
+
+% STEP 5 — Optional visualization of a shortest path
+subG = subgraph(G, path);
+figure
+plot(subG, 'Layout','layered')
+title('Shortest metabolic path between correlated reactions')
+
+% KEY TAKEAWAY (conceptual, not code)
+% qFCA  → tells you which correlations are structurally meaningful
+% Sampling + correlation → tells you which relationships are behaviorally expressed
+% Shortest paths → tell you whether correlations are topologically local or global
+%
+% Used together, these three layers give structure + behavior + network context
+
 
 
 %% export to IDARE and escher!! 
