@@ -47,7 +47,7 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
     
     % give the comparison the name of all models + a identifier choosen
     comparison_name = join(modelList, "_vs_") + "__" + identifier;
-    
+    project.comparisons.(comparison_name).modelList = modelList;
     % run structural model comparison
     project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
     project.comparisons.(comparison_name).reference_model = reference_model; 
@@ -744,119 +744,6 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
 
 end
 
-function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_fva_similariy(project,comparison)
-            
-            modelList = project.comparisons.(comparison).modelNames;
-            reference_model = project.comparisons.(comparison).reference_model;
-
-            replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
-            ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-            replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
-            ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-            
-            n = numel(modelList);
-
-            
-            
-            fva_similarity = eye(n); % Diagonal is 1
-            fva_similarity_rxns = cell(n);
-            
-            fvaData = cell(1, n);
-            for i = 1:n
-                fvaData{i} = [ordered_fva_min_matrix(:, i), ordered_fva_max_matrix(:, i)];
-            end
-
-            
-            indexPairs = find(triu(true(n), 1)); % Upper triangle linear indices
-            [rowIdx, colIdx] = ind2sub([n, n], indexPairs);
-
-            for k = 1:length(indexPairs)
-                y = rowIdx(k);
-                x = colIdx(k);
-
-                [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
-                
-
-                % Fill both [y,x] and [x,y] due to symmetry
-                fva_similarity(y,x) = overallSim;
-                fva_similarity(x,y) = overallSim;
-
-                fva_similarity_rxns{y,x} = rxnSim;
-                fva_similarity_rxns{x,y} = rxnSim;
-            end
-
-            n_models = size(fva_similarity_rxns,2);
-
-            fva_similarity_pathways = cell(n_models);
-        
-            
-            pathways = string(project.models.(reference_model).model.subSystems); % get pathways from reference model
-            unique_pathways = unique(pathways); 
-        
-            % for every pathway get the matrix identifying the rnxs from reference
-            % model in this pathway
-            groups = arrayfun(@(x) find(pathways == x), unique_pathways, 'UniformOutput', false);
-            num_groups = length(groups);
-        
-            indexPairs = find(triu(true(n_models), 1)); % Upper triangle linear indices
-            [rowIdx, colIdx] = ind2sub([n_models, n_models], indexPairs);
-        
-            for k = 1:length(indexPairs)
-                        y = rowIdx(k);
-                        x = colIdx(k);
-        
-                        matrix_fva_rxns = fva_similarity_rxns{y,x};
-                        G = zeros(num_groups, size(matrix_fva_rxns,1));
-                    
-                        for g = 1:num_groups
-                            G(g, groups{g}) = matrix_fva_rxns(groups{g},1);
-                        end
-                        fva_similarity_pathways{y,x} = mean(G,2);
-                        fva_similarity_pathways{x,y} = mean(G,2);
-            end
-end
-
-
-function essential_pathway_metabolites = get_essential_pathway_metabolites(pathway,project,reference_model)
-    % source for pathway metabolite composition: https://github.com/sysbiolux/MidbrainOrganoid_Miro1_scMetabMod/blob/main/ModelAnalysis/compareFBA_v3_PAPER.m
-    
-    arguments
-        pathway (1,1) string {mustBeMember(pathway,["Glycolysis","PPP","TCA_cytoplasm_only","Tricarboxylic_acid_cycle","Oxidative_phosphorylation","Fatty_acid_oxidation","Cholesterol","Dopamine_Tyrosine_metabolism","Fatty_acid_oxidation__all__crn","Fatty_acid_oxidation__all__coa"])}
-        project
-        reference_model
-    end
-        pathways.Glycolysis = ["glc_D[c]","g6p[c]","f6p[c]","fdp[c]","dhap[c]","g3p[c]","13dpg[c]","3pg[c]","2pg[c]","pep[c]","pyr[c]"];
-        pathways.PPP=["ru5p_D[c]","s7p[c]","e4p[c]"];
-        pathways.TCA_cytoplasm_only= ["cit[c]","icit[c]","akg[c]","succ[c]","fum[c]","oaa[c]"];
-        pathways.Tricarboxylic_acid_cycle=["cit[m]","icit[m]","akg[m]","succoa[m]","succ[m]","fum[m]","mal_L[m]","oaa[m]"];
-        pathways.Oxidative_phosphorylation=["nadh[m]","fadh2[m]","focytC[m]","q10h2[m]","atp[m]"];
-        pathways.Fatty_acid_oxidation=["accoa[c]","accoa[m]","coa[c]","coa[m]"];
-        %%
-        temp=find(ismember(string(project.models.(reference_model).model.subSystems),'Fatty acid oxidation'));
-        metList=findMetsFromRxns(project.models.(reference_model).model, ...
-                                 project.models.(reference_model).model.rxns(temp))';
-        temp=find(contains(metList,'coa'));
-        pathways.Fatty_acid_oxidation__all__coa=string(metList(temp));
-        %%
-        temp=find(ismember(string(project.models.(reference_model).model.subSystems),'Fatty acid oxidation'));
-        metList=findMetsFromRxns(project.models.(reference_model).model, ...
-                                 project.models.(reference_model).model.rxns(temp))';
-        temp=find(contains(metList,'crn'));
-        pathways.Fatty_acid_oxidation__all__crn=string(metList(temp));
-        %%
-        pathways.Cholesterol=["sql[r]","zymst[r]","chsterol[r]","chsterol[c]"];
-        pathways.Dopamine_Tyrosine_metabolism=["phe_L[c]","tyr_L[c]","34dhphe[c]","dopa[c]","34dhpac[c]","34dhpha[c]","34dhpe[c]","tym[c]"];
-
-        essential_pathway_metabolites = pathways.(pathway);
-end
-
-
-
-
-
-
-
-
 
 function modelStruct = getMappedStatus(modelStruct)
     if any(contains(fieldnames(modelStruct),"discretized_data"))
@@ -885,7 +772,7 @@ function modelStruct = reorderDiscretizedToMatchGeneOrder(modelStruct)
         % Preallocate output table with NaNs
         outTbl = zeros(numel(gene_symbol), size(discTbl.values,2));
         % Fill rows that exist
-        outTbl(isPresent,:) = discTbl{idx(isPresent), 2:end};
+        outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
         % Add gene names as first column
         modelStruct.discretized_data = table(gene_id_in_model,gene_symbol,outTbl, 'VariableNames',...
                                              ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
