@@ -47,8 +47,6 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
     replacement_value = "mappedDiscRxns"; % get the fba solution values
     ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-    replacement_value = "mappedDiscRxns"; % get the fba solution values
-    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
     
     
     if options.threshold_flux == "upper"
@@ -70,10 +68,45 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     else
         error("wrong value for threshold choosen. Possible values: lower, upper, none")
     end
+
     ordered_fba_matrix_ex = ordered_fba_matrix(get_exchange_rxns_idx,:);
     ordered_mapping_rxn_matrix_ex = ordered_mapping_rxn_matrix(get_exchange_rxns_idx,:);
-
     rxn_names = project.models.(reference_model).model.rxns(get_exchange_rxns_idx);
+
+    if options.FVA
+        replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
+        ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+        replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
+        ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+        ordered_fva_max_matrix_ex = ordered_fva_max_matrix(get_exchange_rxns_idx,:);
+        ordered_fva_min_matrix_ex = ordered_fva_min_matrix(get_exchange_rxns_idx,:);
+        
+        if options.threshold_flux == "all"
+            idx_FVA_var = ~(all(ordered_fva_max_matrix_ex == 0,2) & all(ordered_fva_max_matrix_ex == 0,2));
+            ordered_fva_max_matrix_ex = ordered_fva_max_matrix_ex(idx_FVA_var,:);
+            ordered_fva_min_matrix_ex = ordered_fva_min_matrix_ex(idx_FVA_var,:);
+            rxn_names = rxn_names(idx_FVA_var);
+            ordered_fba_matrix_ex = ordered_fba_matrix_ex(idx_FVA_var,:);
+            ordered_mapping_rxn_matrix_ex = ordered_mapping_rxn_matrix_ex(idx_FVA_var,:);
+        
+        end
+        
+        if options.reducedCost
+            replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
+            ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
+            if options.threshold_flux == "all"
+                ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix_ex(idx_FVA_var,:);
+            end
+        end
+
+        
+    end
+
+
+
+
+    
     rxn_formulas = printRxnFormula(project.models.(reference_model).model, 'rxnAbbrList', rxn_names, 'printFlag', false);
 
     % medium composition 
@@ -98,6 +131,10 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
                                              "rxns",reference_model,"model.ub");
         ordered_ub = ordered_ub(get_exchange_rxns_idx,:);
         ordered_lb = ordered_lb(get_exchange_rxns_idx,:);
+        if options.FVA & options.threshold_flux == "all"
+            ordered_lb = ordered_lb(idx_FVA_var,:);
+            ordered_ub = ordered_ub(idx_FVA_var,:);
+        end
 
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference_model),...
@@ -116,19 +153,8 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
 
 
-    if options.FVA
-        replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
-        ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-        replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
-        ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-        ordered_fva_max_matrix_ex = ordered_fva_max_matrix(get_exchange_rxns_idx,:);
-        ordered_fva_min_matrix_ex = ordered_fva_min_matrix(get_exchange_rxns_idx,:);
-    end
-    if options.reducedCost
-        replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
-        ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
-        ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
-    end
+    
+    
     %if options.shadowPrice
     %    replacement_value = "analysis.FBA.basis.dual"; % get the fba solution values
     %    % shadow prices are measured for every metabolite therefore mapped according to the mets field
@@ -508,39 +534,5 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
 end
 
 
-function rxn_gene_rule = get_rxn_symbol_rule(model,rxnName)
-        % --- Get gene association for reaction ---
-        %rxnName = "ME2";
-        %model   = project.models.(reference_model);
-        
-        rxnIdx = find(strcmp(model.model.rxns, rxnName), 1);
-        assert(~isempty(rxnIdx), 'Reaction not found in the model.');
-        
-        geneAssociation = model.model.grRules{rxnIdx};
-        geneTable       = model.settings.dico;
-        
-        % --- Extract numeric gene IDs ---
-        ids_with_postfix = regexp(geneAssociation, '\d+\.\d+', 'match');
-        ids_numeric      = string(regexp(ids_with_postfix, '^\d+', 'match'));
-        
-        % --- Find best-matching ID column ---
-        cols = {string(geneTable.ENTREZ), string(geneTable.HGNC), ...
-                string(geneTable.ENSG),   string(geneTable.SYMBOL)};
-        
-        [~, idxMax] = max(cellfun(@(c) sum(ismember(ids_numeric, c)), cols));
-        
-        % --- Map to symbols ---
-        [~, idx] = ismember(ids_numeric, geneTable{:, idxMax});
-        symbols  = string(geneTable.SYMBOL(idx));
-        
-        % --- Replace IDs in gene association string ---
-        geneAssocOut = geneAssociation;
-        for k = 1:numel(ids_with_postfix)
-            geneAssocOut = regexprep(geneAssocOut, ...
-                ['\<' ids_with_postfix{k} '\>'], symbols(k));
-        end
-
-        rxn_gene_rule = geneAssocOut;
-end
 
 
