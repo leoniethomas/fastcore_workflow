@@ -1,53 +1,35 @@
-%%%% Model Comparison script - run after the Model analysis script!!!
+%% Model comparison script 
+% This script runs a set of default analysis for a choosen set of models.
+% For these models a SingleModelAnalysis hast to be run beforehand! 
 
-% This script is structured in 2 parts -> structural comparison, and
-% qualitative comparison
-% structural analysis investigates the model structure 
-% and functional analysis investigates the output of fba, fva, sampling etc
+%% Script Setup
 
-%% Set up 
 
-%clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
-addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
-addpath(genpath("C:\Users\leonie.thomas\scFASTCORMICS"))
+addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS")) % add rFASTCORMICS function to your path
 changeCobraSolver("gurobi");
 
-% load the project object 
+% download the git & set the folder which is gonna be your working directory
 working_path = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille";
 cd (working_path)
 addpath(genpath(working_path))
 
-%%
-% read in project object
-%load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "20260119_1042_project.mat");
-% load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_from_vanille_fba_fva.mat");
-% old_project = project;
-% load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_28012026_1508_obj_vanille_sampling.mat");
-% samp_project = project;
+% load your singleModel project object
 load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
 
-%% perform new sampling 
+%% perform new single cell analysis - if not already done for the given object
 
-project = singleModelAnalysis(project,["WT","KO","PLV"],["FBA","FVA", "sampling"],defaultParametersAnalysis);
+parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
+modelList = ["WT","KO","PLV"];
+analysisList = ["FVA","FBA"];
 
-%% move the wanted analysis to be used directly into the analysis slot for each model 
+project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
-% set the wanted analysis object from each model into the analysis slot
-% directly 
-project = set_analysis_to_compare(project,["WT", "KO", "PLV"]);
+project = chooseActiveAnalysisForComparison(project,modelList);
+
 
 %% First the STRUCTURAL comparison of the choosen models
-
-% structureComparison executed on the project generating the structural
-% report for the models choosen to compare 
-
-
-% structureComparison function does:
-%   + check if the models specified have all the needed fields ->
-%     checkRequiredFieldsForModelComparison
-%   + then it returns the 
 
 %% For every analysis you need to define a list of models first which are meant to be compared 
 
