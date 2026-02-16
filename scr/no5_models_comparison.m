@@ -22,56 +22,26 @@ load(working_path + filesep + "context_specific_models" + filesep + "20260119_10
 
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["WT","KO","PLV"];
-analysisList = ["FVA","FBA"];
+analysisList = ["FVA","FBA", "sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
-project = chooseActiveAnalysisForComparison(project,modelList);
+[project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
 
 %% First the STRUCTURAL comparison of the choosen models
 
 %% For every analysis you need to define a list of models first which are meant to be compared 
 
-list_model_names = ["KO","PLV", "WT"];
-reference_model = "orig_model";
+referenceModel = "orig_model";
+comparisonAnalysisList = ["modelStructureComparison",...
+                          "modelFunctionalComparison", ...
+                          "modelsComparisonSampling",...
+                          "IDAREoutput"];
 identifier = "";
 
-[project,comparison_name] = modelsComparison(project,list_model_names,reference_model,["modelStructureComparison"],identifier);
-% modelsComparison is the function that is run once to return a set of
-% predefined figures, outputs to get an overall picture of how the models
-% look like in relation to each other, but the user will also be able to
-% depending on this more general report do more in depth invesitgation 
+[project,comparison_name] = modelsComparison(project,modelList,referenceModel,comparisonAnalysisList,identifier);
 
-
-%% SAMPLING ANALYSIS
-
-
-project = modelsComparisonSampling(project,comparison_name);
-
-
-%% Get cytoscape visualization 
-
-%% Get IDARE INPUT
-
-folder_path = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/idare/";
-comparison_name = "KO_vs_PLV_vs_WT__";
-prepareDataForIDAREVisualization(project, comparison_name,folder_path);
-
-%% Then Functional Comparison
-
-% Steps of the functional comparison 
-% - size of the models
-% - presence in the model per subsystem 
-%   - once in absoute measure -> # oversections / outersections
-%   - Jaccard distance 
-%   - be able to specify different subsystems in the venn diagramm
-%   - then visualize all of that on a heatmap with the Jaccard distance per
-%   subsystem
-
-% show size of the models
-
-% show compute model presence in comparison to the input model
 
 
 %% Investigations up to the user (for example for specific subsystems)
@@ -80,7 +50,7 @@ prepareDataForIDAREVisualization(project, comparison_name,folder_path);
 % run a venn for a specific subsystem
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 % create the rxns presence table from it
 subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT__.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
 fig = plotFlexibleVenn(subsystem_feature_presence,...
@@ -102,15 +72,15 @@ plotFlexibleVenn(subsystem_feature_presence,...
                  "Rxn presence in different models");
 %% genes of interest 
 gene = "5831"; 
-genes_in_model = string(project.models.(reference_model).model.genes);
+genes_in_model = string(project.models.(referenceModel).model.genes);
 genes_of_interest =  genes_in_model(find(contains(genes_in_model , gene)));
 
-findRxnsFromGenes(project.models.(reference_model).model,char(genes_of_interest(1)))
+findRxnsFromGenes(project.models.(referenceModel).model,char(genes_of_interest(1)))
 
 %% get the rxns overview with FVA,FBA and reduced cost for a specified subsystem
 
 
-idx_subsystem_reference_model = find(findExcRxns(project.models.(reference_model).model));
+idx_subsystem_reference_model = find(findExcRxns(project.models.(referenceModel).model));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true, "threshold_flux","upper")
 
 visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
@@ -120,19 +90,19 @@ visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
 
 choosen_subsystem = "Pentose Phosphate Pathway";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",false)
 
 
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
 
 choosen_subsystem = "Arginine and proline metabolism";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
 
@@ -148,11 +118,11 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",reduced_cost_idx, ...
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^4hpro_LT";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","none","FVA", true ,'threshold_flux', "all", ...
@@ -161,10 +131,10 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
 %% get rxns associated with a specific metabolite 
 
 rxn_name_pattern = "^P5CR.*";
-idx_rxn_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.rxns, rxn_name_pattern, 'once')));
-rxn_names = project.models.(reference_model).model.rxns(idx_rxn_matches);
+idx_rxn_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.rxns, rxn_name_pattern, 'once')));
+rxn_names = project.models.(referenceModel).model.rxns(idx_rxn_matches);
 
-[~,rxns_id] = ismember(rxn_names, project.models.(reference_model).model.rxns);
+[~,rxns_id] = ismember(rxn_names, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_id, ...
               "threshold_flux","none","FVA", true ,'threshold_flux', "all", ...
@@ -173,11 +143,11 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_id, ...
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^glc_D[.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","all","FVA", true ,...
@@ -185,11 +155,11 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^akg[.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","all","FVA", true ,...
@@ -198,11 +168,11 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^galgluside_hs.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","none","FVA", true ,...
@@ -211,11 +181,11 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^pep.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","all","FVA", true ,...
@@ -233,10 +203,10 @@ visualize_sampling_landscape(project,comparison_name,[1 2],rxn_color)
 %% Glycolysis specific glucose and pyruvate
 
 
-coa = find(matches(string(project.models.(reference_model).model.subSystems),"CoA synthesis"));
-gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
-oxpho = find(matches(string(project.models.(reference_model).model.subSystems),"Oxidative phosphorylation"));
-tca = find(matches(string(project.models.(reference_model).model.subSystems),"Citric acid cycle"));
+coa = find(matches(string(project.models.(referenceModel).model.subSystems),"CoA synthesis"));
+gly = find(matches(string(project.models.(referenceModel).model.subSystems),"Glycolysis/gluconeogenesis"));
+oxpho = find(matches(string(project.models.(referenceModel).model.subSystems),"Oxidative phosphorylation"));
+tca = find(matches(string(project.models.(referenceModel).model.subSystems),"Citric acid cycle"));
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly},...
                                  ["CoA synthesis", "Glycolysis/gluconeogenesis"]);
@@ -246,7 +216,7 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{tca},...
 
 %%
 
-[exchange,uptake] = find(findExcRxns(project.models.(reference_model).model));
+[exchange,uptake] = find(findExcRxns(project.models.(referenceModel).model));
 fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
                                  ["uptake"]);
 
@@ -256,11 +226,11 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_referenc
 %% 
 
 met_name_pattern = "^galglu.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,akg] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,akg] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{akg},...
                                  ["lactate"],"violin",true,false);
@@ -271,11 +241,11 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{akg},...
 
 %%
 met_name_pattern = "^gluside_hs.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,pro] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,pro] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 fluxsum_sets = visualize_flux(project,comparison_name,[],{pro},...
                                  ["lactate"]);
@@ -295,7 +265,7 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
 
 pathways_with_metabolites = get_essential_pathway_metabolites(project,"orig_model");
 
-pathways_idx = structfun(@(x)find(matches(project.models.(reference_model).model.mets,x)),...
+pathways_idx = structfun(@(x)find(matches(project.models.(referenceModel).model.mets,x)),...
                          pathways_with_metabolites, 'UniformOutput', false);
 fields = fieldnames(pathways_idx);
 idx_cell = cellfun(@(f) pathways_idx.(f), fields, 'UniformOutput', false);    
@@ -330,10 +300,10 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],idx_cell,...
 
 choosen_subsystem = "Arginine and proline metabolism";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
-ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+ppp = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
                                  [choosen_subsystem]);
@@ -344,10 +314,10 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
 
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
-ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+ppp = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
                                  [choosen_subsystem]);
@@ -359,10 +329,10 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
 
 choosen_subsystem = "Pentose phosphate pathway";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_WT__",idx_subsystem_reference_model, "FVA",false)
 
-ppp = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+ppp = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{ppp},...
                                  [choosen_subsystem]);
@@ -375,10 +345,10 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
 
 choosen_subsystem = "Citric acid cycle";
 % pull the subsystem presence from the stored rxns mapping table
-idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(reference_model).model.subSystems));
+idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
 
-tca = find(matches(string(project.models.(reference_model).model.subSystems),choosen_subsystem));
+tca = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{tca},...
                                  [choosen_subsystem]);
@@ -393,11 +363,11 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{tca},...
 % FBA values lactate 
 
 met_name_pattern = "^lac_L.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","all","FVA", false ,...
@@ -417,11 +387,11 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{rxns_met_id},...
 % FBA values pyruvate
 
 met_name_pattern = "^pro_L[.*";
-idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(reference_model).model.mets, met_name_pattern, 'once')));
-met_names = project.models.(reference_model).model.mets(idx_met_matches);
+idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
+met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
-rxns_met = findRxnsFromMets(project.models.(reference_model).model, met_names);
-[~,rxns_met_id] = ismember(rxns_met, project.models.(reference_model).model.rxns);
+rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
+[~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
               "threshold_flux","none","FVA", true ,...

@@ -8,10 +8,6 @@ function project = modelsComparisonSampling(project,comparison_name)
     reference_model = project.comparisons.(comparison_name).reference_model;
     
     % run structural model comparison
-    project = compute_flux_sum(project,list_model_names,reference_model);
-
-    replacement_value = "analysis.sampling.fluxsum"; % get the fba solution values
-    project.comparisons.(comparison_name).ordered_samples_fluxsum = getOrderedFeatureMatrix(project,list_model_names,"mets",reference_model,replacement_value);
     replacement_value = "analysis.sampling.samples"; % get the fba solution values
     project.comparisons.(comparison_name).ordered_samples = getOrderedFeatureMatrix(project,list_model_names,"rxns",reference_model,replacement_value);
     replacement_value = "analysis.FBA.v"; % get the fba solution values

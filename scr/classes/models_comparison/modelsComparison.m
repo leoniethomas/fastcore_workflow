@@ -1,61 +1,92 @@
 function [project, comparison_name] = modelsComparison(project, modelList,reference_model,analyses,identifier)
     % This function runs a set of analysis for the comparison of the
-    % specified genes.
+    % specified models.
     % A number of analysis are run: 
     % - structural analysis: based on the differential presence of
     %   metabolites, genes and reactions in the different models 
     % - functional analysis: based on the quantitative values like FVA,
-    %   FBA, sampling 
+    %   FBA
+    % - analysis of sampling results
     % 
     % Inputs: 
     %   - project:          the object which is the output of the single_model_analysis
     %                       entailing the results of fba,fva,sampling, single gene
     %                       deletion etc. for a single model 
     %   - modelList:        the list of Model names to be included in the comparison 
-    %   - reference_model:  the reference model used to compute the relative feature presence to 
+    %   - reference_model:  the reference model used to compute the relative reaction presence
     %   - analyses:         the list of analyses which should be performed 
+    %                       + modelStructureComparison: investigates the differences between the models 
+    %                         on a structural level, is a gene,metabolite,or rxns present or not ? 
+    %                       + modelFunctionalComparison: investigates the differences between models on a functional
+    %                         level, how much flux do reactions carry in FVA, FBA solutions? 
+    %                       + modelsComparisonSampling: investigates the differences between models sampling solutions,
+    %                         investigates samples solution space 
+    %                         
     %   - identifier:       a string, will be added as a postfix to the analysis name, can be choosen freely
     %                       default)
     %   
     % Output : 
     %   - project:          project object with a added comparison field entailing
     %                       all the output, modelcomparison information
-
     arguments
-        project
+        project 
         modelList (1,:) string = strings(0)
-        reference_model (1,:) string = "orig_model"
-        analyses  (1,:) string = ["modelStructureComparison"]
-        identifier (1,:) string = string(datetime('now','Format','_yyyyMMdd_HHmmss'))
+        reference_model (1,1) string = "orig_model"
+        analyses  (1,:) string  {mustBeMember(analyses, ["modelStructureComparison","modelFunctionalComparison","modelsComparisonSampling","IDAREoutput"])} =["modelStructureComparison"]
+        identifier (1,1) string = string(datetime('now','Format','_yyyyMMdd_HHmmss'))
+    end
+
+    % --check input paramteres
+    % check that all the specified model names(modelList & reference_model)
+    validModels = string(fieldnames(project.models));
+    modelsToTest = [modelList,reference_model]
+    if ~all(ismember(modelsToTest, validModels))
+        invalid = modelsToTest(~ismember(modelsToTest, validModels));
+        error("Either for the modelList or the reference_model invalid model(s) have been choosen.Invalid model name(s): %s. Valid models are: %s", ...
+               strjoin(invalid,", "), ...
+               strjoin(validModels,", "));
     end
     
-    % if no list of genes is given just compare all the models in the
-    % project.models slot
-    if isempty(modelList)
-        modelList = project.models;
-    end
-    
-    % get the mapping data from the disc data
+    % -- get mapping status 
+    % -> mapping of rxns based on the discretization of the gene expression
+    % data, as active or n
     project.models = structfun(@(x) getMappedStatus(x), ...
                           project.models, ...
                           'UniformOutput', false);
-    % get the disc data into the same order as in the Model
+    % -- reordering discretized data matrix 
+    % reorder the discretized expression data matrix in every model to
+    % match the order of the genes in each model + add gene symbols
     project.models = structfun(@(x) reorderDiscretizedToMatchGeneOrder(x), ...
                               project.models, ...
                               'UniformOutput', false);
 
-    
+    % -- create comparison slot
     % give the comparison the name of all models + a identifier choosen
     comparison_name = join(modelList, "_vs_") + "__" + identifier;
     project.comparisons.(comparison_name).modelList = modelList;
-    % run structural model comparison
-    project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
-    project.comparisons.(comparison_name).reference_model = reference_model; 
-    % run functional model comparison
+    project.comparisons.(comparison_name).reference_model = reference_model;
     
-    modelFunctionalComparison(project, comparison_name,analyses);
-    
+    % -- run structural comparison - always has to be run 
 
+    project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
+    project.comparisons.(comparison_name).reference_model = reference_model;
+
+    % -- fun functional comparions
+    if any(matches(analyses, "modelFunctionalComparison"))
+        modelFunctionalComparison(project, comparison_name,analyses)
+    end
+
+    % -- run sampling comparison
+    if any(matches(analyses, "modelsComparisonSampling"))
+        project = modelsComparisonSampling(project,comparison_name)
+    end
+    
+    % -- generate output to visualize in IDARE
+    if any(matches(analyses, "IDAREoutput"))
+        folder_path = "./idare/";
+        mkdir(folder_path);
+        prepareDataForIDAREVisualization(project, comparison_name,folder_path);
+    end
 end
 
 function modelFunctionalComparison(project, comparison_name,analyses)
@@ -746,36 +777,66 @@ end
 
 
 function modelStruct = getMappedStatus(modelStruct)
+    % This function gives you the reactions which were part of the
+    % initialCore in the construction of the mdoel (1) and the rxns which
+    % were discretized to be notExpressed (-1).
+    % The function steps in every single model of the project object and
+    % checks if there is a discretized expression data slot in the object. 
+    % If the model has this data slot the the discretized data is mapped to
+    % the reaction by this function and returns the mapping for every
+    % colum in the discretized dataframe as well as a global mapping per
+    % rxns for the whole model
+
+    % - only perform the mapping for the models having associated
+    % expression data 
     if any(contains(fieldnames(modelStruct),"discretized_data"))
+        % using rfastcormics function to map discretized data to the rxns
         mapping = mapExpressionToModel( ...
             modelStruct.model, ...
             modelStruct.discretized_data.values, ...
             modelStruct.settings.dico, ...
             string(modelStruct.discretized_data.gene_names), ...
             1);
-    
-        numberOfSamples = size(mapping, 2);
         
+        numberOfSamples = size(mapping, 2);
+        % store it per sample, column in the discretized expression matrix
         modelStruct.mappedDiscRxns_sample = mapping;
+        % and also as global mapping for the model, by multiplying it with
+        % the consensus porportion used for the model construction 
+        % parameters used in the model construction can be accessed in the 
+        % settings. slot of each individual model
+        
+        % definition of initialCore reactions
         modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
+        % definition of the notExpressed genes
+        notExpressed = find(sum(mapping == -1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples));
+        modelStruct.mappedDiscRxns(notExpressed) = -1;
+        % The definition of the unexpressed and initialCore rxns is done as
+        % performed in rFASTCORMICS_v2
     end
 end
 
 
 function modelStruct = reorderDiscretizedToMatchGeneOrder(modelStruct)
+    % This function reorders the discretized data slot of every model to
+    % have the rows/genes in the same order as in the associated
+    % model.genes slot. In addition it adds the gene symbol to the discretized data slot.
+    % The discretized data is given back as a matrix. 
     if any(contains(fieldnames(modelStruct),"discretized_data"))
-        gene_symbol = string(modelStruct.settings.dico.SYMBOL);
-        gene_id_in_model = string(modelStruct.settings.dico.gene_id_in_model);
-        discTbl     = modelStruct.discretized_data;   % table with gene_names + data
-        % Map discretized genes into full gene list
-        [isPresent, idx] = ismember(gene_symbol, string(discTbl.gene_names));
-        % Preallocate output table with NaNs
-        outTbl = zeros(numel(gene_symbol), size(discTbl.values,2));
-        % Fill rows that exist
-        outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
-        % Add gene names as first column
-        modelStruct.discretized_data = table(gene_id_in_model,gene_symbol,outTbl, 'VariableNames',...
-                                             ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
+        if size(modelStruct.discretized_data,1) ~= length(string(modelStruct.settings.dico.SYMBOL))% in case this is the second time you run a modelComparison, the disc slot is already ordered so we skip this function in that case
+            gene_symbol = string(modelStruct.settings.dico.SYMBOL);
+            gene_id_in_model = string(modelStruct.settings.dico.gene_id_in_model);
+            discTbl     = modelStruct.discretized_data;   % table with gene_names + data
+            % Map discretized genes into full gene list
+            [isPresent, idx] = ismember(gene_symbol, string(discTbl.gene_names));
+            % Preallocate output table with NaNs
+            outTbl = zeros(numel(gene_symbol), size(discTbl.values,2));
+            % Fill rows that exist
+            outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
+            % Add gene names as first column
+            modelStruct.discretized_data = table(gene_id_in_model,gene_symbol,outTbl, 'VariableNames',...
+                                                 ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
+        end
     end
 end
 
