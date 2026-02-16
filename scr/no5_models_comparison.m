@@ -22,25 +22,26 @@ load(working_path + filesep + "context_specific_models" + filesep + "20260119_10
 
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["WT","KO","PLV"];
-analysisList = ["FVA","FBA", "sampling"];
+analysisList = ["FVA","FBA"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
 
-%% First the STRUCTURAL comparison of the choosen models
 
-%% For every analysis you need to define a list of models first which are meant to be compared 
+
+%% Main analysis 
 
 referenceModel = "orig_model";
 comparisonAnalysisList = ["modelStructureComparison",...
-                          "modelFunctionalComparison", ...
-                          "modelsComparisonSampling",...
-                          "IDAREoutput"];
+                          "modelFunctionalComparison"]%, ...
+                          % "modelsComparisonSampling",...
+                          % "IDAREoutput"];
 identifier = "";
 
-[project,comparison_name] = modelsComparison(project,modelList,referenceModel,comparisonAnalysisList,identifier);
+[project,comparison_name] = modelsComparison(project,modelList, analysisID,...
+                                             referenceModel,comparisonAnalysisList,identifier);
 
 
 

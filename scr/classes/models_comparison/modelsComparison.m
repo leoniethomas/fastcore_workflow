@@ -1,4 +1,4 @@
-function [project, comparison_name] = modelsComparison(project, modelList,reference_model,analyses,identifier)
+function [project, comparison_name] = modelsComparison(project, modelList,analysisID,reference_model,analyses,identifier)
     % This function runs a set of analysis for the comparison of the
     % specified models.
     % A number of analysis are run: 
@@ -13,6 +13,8 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
     %                       entailing the results of fba,fva,sampling, single gene
     %                       deletion etc. for a single model 
     %   - modelList:        the list of Model names to be included in the comparison 
+    %   - analysisID:       the individual analysis slots used for the
+    %                       comparison
     %   - reference_model:  the reference model used to compute the relative reaction presence
     %   - analyses:         the list of analyses which should be performed 
     %                       + modelStructureComparison: investigates the differences between the models 
@@ -29,8 +31,9 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
     %   - project:          project object with a added comparison field entailing
     %                       all the output, modelcomparison information
     arguments
-        project 
-        modelList (1,:) string = strings(0)
+        project (1,1) struct
+        modelList (1,:) string
+        analysisID (1,:) string
         reference_model (1,1) string = "orig_model"
         analyses  (1,:) string  {mustBeMember(analyses, ["modelStructureComparison","modelFunctionalComparison","modelsComparisonSampling","IDAREoutput"])} =["modelStructureComparison"]
         identifier (1,1) string = string(datetime('now','Format','_yyyyMMdd_HHmmss'))
@@ -65,6 +68,7 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
     comparison_name = join(modelList, "_vs_") + "__" + identifier;
     project.comparisons.(comparison_name).modelList = modelList;
     project.comparisons.(comparison_name).reference_model = reference_model;
+    project.comparisons.(comparison_name).analysisID = analysisID;
     
     % -- run structural comparison - always has to be run 
 
@@ -73,12 +77,12 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
 
     % -- fun functional comparions
     if any(matches(analyses, "modelFunctionalComparison"))
-        modelFunctionalComparison(project, comparison_name,analyses)
+        modelFunctionalComparison(project, comparison_name);
     end
 
     % -- run sampling comparison
     if any(matches(analyses, "modelsComparisonSampling"))
-        project = modelsComparisonSampling(project,comparison_name)
+        project = modelsComparisonSampling(project,comparison_name);
     end
     
     % -- generate output to visualize in IDARE
@@ -89,54 +93,53 @@ function [project, comparison_name] = modelsComparison(project, modelList,refere
     end
 end
 
-function modelFunctionalComparison(project, comparison_name,analyses)
-    % The structure comparison is a function that compares the models
-    % listed on structural differences. Structural differences in the
-    % context of Fastcore can be defined as the set of reactions that are
-    % kept when running fastcore. This means we check for the existence of
-    % rxns, metabolites and genes in the model, and their overlap between
-    % models.
-
+function modelFunctionalComparison(project, comparison_name)
+    % This function runs the functional model comparison. 
+    % The models are compared on basis of the FBA & FVA results from the singleModelAnalysis. 
+    % So the functional capacity the model has in context of the defined
+    % objective function. 
+    % Input:
+    %   - project: struct with content defined in the README,
+    %     singleModelAnalysis run on the object, and chooseActiveAnalysis
+    %     needs to be set too
+    %   - comparison_name: which of the comparisons should be visualized,
+    %     comparison slot is created when running the
+    %     modelStructuralComparison function
+    % Output: #TODO
+    %   - different figures
+    %   - excel sheet - imports export fba, rxns wise FVA scores for each model, enrichment
+    %     table with the scores -> needs to be done still 
     arguments
-        project
-        comparison_name
-        analyses
+        project (1,1) struct
+        comparison_name (1,1) string
     end
 
     modelList = project.comparisons.(comparison_name).modelNames;
     reference_model = project.comparisons.(comparison_name).reference_model;
-    % first visualize the fba solution 
-    % what are the variables I need from the fba solution 
     
+    
+    %%% ---------- Visualization: objective values per model
     fba_objective_values = cell2mat(cellfun(@(x) project.models.(x).analysis.FBA.f(1,1) ,modelList,"UniformOutput",false));
     get_exchange_rxns_idx = find(findExcRxns(project.models.(reference_model).model));    
-
-
-    
     figure
-    tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
-
-    %%% barplot for the biomass/defined objective 
-
-    
-
-    nexttile(1);
     bar(fba_objective_values)
     title('Model comparison: flux of optimized reaction')
     ylabel('Reaction flux value for objective function [mMol/(gDW*h)]')
     xlabel('Model')
     xticklabels(modelList)
+    set(gca, 'FontSize', 18)
+
+    %%% ---------- Visualization: get FBA values under objective function
+    %%%             for the different models - filtered for exchange rxns
     
-    % import rxns -> upper limit applied to function
+    % Import
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx, ...
                   'threshold_flux','upper','FVA',false,'reducedCost',false);
-    % expor rxns -> upper limit applied to function
+    % Export
     get_flux_plot(project, comparison_name,get_exchange_rxns_idx,...
                   'threshold_flux','lower','FVA',false,'reducedCost',false);
     
-
-    % compute Fluxvariability display in heatmap 
-    %%% -> model wide 
+    %%% ---------- Visualization: FVA Similarity between Models
 
     [fva_sim,fva_sim_rxns, fva_sim_pathways] = compute_fva_similariy(project,comparison_name);
 
@@ -147,66 +150,12 @@ function modelFunctionalComparison(project, comparison_name,analyses)
                              "FVA similarity",...
                              [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255);
     
-    %%% -> per subsystem
-    % a boxplot per subsystem, displaying the FVA values for the pairwise
-    % comparisons
-    fva_sim_rxns;
-    
-    % get an overview of which FVA value distribution we have comparing
-    % different models
-    
-    fva_lower2x2 = getLowerTriangleBlock(fva_sim_rxns);
-    
-    modelPairs = cell(numel(modelList));  % preallocate
-    
-    for i = 1:numel(modelList)
-        for j = 1:numel(modelList)
-            modelPairs{i,j} = {};
-            if i ~= j
-                modelPairs{i,j} = {modelList{i}, modelList{j}};
-            end
-        end
-    end
-    modelPairs2x2 = getLowerTriangleBlock(modelPairs);
-    
-    [nRows, nCols] = size(fva_lower2x2);
-    
-    % Create tiled layout
-    t = tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
-    
-    for i = 1:nRows
-        for j = 1:nCols
-            nexttile((i-1)*nCols + j)
-    
-            data = fva_lower2x2{i,j};
+    %%% ---------- Visualization: FVA Similarity per reaction histogramm
 
-            if ~isempty(data)
-                data = data(data ~= 1);  % remove trivial values
-            end
-        
-            if ~isempty(data)
-                histogram(data,100)
-                set(gca, 'FontSize', 18)
-            else
-                axis off  % empty tile
-            end
+    FVA_sim_values_hist(fva_sim_rxns, modelList)
     
-            % Label axes
-            if ~isempty(data)
-                if i ~= 1
-                    xlabel(modelPairs2x2{i,j}{1,2}, 'Interpreter','none')
-                end
-                if j == 1
-                    ylabel(modelPairs2x2{i,j}{1,1}, 'Interpreter','none')
-                end
-            end
-            box on
-        end
-    end
-    
-    sgt = sgtitle('Histogram of FVA similarity values between models per rxns (<1)');
-    sgt.FontSize = 20;
-    % compute enrichment of pathways in top FVA similarity rxns
+    %%% ---------- Visualization: FVA Similarity per reaction - enrichment
+    %%%            for low fva similarity scores per pathway in the model
 
     [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
     idx_to_keep = find(sum(rxn_mapping ~=0,2) > 0);
@@ -245,7 +194,7 @@ function modelFunctionalComparison(project, comparison_name,analyses)
     dotplot(NES_tbl,FDR_tbl)
 
     
-    % do based on the enrichment
+    %%% ---------- Visualization: Fluxsum based on the FBA values ? 
     
     % compute Fluxsum 
 
@@ -265,28 +214,49 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     % context of Fastcore can be defined as the set of reactions that are
     % kept when running fastcore. This means we check for the existence of
     % rxns, metabolites and genes in the model, and their overlap between
-    % models.
-
+    % models. Reaction existence will be analysed in different sets.
+    % Reaction exisitence in different metabolic subsystems/pathways,
+    % existence of reaction depending on their initial classification of
+    % expressed/not expressed core/not expressed. This figures are meant to
+    % give an indication of which reactions were kept in the model, how
+    % high the overlap of those are between the models, which of the
+    % overlapping reactions are within the core or not expressed, which
+    % pathways the genes in the outer and intersection are part of etc.
+    % Input:
+    %   - project: fastcore workflow project, with a run of 
+    %              singleModelAnalysis already performed, and the active
+    %              analysis already set using
+    %              chooseActiveAnalysisForComparison
+    %   - modelList: List of models to compare
+    %   - reference_model: for the structural comparison of wether a
+    %                      reaction is existent or not, a reference model needs to be defined
+    %                      therefore you need to define a reference model
+    %                      which is also in the models slot of the project
+    %                      object
+    % Output:
+    %   - structure analysis: yet to be structured properly #TODO
     arguments
-        project
-        modelList
-        reference_model
+        project (1,1) struct
+        modelList (1,:) string
+        reference_model (1,1) string
     end
 
-    % extract models you want to compare from the project object
     models_list = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
     models = structfun(@(x) x.model, models_list, 'UniformOutput',false);
     structure_analysis.modelNames = string(fieldnames(models));
 
 
-    % get the size of the different models
+    % get model sizes - # genes,reactions and metabolites
     data = struct2array(structfun(@(x) {numel(x.rxns); numel(x.mets); numel(x.genes)}, ...
                            models, 'UniformOutput', false))';
     array2table(data, ...
                     'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
                     'RowNames', string(fieldnames(models))')
-
-    %%% rxn mapping from discretized data + visualization of both 
+    
+    % -- Visualization: Discretization status for expression of genes in model on sample level, on model level as well as the mapping/discretization on rxn level
+    % -> gives you a feeling of how many reactions in the model are from the core, how many of the rxns that were notExpressed made it in regardless etc.
+    
+    % get the reaction mapping (sample and model level) as well as the discretization values for each reaction/gene in the model 
     replacement_value = "mappedDiscRxns_sample"; % get the fba solution values
     ordered_mapping_rxn_matrix_sample_wise = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
     replacement_value = "mappedDiscRxns"; % get the fba solution values
@@ -294,16 +264,13 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     replacement_value = "discretized_data.values"; % get the fba solution values
     ordered_mapping_expr_disc_matrix = getOrderedFeatureMatrix(project,modelList,"genes",reference_model,replacement_value);
 
-    % once with all samples, once applying the consensus proportion
+    % get the names of the single samples from the metadata slot - used in the following plots
     columnnames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
                                   string(x.sample_metadata.(x.settings.script_parameters.columns_to_define_model_samples_on)),...
                             models_list,"UniformOutput",false));
     columnnames = vertcat(columnnames{:});
 
-
-    %%
-
-
+    % get the data into one object to loop over
     datasets = { ordered_mapping_expr_disc_matrix,ordered_mapping_rxn_matrix_sample_wise, ordered_mapping_rxn_matrix};   % replace with your actual dataset variables
     dataset_names = ["ordered_mapping_rxn_matrix_sample_wise", "ordered_mapping_expr_disc_matrix", "ordered_mapping_rxn_matrix"];  % optional titles
     xlabels_plots = ["Samples", "Samples", "Models"]; 
@@ -314,6 +281,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     numDatasets = length(datasets);
 
     % Determine all unique discretization values across datasets (excluding 13)
+    % the value 13 has been set to indicate that the rxn/gene is not in the
+    % model, so the discretization is not shown, in these figures only the
+    % discretization is shown of the genes/rxns in the model, the figures
+    % for all genes, rxns are done in the QC script when preparing the data
+    % for the model creation !!
     all_values = [];
     for k = 1:numDatasets
         all_values = union(all_values, setdiff(unique(datasets{k}), 13));
@@ -383,66 +355,15 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     lgd.Title.String = "Discretization status";
 
 
-
-    %%
-    for k = 1:length(datasets)
-        dataset = datasets{k};
-        
-        % get unique values, ignoring 13
-        unique_disc_values = unique(dataset);
-        unique_disc_values = setdiff(unique_disc_values, 13);
-    
-        % counts per category per sample
-        counts = cell2mat(arrayfun(@(v) sum(dataset == v, 1), ...
-                                   unique_disc_values, 'UniformOutput', false));
-    
-        % stacked barplot
-        figure
-        bar(counts', 'stacked')
-    
-        % percentages
-        tot = sum(counts,1);
-        pct = 100 * counts ./ tot;
-    
-        % write percentages inside bars
-        for i = 1:size(counts,2)          % per bar (sample)
-            y0 = 0;
-            for j = 1:size(counts,1)      % per stack (category)
-                if counts(j,i) > 0
-                    text(i, y0 + counts(j,i)/2, ...
-                        sprintf('%.1f%%', pct(j,i)), ...
-                        'HorizontalAlignment','center', ...
-                        'VerticalAlignment','middle', ...
-                        'FontSize',20,'Color','w','FontWeight','bold');
-                end
-                y0 = y0 + counts(j,i);
-            end
-        end
-    
-        % axes and labels
-        ax = gca;
-        ax.FontSize = 18;
-    
-        xlabel('Samples','FontSize',20)
-        ylabel('# Genes','FontSize',20)
-        title("Discretization of genes per sample: " + dataset_names(k))
-    
-        % x-axis labels
-        xticks(1:length(columnnames))
-        xticklabels(regexprep(columnnames, "_", "-"))
-    
-        % legend
-        lgd = legend(string(unique_disc_values));
-        lgd.FontSize = 20;
-        lgd.Title.String = "Discretization status";
-    end
-
+    % -- Visualization: Get the jaccard similarity on basis of the
+    % gene,metabolite and reaction presence in the corresponding models
+    % How similar are my models structuraly, which models are more similar
+    % to each other than others ? 
+   
     
     [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
     structure_analysis.rxn_mapping_table = array2table(rxn_mapping,"VariableNames",modelList,"RowNames",string(project.models.(reference_model).model.rxns));
-    
-    %%%%%%%%%%%%%%%%%%%% get the intersections/outersection 
-    %%%%%% similarities between models based on rxns,genes, mets
+   
 
     for field_to_investigate = ["genes", "mets", "rxns"]
         [ordered_feature, ~] = getOrderedFeatureMatrix( ...
@@ -467,7 +388,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         h.Title = title_fig;    
     end
     
-    %%%%%%%%%%%%%%%%%%%%% get presence of rxns in each subsytem/pathway
+    % -- Visualization: Get reaction presence for each model in comparison
+    % to the defined reference model -> visualization per subsystem
+    % Where does the difference I see in the jaccard plot come from ? form
+    % which subsystem, which subsystem is most different in pairwise
+    % comparison ? 
         
     pathways = string(project.models.(reference_model).model.subSystems); % get pathways from reference model
     unique_pathways = unique(pathways); 
@@ -597,6 +522,14 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     categories = fieldnames(models_list)';  % model names
     %t = tiledlayout(1,2, 'TileSpacing','compact', 'Padding','compact');
 
+    % -- Visualization: get a sense of how many of the core reactions made
+    % it into your model. In theory 100 percent of the reactions should be
+    % in, but in practice this is not gona happen, adjusting the
+    % thresholding/discretization in the preprocessing of the data for
+    % rfastcormics could change the precentages you see in the following
+    % figure
+        
+
     figure
     tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
     
@@ -695,6 +628,13 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     
     close(figV)
 
+    % -- Visualization: Looking in deeper into the core reactions, the core
+    % is what is defined by the data, therefore portrays the underlying
+    % biological chnages, so the question is which reactions are part of
+    % the outer and intersections we saw in the previous venn/intersection
+    % diagramm ? are the differences in core reactions only due to
+    % exchange/import ? transporters ? This should be avoided!
+        
     % create an upsetr plot for the all the inter and outersections
     % filter out the main intersection -> the one with the longest name
     names_intersections = fieldnames(idx_inter_outersections);
@@ -770,7 +710,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     lgd.FontSize = 20;
 
 
-    
+    % Further Visualizations ? #TODO ? 
 
 
 end
@@ -810,6 +750,7 @@ function modelStruct = getMappedStatus(modelStruct)
         modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
         % definition of the notExpressed genes
         notExpressed = find(sum(mapping == -1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples));
+        modelStruct.mappedDiscRxns = int32(modelStruct.mappedDiscRxns);
         modelStruct.mappedDiscRxns(notExpressed) = -1;
         % The definition of the unexpressed and initialCore rxns is done as
         % performed in rFASTCORMICS_v2
@@ -843,6 +784,16 @@ end
 
 
 function fva_lower = getLowerTriangleBlock(fva_sim_rxns)
+    % This function gets the lower part of a similarity matrix. 
+    % Written because we are looking at pairwise distances/similarities in
+    % the figures, but to not have repetitive plots it is useful to only
+    % look at one part of the matrix (eiter above or below the diagonal)
+    % since the diagonal (so the comparison of the model with itself) will
+    % always be 1 or zero (depending wheterh we talk about distance or
+    % similarity) and therefore only one of the triangels in the matrix
+    % cell is interesting. 
+    % This function sets all but the lower triangle to 0 so that there are
+    % no repetitive plots!
     % fva_sim_rxns: n x n cell array of comparisons
     % Returns a compact lower-triangle block cell array
 
@@ -861,6 +812,20 @@ function fva_lower = getLowerTriangleBlock(fva_sim_rxns)
 end
 
 function results = pathway_enrichment(sets, metric_matrix,feature_names)
+    % This function performs pathway enrichment on the fva similarity
+    % values. In the context of metabolic modelling the enrichment in this
+    % function is defined as the enrichment of low fva similarity values
+    % (high dissimilarity) in a specific metabolic pathway. 
+    % So practically this function does a ranked based hyptothesis testing.
+    % Sorting of the rxns after their similarity value (ascending sorting,
+    % since we want to know where the FVA boundaries are most different)
+    % and then see which of the metabolic subsystems defined in the model
+    % are enriched in this sorting!
+    % # TODO -> better documentation of the function + check what happens
+    % with the rnxs that have the same rank, there should be a group fo
+    % rxns that have the same rxn FVA similarity -> does this effect the
+    % enrichment -> since the sorting with the same value is then kind of
+    % arbitraty !!!! 
 
 
     [metricSorted, sortIdx] = sort(metric_matrix,'descend');
@@ -974,14 +939,16 @@ end
 
 
 function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_keep,reference_model, subSystems)
-arguments
-    project
-    modelList
-    fva_sim_rxns 
-    idx_to_keep
-    reference_model
-    subSystems =[]
-end
+    % This function visualizes the enrichment results in a dotplot!!
+    % #TODO: better documentation of the function1!!!
+    arguments
+        project
+        modelList
+        fva_sim_rxns 
+        idx_to_keep
+        reference_model
+        subSystems =[]
+    end
     if isempty(subSystems)
         subSystems = string(project.models.(reference_model).model.subSystems(idx_to_keep)); 
     end
@@ -1032,6 +999,8 @@ end
 end
 
 function dotplot(NES_tbl,FDR_tbl)
+    % #TODO better documentation of the function!!
+
 
     % Extract pathways and comparisons
     pathways = regexprep(string(NES_tbl.Properties.RowNames), "_", " ");
@@ -1094,3 +1063,71 @@ function dotplot(NES_tbl,FDR_tbl)
     
     box on
 end
+
+
+
+function FVA_sim_values_hist(fva_sim_rxns, modelList)
+    % This function visualizes the FVA values in a histogramm per
+    % comparison. These histogramms give us an indication of how similary
+    % models are in their FVA min and max boundaries, and although the
+    % heatmap summing up the FVA values also hast the same intuition, this
+    % visualization also enables to see what similarity values are mostly
+    % occuring. Is the difference in the overall similarity mainly due to a
+    % few reactions having very low values, or do we see a lot of mean fva
+    % similarity values per reaction ? 
+    % #TODO improve function documentation!!
+    fva_lower2x2 = getLowerTriangleBlock(fva_sim_rxns);
+    
+    modelPairs = cell(numel(modelList));  % preallocate
+    
+    for i = 1:numel(modelList)
+        for j = 1:numel(modelList)
+            modelPairs{i,j} = {};
+            if i ~= j
+                modelPairs{i,j} = {modelList{i}, modelList{j}};
+            end
+        end
+    end
+    modelPairs2x2 = getLowerTriangleBlock(modelPairs);
+    
+    [nRows, nCols] = size(fva_lower2x2);
+    
+    % Create tiled layout
+    t = tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
+    
+    for i = 1:nRows
+        for j = 1:nCols
+            nexttile((i-1)*nCols + j)
+    
+            data = fva_lower2x2{i,j};
+
+            if ~isempty(data)
+                data = data(data ~= 1);  % remove trivial values
+            end
+        
+            if ~isempty(data)
+                histogram(data,100)
+                set(gca, 'FontSize', 18)
+            else
+                axis off  % empty tile
+            end
+    
+            % Label axes
+            if ~isempty(data)
+                if i ~= 1
+                    xlabel(modelPairs2x2{i,j}{1,2}, 'Interpreter','none')
+                end
+                if j == 1
+                    ylabel(modelPairs2x2{i,j}{1,1}, 'Interpreter','none')
+                end
+            end
+            box on
+        end
+    end
+    
+    sgt = sgtitle('Histogram of FVA similarity values between models per rxns (<1)');
+    sgt.FontSize = 20;
+    
+
+end
+

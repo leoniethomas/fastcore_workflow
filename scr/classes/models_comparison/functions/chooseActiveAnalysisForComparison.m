@@ -1,4 +1,4 @@
-function project = chooseActiveAnalysisForComparison(project,modelList,analysisID)
+function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,analysisID)
     % This function needs to be run in preparation for the modelsComparison
     % function. For the loaded project object, multiple analysis with a
     % different set of parameters can be performed. Before going into the
@@ -18,7 +18,8 @@ function project = chooseActiveAnalysisForComparison(project,modelList,analysisI
     %                   analysis perfomed for each model will be set as active.
     % Output:
     %   - project:      a fastcore project with a defined active analysis
-    %
+    %   - analysisID:   get the analysisID used returned, in the same order
+    %                   as the modelList given
     %
     arguments
         project
