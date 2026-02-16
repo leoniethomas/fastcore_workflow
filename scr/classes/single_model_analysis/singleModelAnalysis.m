@@ -6,10 +6,11 @@ function project = singleModelAnalysis(project, modelList, analyses, parameterTa
 % Available analysis:
 %   FBA
 %   FVA
+%   shadow prices % need to be added
 %   sampling
 %   single_gene_deletion
 %   double_gene_deletion
-%   enrichment ?
+%   enrichment % need to be added
 % Output : project with a field analysis
 
 %% Check the structure of project
@@ -93,9 +94,11 @@ for i = 1:numel(modelList)
                 FBA = project.models.(name).analysis.(id).FBA;
             else
                 FBA = optimizeCbModel(model, 'max', 'zero');
+                project.models.(name).analysis.(id).FBA = FBA;
             end
         else
             FBA = optimizeCbModel(model, params.osenseStr, params.minNorm);
+            project.models.(name).analysis.(id).FBA = FBA;
         end
         
         opt = FBA.f;
@@ -252,7 +255,7 @@ for i = 1:numel(modelList)
         [grRatioDble, grRateKO, grRateWT] = doubleGeneDeletion(model, method, geneList1, geneList2, printLevel);
         
         % Storing the results
-        project.models.(name).analysis.(id).doubleGeneDeletion.grRatio = grRatioDble;
+        project.models.(name).analysis.(id).doubleGeneDeletion.grRatioDble = grRatioDble;
         project.models.(name).analysis.(id).doubleGeneDeletion.grRateKO = grRateKO;
         project.models.(name).analysis.(id).doubleGeneDeletion.grRateWT = grRateWT;
         
