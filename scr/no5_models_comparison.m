@@ -14,6 +14,8 @@ changeCobraSolver("gurobi");
 working_path = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille";
 cd (working_path)
 addpath(genpath(working_path))
+addpath(genpath("C:\Users\leonie.thomas\looplessFluxSampler"))
+rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
 load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
@@ -22,11 +24,14 @@ load(working_path + filesep + "context_specific_models" + filesep + "20260119_10
 
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["WT","KO","PLV"];
-analysisList = ["FVA","FBA"];
+analysisList = ["FVA", "FBA", "sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
+
+
+%% Check object structure for running the model comparison
 
 
 
@@ -35,9 +40,9 @@ project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis)
 
 referenceModel = "orig_model";
 comparisonAnalysisList = ["modelStructureComparison",...
-                          "modelFunctionalComparison"]%, ...
-                          % "modelsComparisonSampling",...
-                          % "IDAREoutput"];
+                          "modelFunctionalComparison", ...
+                          "modelsComparisonSampling"]%,...
+                          %"IDAREoutput"];
 identifier = "";
 
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
@@ -181,18 +186,21 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
 
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^pep.*";
+met_name_pattern = "^pro_L.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
 rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
 [~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
-              "threshold_flux","all","FVA", true ,...
+get_flux_plot(project,"WT_vs_KO_vs_PLV__",rxns_met_id, ...
+              "threshold_flux","none","FVA", false ,...
               'title_plots',"Functional model comparison: all reactions including lactate");
 
-
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{rxns_met_id},...
+                                 ["lactate"],"violin",true,false);
+fluxsum_sets = visualize_flux(project,comparison_name,[],{rxns_met_id},...
+                                 ["lactate"]);
 
 
 %%
@@ -208,12 +216,13 @@ coa = find(matches(string(project.models.(referenceModel).model.subSystems),"CoA
 gly = find(matches(string(project.models.(referenceModel).model.subSystems),"Glycolysis/gluconeogenesis"));
 oxpho = find(matches(string(project.models.(referenceModel).model.subSystems),"Oxidative phosphorylation"));
 tca = find(matches(string(project.models.(referenceModel).model.subSystems),"Citric acid cycle"));
+arg_pro = find(matches(string(project.models.(referenceModel).model.subSystems),"Arginine and proline metabolism"));
 
-fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly},...
-                                 ["CoA synthesis", "Glycolysis/gluconeogenesis"]);
+fluxsum_sets = visualize_flux(project,comparison_name,[],{arg_pro},...
+                                 ["Arginine and proline metabolism"]);
 
-fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{tca},...
-                                 ["TCA"]);
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{arg_pro},...
+                                 ["Arginine and proline metabolism"],"violin",false,false);
 
 %%
 
@@ -226,7 +235,7 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_referenc
 
 %% 
 
-met_name_pattern = "^galglu.*";
+met_name_pattern = "^akg.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
@@ -234,7 +243,7 @@ rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
 [~,akg] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{akg},...
-                                 ["lactate"],"violin",true,false);
+                                 ["lactate"],"violin",true,true);
 
 fluxsum_sets = visualize_flux(project,comparison_name,[],{akg},...
                                  ["lactate"]);
