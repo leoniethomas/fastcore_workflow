@@ -22,8 +22,9 @@ function prepareDataForIDAREVisualization(project, comparison_name,folder_path,o
     for model_idx=1:length(model_names)
         model = project.models.(model_names(model_idx)).model;
         model_file_name = store_models + filesep + model_names(model_idx);
+        model_file_name_orig = store_models + filesep + "orig_" +  model_names(model_idx);
         save(model_file_name + ".mat",'model');
-        exportToXML(model_file_name + ".mat",model_file_name + ".xml");
+        exportToXML(model_file_name + ".mat",model_file_name + ".xml",model_file_name_orig + ".xml");
     end
 
     % save reference model
@@ -120,12 +121,13 @@ function prepareDataForIDAREVisualization(project, comparison_name,folder_path,o
 
 end
 
-function exportToXML(matFile, xmlFile)
+function exportToXML(matFile, xmlFile,xmlFile_orig)
 
     pyenv('Version','/Users/leonie.thomas/miniconda3/envs/cobra_py/bin/python');
     py.importlib.import_module('cobra.io');
     
     model = py.cobra.io.load_matlab_model(matFile);
+    py.cobra.io.write_sbml_model(model, xmlFile_orig);
 
 
     % Remove GPR rules from reactions
