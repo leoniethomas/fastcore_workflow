@@ -128,10 +128,6 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
         
             % Step 3: plot
             columns_to_keep = find(~all(dat == 0));
-            % Compute variance per column
-            colVar = var(dat, 0, 1); 
-            nonZeroVarCols = colVar > 0;
-            columns_to_keep = columns_to_keep & nonZeroVarCols;
             obj = violinplot(dat(:,columns_to_keep), groups(columns_to_keep),'ShowData', false);    % leave out 'ShowData' for compatibility
         
             % Step 4: labels
