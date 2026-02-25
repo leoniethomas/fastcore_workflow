@@ -25,7 +25,7 @@ milano_project.models.EV_1201.settings.script_parameters.columns_to_define_model
 
 %% deal witht the medium 
 
-modelNames = ["SDHB_0912", "SDHB_1201", "EV_0912", "EV_1201"];
+modelNames = ["SDHB_0912", "EV_0912"];
 
 for i = 1:numel(modelNames)
     name = modelNames{i};
@@ -35,8 +35,26 @@ for i = 1:numel(modelNames)
     milano_project.models.(name).settings.medium = struct();
     milano_project.models.(name).settings.medium.medium_composition = tmp;
 
+    milano_project.models.(name).settings.medium.manual_set_boundaries.unwanted_import = ["EX_o2s[e]", "EX_h2o2[e]", "EX_ppi[e]"];
+    milano_project.models.(name).settings.medium.manual_set_boundaries.wanted_import = ["EX_o2[e]", "EX_h[e]"];
+    milano_project.models.(name).settings.medium.manual_set_boundaries.wanted_export = strings(0);
     milano_project.models.(name).settings.medium.manual_set_boundaries.unwanted_export = strings(0);
-    milano_project.models.(name).settings.medium.manual_set_boundaries.unwanted_import = strings(0);
+end
+
+modelNames = ["SDHB_1201", "EV_1201"];
+
+for i = 1:numel(modelNames)
+    name = modelNames{i};
+    
+    tmp = milano_project.models.(name).settings.medium;
+    
+    milano_project.models.(name).settings.medium = struct();
+    milano_project.models.(name).settings.medium.medium_composition = tmp;
+
+    milano_project.models.(name).settings.medium.manual_set_boundaries.unwanted_import = ["EX_o2s[e]", "EX_h2o2[e]", "EX_ppi[e]", "EX_cit[e]", "EX_succ[e]", "EX_glu_L[e]"];
+    milano_project.models.(name).settings.medium.manual_set_boundaries.wanted_import = ["EX_o2[e]", "EX_h[e]"];
+    milano_project.models.(name).settings.medium.manual_set_boundaries.wanted_export = strings(0);
+    milano_project.models.(name).settings.medium.manual_set_boundaries.unwanted_export = strings(0);
 end
 
 
@@ -44,13 +62,14 @@ end
 
 %parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["SDHB_0912","EV_0912"];
+modelList = ["SDHB_1201","EV_1201"];
 %analysisList = ["FVA", "FBA"];%, "sampling"];
 
 %milano_project = singleModelAnalysis(milano_project,modelList,analysisList,parametersAnalysis);
 
-[milano_project, analysisID] = chooseActiveAnalysisForComparison(milano_project,modelList,["analysis_20260218_1055", "analysis_20260218_1006"]);
+[milano_project, analysisID] = chooseActiveAnalysisForComparison(milano_project,modelList);
 
-referenceModel = "orig_model";
+referenceModel = "consistent_medium_constrained_model";
 comparisonAnalysisList = ["modelStructureComparison",...
                           "modelFunctionalComparison", ...
                           "modelsComparisonSampling"];%,...
@@ -85,10 +104,10 @@ fig = plotFlexibleVenn(subsystem_feature_presence,...
 
 get_flux_plot(milano_project,comparison_name,idx_subsystem_reference_model, "FVA",true, "threshold_flux","upper")
 
-visualize_flux(milano_project,comparison_name,[],{idx_subsystem_reference_model},...
-                                 ["Glycolysis"]);
-
-visualize_fluxsum(milano_project,comparison_name,[],{idx_subsystem_reference_model},...
-                                 ["Glycolysis"]);
+% visualize_flux(milano_project,comparison_name,[],{idx_subsystem_reference_model},...
+%                                  ["Glycolysis"]);
+% 
+% visualize_fluxsum(milano_project,comparison_name,[],{idx_subsystem_reference_model},...
+%                                  ["Glycolysis"]);
 
 
