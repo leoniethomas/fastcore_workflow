@@ -403,11 +403,12 @@ if ~isempty(metsOfInterest)
         pattern = ['^', met, '\['];
         idx = ~cellfun('isempty', regexp(model.mets, pattern, 'once'));
         matchedMets = model.mets(idx);
-        metName = string(model.metNames(find(strcmp(model.mets, matchedMets(1)))));
         
         if ~isempty(matchedMets)
+            
             nbMetsIn = nbMetsIn + 1;
             
+            metName = string(model.metNames(find(strcmp(model.mets, matchedMets(1)))));
             add(rpt, Heading(2, sprintf('%s (%s)', metName, met)));
             add(rpt, lineBreak);
     
