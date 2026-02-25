@@ -75,7 +75,7 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         end
         
         analysis = mod.analysis.(analysisID(m));
-        for slot=1:length(analysisID)
+        for slot=1:length(fieldnames(analysis))
             slot_names = string(fieldnames(analysis));
             project.models.(modelList(m)).analysis.(slot_names(slot)) = analysis.(slot_names(slot));
         end
