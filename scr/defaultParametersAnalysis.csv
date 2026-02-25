@@ -11,6 +11,7 @@ samplerName,sampling,CHRR
 options.toRound,sampling,1
 options.nPointsReturned,sampling,2000
 options.nFiles,sampling,10
+options.numCores,sampling,10
 options.maxTime,sampling,36000
 options.nWarmupPoints,sampling,"2*size(model.S, 2)"
 options.nStepsPerPoint,sampling,"size(model.S, 2)"

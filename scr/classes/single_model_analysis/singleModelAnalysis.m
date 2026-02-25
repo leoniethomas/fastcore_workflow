@@ -154,6 +154,13 @@ for i = 1:numel(modelList)
             [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options, model);
         elseif params.samplerName == "CHRR"
             [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options);
+        elseif params.samplerName == "ADSB" | params.samplerName == "ll_ACHRB" | params.sampler == "EDHRB"
+            option.numSamples = params.options.nPointsReturned;
+            option.stepsPerPoint = params.options.nStepsPerPoint;
+            %option.algorithm = params.samplerName;
+            option.numDiscarded = params.options.nWarmupPoints;
+            option.parallelFlag = true;
+            samples = looplessFluxSampler(model, option);
         else
             error("Currently this pipeline only allows the use of 2 samplers: ACHR and CHRR!")
         end
