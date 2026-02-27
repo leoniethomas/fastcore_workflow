@@ -11,25 +11,20 @@ classdef expression_data
         Properties
         sample_names % names of all samples/cells in the gene expression file read in
         metadata % metadata defining the properties of the different samples/cells
-        feature_names_raw % defining the gene names used in the raw count data stored in the raw_counts slot
         raw_counts % raw unnormalized counts
-        feature_names_norm % defining the gene names used for the normalized data slots 
-        FPKM % Fragments Per Kilobase Million data
-        zFPKM % scaled and centered FPKM
-        TPM %  Transcripts Per Kilobase Million data
-        vst_normalized_counts % variance stabilized data from Deseq2
+        norm_counts %counts normalized for library size/gene length(for non umi RNAseq)
+        znorm_counts % scaled and centered FPKM
         discretized % discretized data - generated useing fastcormics discretize_FPKM function
         features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
-        rxn_names % rxn names from the metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
-        model_presence
+        model_id
+        dico
         pca
         umap
-        source
     end
     
     methods
-        function obj = expression_data(path_raw_counts,path_metadata,sample_label_column)
+        function obj = expression_data(path_raw_counts,path_metadata,dico,sample_label_column)
                 % this function reads in the needed expression data to
                 % perform the preprocessing & QC for fastcormics.
                 %   path_raw_counts:     full path to the file storing the
@@ -41,15 +36,16 @@ classdef expression_data
                 %                        samples are defined, this is
                 %                        used later when visualizing the
                 %                        data
-                arguments
-                   path_raw_counts (1,1) %string {mustBeFileType(path_raw_counts,"txt")}
-                   path_metadata (1,1) %string {mustBeFileType(path_metadata,"txt")}
-                   sample_label_column (1,1) string
-                end
+                % arguments
+                %    path_raw_counts (1,1) %string {mustBeFileType(path_raw_counts,"csv")}
+                %    path_metadata (1,1) %string {mustBeFileType(path_metadata,"txt")}
+                %    sample_label_column (1,1) string
+                % end
             
                 
                 % read in sample names 
-                obj.metadata = readtable(path_metadata, 'Delimiter',';');
+                obj.metadata = readtable(path_metadata, 'Delimiter',',');
+                obj.dico = dico;
                 
                 if ~any(contains(obj.metadata.Properties.VariableNames,sample_label_column))
                     disp("These are the columnnames in the metadata file:")
@@ -58,122 +54,72 @@ classdef expression_data
                 end
                 obj.Properties = string(properties(obj));
                 obj.sample_names = string(obj.metadata.(sample_label_column))';
-                obj.raw_counts = readcell(path_raw_counts);
+                obj.raw_counts = readtable(path_raw_counts, 'Delimiter',',');
                 
                 % bring the raw data into the right format
-                find_numeric_entries = cellfun(@(x) isnumeric(x), obj.raw_counts);
-                sample_row = find(sum(find_numeric_entries,2)==0);
-                feature_column = find(sum(find_numeric_entries)==0);
-                obj.feature_names_raw = rmmissing(string(obj.raw_counts(:,feature_column)));
-                sample_names = rmmissing(string(obj.raw_counts(sample_row,:)));
-                sample_all = sample_names;
-                sample_names = sample_names(find(ismember(sample_names, obj.sample_names)));
-                not_sample_name = sample_all(find(~ismember(sample_all,sample_names)));
-                obj.feature_names_raw(find(matches(obj.feature_names_raw,not_sample_name))) = [];
-                
-                obj.raw_counts(sample_row,:) = [];
-                obj.raw_counts(:,feature_column) = [];
-                % we extracted the feature and sample column
-                % now check if the rest of the matrix is all numeric
-                % then transfert to matrix
-                if ~sum(sum(cellfun(@(x) ~isnumeric(x), obj.raw_counts)) ~= 0)
-                    obj.raw_counts =cell2mat(obj.raw_counts);
-                else
-                    error("The raw count matrix entails other non-numeric columns/rows than the features and the samples! Check your matrix before using it as input!")
+                feature_column = find(obj.raw_counts.Properties.VariableTypes ~= "double");                
+                if isempty(obj.raw_counts.Properties.RowNames)
+                   obj.raw_counts.Properties.RowNames = string(obj.raw_counts{:,feature_column});
+                   obj.raw_counts(:,feature_column) = [];
+                end
+                if isempty(obj.raw_counts.Properties.VariableNames)
+                    error("The Variablenames are empty for the raw counts table, adjust code to get the sample names as Column names!!")
                 end
               
-                if size(obj.raw_counts,2) ~= length(sample_names)
-                    error("The choosen sample name row does not entail all the sample ids, to cover the number of columns in the raw count data. Check that there are as many identifiers in the sample row as there are columns in the data!")
+                % sort the table according to the metadata given 
+                if sum(matches(obj.sample_names, string(obj.raw_counts.Properties.VariableNames))) == 0
+                    obj.sample_names = regexprep(obj.sample_names,"_", "-");
+                    obj.raw_counts.Properties.VariableNames = regexprep(obj.raw_counts.Properties.VariableNames,"_", "-");
+                    if sum(~matches(obj.sample_names, string(obj.raw_counts.Properties.VariableNames))) ~= 0
+                        error("Since non of the sample names between the metadata matched _ was replaced by - but still there are samples in the metadata that can not be found in the raw count data! Check your csv files!")
+                    end
                 end
-                
-                % check that the samples are in the corresponding order in
-                % the metadata as well as in the expresion data           
-                [a,b,c] = intersect(obj.sample_names, sample_names);
-                if length(obj.sample_names) ~= length(a) | sum(c ~= b) > 0
-                    % if the number of samples is not equal or if the samples are not in the same order                    
-                    obj.sample_names = obj.sample_names(b);
-                    sample_names = obj.samples(c);
-                    obj.metadata= obj.metadata(b,:);
-                    obj.raw_counts = obj.raw_counts(:,c);
-                end
-                disp("expression data object created:")
-                obj
-                disp("expression data entails " + string(length(obj.sample_names)) + " samples!")
+
+                obj.raw_counts = obj.raw_counts(:,obj.sample_names);
             
         end
-        function obj = get_normalized_data(obj, file_path, slot)
+        function obj = get_normalized_data(obj, file_path)
             % This function reads in the normalized data 
             % normalized data referres here to TPM and/or FPKM
             % (vst_normalized counts)
             
-            arguments
-               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
-               file_path (1,1) string {mustBeFileType(file_path,"csv")}
-               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized"])}
+            % arguments
+            %    obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+            %    file_path (1,1) string {mustBeFileType(file_path,"csv")}
+            % end
+
+            obj.norm_counts = readtable(file_path, 'Delimiter',',');
+
+            % bring the raw data into the right format
+            feature_column = find(obj.norm_counts.Properties.VariableTypes ~= "double");                
+            if isempty(obj.norm_counts.Properties.RowNames)
+               obj.norm_counts.Properties.RowNames = string(obj.norm_counts{:,feature_column});
+               obj.norm_counts(:,feature_column) = [];
+            end
+            if isempty(obj.norm_counts.Properties.VariableNames)
+                error("The Variablenames are empty for the normalized counts table, adjust code to get the sample names as Column names!!")
+            end
+          
+            % sort the table according to the metadata given 
+            if sum(matches(obj.sample_names, string(obj.norm_counts.Properties.VariableNames))) == 0
+                obj.sample_names = regexprep(obj.sample_names,"_", "-");
+                obj.norm_counts.Properties.VariableNames = regexprep(obj.norm_counts.Properties.VariableNames,"_", "-");
+                if sum(~matches(obj.sample_names, string(obj.norm_counts.Properties.VariableNames))) ~= 0
+                    error("Since non of the sample names between the metadata matched _ was replaced by - but still there are samples in the metadata that can not be found in the raw count data! Check your csv files!")
+                end
             end
 
-            obj.(slot) = readcell(file_path);          
-            % get sample and feature names 
-            % bring the raw data into the right format
-            find_numeric_entries = cellfun(@(x) isnumeric(x), obj.(slot));
-            sample_row = find(sum(find_numeric_entries,2)==0);
-            feature_column = find(sum(find_numeric_entries)==0);
-            features_in_data = rmmissing(string(obj.(slot)(:,feature_column)));
-            sample_names = rmmissing(string(obj.(slot)(sample_row,:)));
-            obj.(slot)(sample_row,:) = [];
-            obj.(slot)(:,feature_column) = [];
-            
-            not_sample_name = sample_names(find(~ismember(sample_names,obj.sample_names)));
-            sample_names = sample_names(find(ismember(sample_names,obj.sample_names)));
-            features_in_data(find(matches(features_in_data,not_sample_name))) = [];
-            if ~isempty(obj.feature_names_norm)
-                % in case there has been normalized data already read in
-                % the new data is filtered according what is already stored
-                % in the feature_name_norm 
-                [~,idx_in_feature_names_norm] = ismember(obj.feature_names_norm, features_in_data);
-                obj.(slot) = obj.(slot)(idx_in_feature_names_norm,:);
-                if length(idx_in_feature_names_norm) < length(features_in_data)
-                   disp("You lost some of your features in the " + slot + " data slot since it was indexed based on the features in the .feature_names_norm slot of the expression_data object!") 
-                end
-            else
-                obj.feature_names_norm = features_in_data;
-            end
-            
-            
-            
-            % we extracted the feature and sample column
-            % now check if the rest of the matrix is all numeric
-            % then transfer to matrix
-            if ~sum(sum(cellfun(@(x) ~isnumeric(x), obj.(slot))) ~= 0)
-                obj.(slot) =cell2mat(obj.(slot));
-            else
-            end
-            
-            
-            % check that the samples are in the corresponding order in
-            % the metadata as well as in the expresion data   
-            if length(sample_names) ~= size(obj.(slot),2)
-                error("There are more entries in the sample row than there are data in the data, check which of the entries you need to get rid of.")
-            end
-            [~,b] = intersect(obj.sample_names, sample_names);
-            obj.(slot) = obj.(slot)(:,b);
-            if length(b) ~= length(obj.sample_names)
-               error("Not all the samples from the metadata could be found in the data!") 
-            end
-            
-            disp("expression data object created:")
-            obj
-            disp("expression data entails " + string(length(obj.sample_names)) + " samples!")
+            obj.norm_counts = obj.norm_counts(:,obj.sample_names);
 
         end
         
         function obj = map_expression_2_rxns(obj,model_used,dic_gene_ids_entrez_used)
            % this function executes the mapping of the gene expression to the rnx in the model
-            arguments
-               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
-               model_used (1,1) struct
-               dic_gene_ids_entrez_used (:,:) table
-            end
+            % arguments
+            %    obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+            %    model_used (1,1) struct
+            %    dic_gene_ids_entrez_used (:,:) table
+            % end
             
             if exist("mapExpressionToModel",'file') == 0
                error("Fastcormics is not installed or the installation was not added to the path variable! The function used for mapping can not be found! map_expression_2_data_rFASTCORMICS function is needed to execute this task!") 
@@ -182,26 +128,29 @@ classdef expression_data
             mapping = mapExpressionToModel(model_used, ...
                                                          obj.discretized,...
                                                          dic_gene_ids_entrez_used,...
-                                                         cellstr(obj.feature_names_norm),1);
+                                                         obj.norm_counts.Properties.RowNames,1);
+            obj.model_id = model_used.id;
             mapping = sparse(mapping);
-            obj.mapping_exp_2_rxns = mapping;
-            obj.rxn_names = string(model_used.rxns);
+            obj.mapping_exp_2_rxns = array2table(mapping, ...
+                                             'RowNames', model_used.rxns, ...
+                                             'VariableNames', obj.norm_counts.Properties.VariableNames);
         end
         
-        function obj = get_discretized_data(obj,figflag,file_path_results,slot)
+        function obj = get_discretized_data(obj,figflag,file_path_results)
             % This function executes the discretize function of fastcormics
             % and saves the output to a folder
-            arguments
-               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
-               figflag (1,1) double {mustBeMember(figflag,[1,0])}
-               file_path_results (1,1) string
-               slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized","raw_counts"])} ="FPKM"
-            end
+            % arguments
+            %    obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+            %    figflag (1,1) double {mustBeMember(figflag,[1,0])}
+            %    file_path_results (1,1) string
+            %    slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized","raw_counts"])} ="FPKM"
+            % end
 
-            mkdir(file_path_results + "Discretization" )
-            [obj.discretized,obj.zFPKM] = discretize_FPKM(obj.(slot), ...
-                                              obj.sample_names,figflag,...
-                                              char(file_path_results + "Discretization" + filesep));
+            mkdir(file_path_results + "fig")
+            [obj.discretized, ...
+             obj.znorm_counts] = discretize_FPKM(obj.norm_counts{:,:}, ...
+                                                   obj.sample_names,figflag,...
+                                                   char(file_path_results + "fig" + filesep));
             
             num_disc = hist(obj.discretized,3);
             figure
@@ -211,22 +160,30 @@ classdef expression_data
             xticklabels(obj.sample_names)
             xtickangle(90); 
             hold off
-            saveas(gcf,file_path_results +  "discretized_count.png");
+            saveas(gcf,char(file_path_results + "fig" + filesep) +  "discretized_count.png");
             
         end
         
-        function obj = get_metabolic_genes(obj,model_used,dic_gene_ids_entrez_used)
+        function obj = get_metabolic_genes(obj,model_used, wanted_id)
             % 
             
-            arguments
-               obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
-               model_used (1,1) struct
-               dic_gene_ids_entrez_used table
-            end        
+            % arguments
+            %    obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
+            %    model_used (1,1) struct
+            %    dic_gene_ids_entrez_used table
+            % end        
             
-            metabolic_genes_entrez = regexprep(string(model_used.(string(fieldnames(model_used))).genes), '\.1$', '');           
-            obj.features_metabolic_genes = string(dic_gene_ids_entrez_used.Var1.dico.SYMBOL(find(matches(dic_gene_ids_entrez_used.Var1.dico.ENTREZ,...
-                                                                   metabolic_genes_entrez))));
+            metabolic_genes_entrez = regexprep(string(model_used.(string(fieldnames(model_used))).genes), '\.1$', '');    
+            % find out which type of gene id is used by scanning the dico for matches 
+            f = @(x) sum(matches(metabolic_genes_entrez,string(obj.dico{:,x})));
+            match_per_column_dico = arrayfun(f, 1:size(obj.dico,2));
+            [~,mapping_column_idx] = max(match_per_column_dico);
+            mapping_column = obj.dico{:,mapping_column_idx};
+
+            find_matches_in_data = find(matches(mapping_column,metabolic_genes_entrez));
+            
+            obj.features_metabolic_genes = string(obj.dico.(wanted_id));
+            obj.features_metabolic_genes = obj.features_metabolic_genes(find_matches_in_data);
             
         end
         
