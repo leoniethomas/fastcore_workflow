@@ -105,6 +105,8 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
     col_labels = groups;
     
     % Create heatmap
+    figure;
+    hold off;
     h = heatmap(col_labels, regexprep(row_labels,"_"," "), heatmap_data);
     
     % Customize

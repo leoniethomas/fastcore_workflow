@@ -434,7 +434,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
             xMaxHigh = max(MED_high(:));
             % Add small padding
             xPad = (xMaxHigh - xMinHigh) * 0.05;
-            xlim(axTop, [xMinHigh-xPad, xMaxHigh+xPad]);
+            %xlim(axTop, [xMinHigh-xPad, xMaxHigh+xPad]);
         
             % Y limits
             yMinHigh = 0.5;  % first y
