@@ -24,7 +24,7 @@ classdef fastcore_experiment
 
         end
 
-        function obj = add_models(obj,model,dico)
+        function obj = add_model(obj,model)
             disp("Running fastcc and getting rid of unconsistent rxns!")
             A = fastcc(model, 1e-4, 1);
             % 
@@ -34,12 +34,12 @@ classdef fastcore_experiment
             consistency_check(model);
             
             obj.orig_model = model;
-            obj.dico = dico;
             
         end
         function obj = add_expression_data(obj,data, disc_data)
-            obj.data = data;
+            obj.data = struct(data);
             obj.data.source = disc_data;
+            obj.dico = obj.data.dico;
         end
         
         
