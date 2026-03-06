@@ -1,7 +1,6 @@
 function rxn_gene_rule = get_rxn_symbol_rule(model,rxnName)
         % --- Get gene association for reaction ---
-        %rxnName = "ME2";
-        %model   = project.models.(reference_model);
+        % repace the gene specifiers by the gene symbol
         
         rxnIdx = find(strcmp(model.model.rxns, rxnName), 1);
         assert(~isempty(rxnIdx), 'Reaction not found in the model.');

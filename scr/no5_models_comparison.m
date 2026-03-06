@@ -26,7 +26,7 @@ parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["WT","KO","PLV"];
 analysisList = ["FVA", "FBA", "sampling"];
 
-project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
+%project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
@@ -40,7 +40,7 @@ project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis)
 
 %% Main analysis 
 
-project.models.reference_model.modelreferenceModel = "orig_model";
+referenceModel = "orig_model";
 comparisonAnalysisList = ["modelStructureComparison",...
                           "modelFunctionalComparison", ...
                           "modelsComparisonSampling"]%,...
@@ -50,7 +50,16 @@ identifier = "";
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
                                              referenceModel,comparisonAnalysisList,identifier);
 
+%% 
+coa = find(matches(string(project.models.(referenceModel).model.subSystems),"CoA synthesis"));
+gly = find(matches(string(project.models.(referenceModel).model.subSystems),"Glycolysis/gluconeogenesis"));
+oxpho = find(matches(string(project.models.(referenceModel).model.subSystems),"Oxidative phosphorylation"));
+tca = find(matches(string(project.models.(referenceModel).model.subSystems),"Citric acid cycle"));
+arg_pro = find(matches(string(project.models.(referenceModel).model.subSystems),"Arginine and proline metabolism"));
 
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap",true);
 
 %% Investigations up to the user (for example for specific subsystems)
 
