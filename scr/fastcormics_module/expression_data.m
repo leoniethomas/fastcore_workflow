@@ -18,6 +18,7 @@ classdef expression_data
         features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
         model_id
+        feature_names_norm
         dico
         pca
         umap
