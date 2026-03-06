@@ -18,7 +18,7 @@ addpath(genpath("C:\Users\leonie.thomas\looplessFluxSampler"))
 rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
-load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
 
 %% perform new single cell analysis - if not already done for the given object
 
@@ -30,6 +30,8 @@ project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis)
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
+%save(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat",'project')
+
 
 %% Check object structure for running the model comparison
 
@@ -38,7 +40,7 @@ project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis)
 
 %% Main analysis 
 
-referenceModel = "orig_model";
+project.models.reference_model.modelreferenceModel = "orig_model";
 comparisonAnalysisList = ["modelStructureComparison",...
                           "modelFunctionalComparison", ...
                           "modelsComparisonSampling"]%,...
@@ -54,7 +56,7 @@ identifier = "";
 
 
 % run a venn for a specific subsystem
-choosen_subsystem = "Glycolysis/gluconeogenesis";
+ fchoosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 % create the rxns presence table from it
@@ -103,7 +105,7 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",f
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+get_flux_plot(project,"WT_vs_KO_vs_PLV__",idx_subsystem_reference_model, "FVA",false)
 
 
 choosen_subsystem = "Arginine and proline metabolism";
@@ -419,6 +421,33 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{rxns_met_id},...
                                  ["proline"]);
 
 
+%% visualize the expression values + their discretization status
+
+exprCells = struct2cell(structfun(@(x)x.sample_metadata.condition,rmfield(project.models,setdiff(fieldnames(project.models),modelList)),'UniformOutput',false));
+condition = string(cat(1, exprCells{:})); 
+
+gene_names = string(project.models.KO.discretized_data.gene_names);
+exprCells = struct2cell(structfun(@(x)x.expression_data,rmfield(project.models,setdiff(fieldnames(project.models),modelList)),'UniformOutput',false));
+all_expr = cat(2, exprCells{:});  % Result: 24720 x total_samples
+
+
+all_expr(find(contains( gene_names, "PDHX")),:)
+
+exprCells = struct2cell(structfun(@(x)x.discretized_data.values,rmfield(project.models,setdiff(fieldnames(project.models),modelList)),'UniformOutput',false));
+all_disc = cat(2, exprCells{:});  % Result: 24720 x total_samples
+
+
+all_disc(find(contains( gene_names, "PDHX")),:)
+
+
+PDHX_expr = all_expr(contains(gene_names, "PDHX"), :);
+
+% Make boxplot grouped by condition
+figure;
+boxplot(PDHX_expr, condition);
+ylabel('Expression of PDHX');
+title('PDHX Expression Across Conditions [FPKM]');
+grid on;
 
 
 
