@@ -53,7 +53,7 @@ function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_id
         met_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_set_labels (1,:) string = []
-        plot_type  {mustBeMember(plot_type, ["violin","heatmap"])} =["violin"] 
+        plot_type  {mustBeMember(plot_type, ["violin","heatmap_model", "heatmap_sample"])} =["violin"] 
         exclude_coenzymes (1,1) logical = true
         ignore_compartment (1,1) logical = true
     end
@@ -96,14 +96,14 @@ function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_id
     if plot_type == "violin"
             fluxsum_sets = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment);
     else
-            fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels);
+            fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type);
     end
 
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 end
 
-function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels)
+function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type)
     % This function visualizes the mean fluxsum over the specified rxn_id
     % sets. By getting the fluxsum for metabolites that are participating
     % in the specified sets + are part of the met_idx and then computing
@@ -121,6 +121,9 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
     %       - rxn_idx: sets of rxns to be visualized in the heatmap
     %       - rxn_set_labels: names of the defined sets, can be choosen
     %         freely
+    %       - type: specifies whether a fluxsum per rxn set should be
+    %         visualized per samples or the average over all samples from one
+    %         model: values : "heatmap_sample" or "heatmap_model" default is "heatmap_model"
     % Output: 
     %       - fluxsum_sets: fluxsum overall metabolites per sample as a
     %         array with matrices stored within
@@ -130,6 +133,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         met_idx  
         rxn_idx
         rxn_set_labels (1,:) string 
+        type {mustBeMember(type, ["heatmap_model", "heatmap_sample"])} =["heatmap_model"] 
     end
     reference = project.comparisons.(comparison_name).reference_model;
     if isempty(rxn_idx)
@@ -146,7 +150,8 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
 
 
     heatmap_data = zeros(length(fluxsum_sets), length(unique(samples_cat)));
-    
+    heatmap_data_all_samples = zeros(length(fluxsum_sets), length(samples_cat));
+
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
     for subsystem = 1:numel(fluxsum_sets)
@@ -171,22 +176,79 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
             data_grouped{g} = data(:, idx);   % all metabolites, only this group
         end
         heatmap_data(subsystem,:) = cellfun(@(x) mean(x(:)), data_grouped);
+        heatmap_data_all_samples(subsystem,:) = cell2mat(cellfun(@(x) mean(x,1), data_grouped, 'UniformOutput', false));
         
     end
 
-    % Optional row/column labels
-    row_labels = rxn_set_labels;
-    col_labels = groups;
+    if type == "heatmap_model"
+        % z-scaling for the heatmap in order to make the differences between
+        % samples for one pathway more visible!
+        scaled_data = zscore(heatmap_data')';
     
-    % Create heatmap
-    h = heatmap(col_labels, regexprep(row_labels,"_"," "), heatmap_data);
+        imagesc(scaled_data)
+        
+        cmap = get_color_pallette();
+        h = colorbar;  
+        caxis([-max([max(scaled_data(:)),abs(min(scaled_data(:)))]) max([max(scaled_data(:)),abs(min(scaled_data(:)))])])   % colors scaled from -2 (min) to 2 (max)
+
+        ylabel(h, 'Scaled average fluxsum average value over rxn set', 'FontSize', 18)        % Set title/label of colorbar
+        axis equal tight            % Make cells square and remove extra space
     
-    % Customize
-    h.Title = 'Flux Sum Heatmap';
-    h.XLabel = 'Model';
-    h.YLabel = 'pathway';
-    h.Colormap = parula;        % or 'hot', 'jet', etc.
-    h.ColorLimits = [min(data(:)) max(data(:))];  % optional
+        title("Fluxsum per rxn set overall metabolites")    % grayscale
+        % Set x-axis and y-axis labels
+        set(gca, 'XTick', 1:length(unique(samples_cat)), 'XTickLabel', unique(samples_cat), ...
+             'YTick', 1:length(rxn_set_labels), 'YTickLabel', rxn_set_labels)
+        xtickangle(45)
+        ax = gca;
+        ax.FontSize = 18;  
+        xlabel('Model', 'FontSize', 18)       
+        ylabel('Reaction set', 'FontSize', 18)    
+       
+        [nRows, nCols] = size(heatmap_data);
+        
+    
+        % Loop over every cell and place the absolute number from pathway_counts
+        for i = 1:nRows
+            for j = 1:nCols
+                % You want absolute numbers, not relative counts, so use pathway_counts
+                % (or multiply relative_counts by reference_model if needed)
+                value =  heatmap_data(i,j); % +1 because first column is reference_model
+                % Place text at the center of the tile
+                text(j, i, num2str(value), ...
+                    'HorizontalAlignment','center', ...
+                    'VerticalAlignment','middle', ...
+                    'Color','k', ...          % black text
+                    'FontSize',18)
+            end
+        end
+        
+        hold off
+    else
+
+        figure
+        scaled_data = zscore(heatmap_data_all_samples')';
+    
+        imagesc(scaled_data)
+
+        cmap = get_color_pallette();
+       
+        h = colorbar;  
+        caxis([-max([max(scaled_data(:)),abs(min(scaled_data(:)))]) max([max(scaled_data(:)),abs(min(scaled_data(:)))])])   % colors scaled from -2 (min) to 2 (max)
+
+        ylabel(h, 'Scaled average fluxsum value per sample', 'FontSize', 18)        % Set title/label of colorbar
+        title("Fluxsum per rxn set overall metabolites")    % grayscale
+        % Set x-axis and y-axis labels
+        [sample_count,~] = hist(samples_cat);
+        xtickposition = ((1:length(unique(samples_cat))) .* (sample_count)) - sample_count/2;
+    
+        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
+             'YTick', 1:length(rxn_set_labels), 'YTickLabel', rxn_set_labels)
+        xtickangle(45)
+        ax = gca;
+        ax.FontSize = 18;  
+        xlabel('Model', 'FontSize', 18)       
+        ylabel('Reaction set', 'FontSize', 18)
+    end
     
 
 end
