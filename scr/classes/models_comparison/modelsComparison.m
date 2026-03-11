@@ -600,6 +600,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     ax3 = nexttile(3,[1 2]);   % column 2, span both rows
     axis(ax3,'off')
     hold(ax3,'on')
+    
 
     core_reactions_included = struct2cell(structfun(@(x) x.core_reactions(find(ismember(x.core_reactions, x.model.rxns)))', ...
                                             models_list, 'UniformOutput', false));
@@ -610,105 +611,135 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
                                                         "Structural model comparison: core rxns presence");
 
     
-    
-    % Find axes inside Venn figure
-    axV = findobj(figV,'Type','axes','-not','Tag','legend');
-    axV = axV(1);
-    
-    % Copy graphics
-    copyobj(allchild(axV), ax3)
+    if string(class(figV)) == 'matlab.ui.Figure'
 
-    
-    
-    % Fix geometry
-    axis(ax3,'tight')
-    axis(ax3,'equal')
-    ax3.Clipping = 'off';
-
-    
-    close(figV)
-
-    % -- Visualization: Looking in deeper into the core reactions, the core
-    % is what is defined by the data, therefore portrays the underlying
-    % biological chnages, so the question is which reactions are part of
-    % the outer and intersections we saw in the previous venn/intersection
-    % diagramm ? are the differences in core reactions only due to
-    % exchange/import ? transporters ? This should be avoided!
+        % Find axes inside Venn figure
+        axV = findobj(figV,'Type','axes','-not','Tag','legend');
+        axV = axV(1);
         
-    % create an upsetr plot for the all the inter and outersections
-    % filter out the main intersection -> the one with the longest name
-    names_intersections = fieldnames(idx_inter_outersections);
-    [~,all_intersection] = max(cellfun(@(x) length(x), names_intersections));
-    idx_inter_outersections = rmfield(idx_inter_outersections, names_intersections(all_intersection));
-    % now get the pathway of every entry
-    inter_outersections_pathways = structfun(@(x) string(project.models.(reference_model).model.subSystems(x)),...
-                                             idx_inter_outersections,'UniformOutput',false);
-    C = struct2cell(inter_outersections_pathways);
-    unique_pathways = unique(vertcat(C{:}));
+        % Copy graphics
+        copyobj(allchild(axV), ax3)
     
-
-    % Preprocess pathways: collapse transport
-    S = structfun(@(x) regexprep(x,"^Transport.*","Transport"), inter_outersections_pathways, 'UniformOutput', false);
-    pathways_unique = unique(regexprep(unique_pathways,"^Transport.*","Transport"));
+        
+        
+        % Fix geometry
+        axis(ax3,'tight')
+        axis(ax3,'equal')
+        ax3.Clipping = 'off';
+        close(figV)
+    else 
+        % store main figure handle
+        mainFig = gcf;
+        
+        % create Venn/heatmap figure
+        [figV,idx_inter_outersections,~] = plotFlexibleVenn( ...
+            core_presence, structure_analysis.modelNames, ...
+            "Structural model comparison: core rxns presence");
+        
+        % extract data
+        X = figV.XData;
+        Y = figV.YData;
+        C = figV.ColorData;
+        
+        % close the temporary figure
+        close(ancestor(figV,'figure'))
+        
+        % activate main figure again
+        figure(mainFig)
+        
+        % place heatmap in tile
+        nexttile(3,[1 2])
+        heatmap(X,Y,C)
+        
+        title('Structural model comparison: core rxns presence')
     
-    barNames = string(fieldnames(S));
-    nBars = numel(barNames);
-    
-    % Build count matrix
-    Y = cellfun(@(b) sum(S.(b)' == pathways_unique, 2)', barNames', 'UniformOutput', false);
-    Y = cat(1, Y{:});
-    
-    % Sort bars by total counts (descending)
-    [~, sortIdx] = sort(sum(Y,2), 'descend');
-    Y = Y(sortIdx,:);
-    barNames_sorted = barNames(sortIdx);
-    
-    % Plot
-    figure
-    b = bar(Y, 'stacked');
-    
-    % Generate a qualitative colormap with enough colors
-    numColors = size(Y,2);
-    % Example 20-color qualitative palette (from ColorBrewer / Tableau)
-    cmap = [ ...
-        166 206 227;
-        31 120 180;
-        178 223 138;
-        51 160 44;
-        251 154 153;
-        227 26 28;
-        253 191 111;
-        255 127 0;
-        202 178 214;
-        106 61 154;
-        255 255 153;
-        177 89 40;
-        141 211 199;
-        255 255 179;
-        190 186 218;
-        251 128 114;
-        128 177 211;
-        253 180 98;
-        179 222 105;
-        252 205 229] / 255;  % Normalize 0-1
-    
-    % Apply colors to each category
-    for k = 1:numColors
-        b(k).FaceColor = cmap(mod(k-1,size(cmap,1))+1,:);
+        
     end
-    
-    
-    % Labels and legend
-    ax = gca;
-    ax.XTickLabel = regexprep(barNames_sorted, "_", " ");
-    ax.FontSize = 20;
-    xlabel('Model intersections/outersections','FontSize',20)
-    ylabel('# Core Reactions','FontSize',20)
-    title('Count of Core reactions per pathway and intersection/outersection','FontSize',20)
-    
-    lgd = legend(pathways_unique, 'Location','northeast');
-    lgd.FontSize = 20;
 
+    
+    if string(class(figV)) == 'matlab.ui.Figure'
+
+        % -- Visualization: Looking in deeper into the core reactions, the core
+        % is what is defined by the data, therefore portrays the underlying
+        % biological chnages, so the question is which reactions are part of
+        % the outer and intersections we saw in the previous venn/intersection
+        % diagramm ? are the differences in core reactions only due to
+        % exchange/import ? transporters ? This should be avoided!
+            
+        % create an upsetr plot for the all the inter and outersections
+        % filter out the main intersection -> the one with the longest name
+        names_intersections = fieldnames(idx_inter_outersections);
+        [~,all_intersection] = max(cellfun(@(x) length(x), names_intersections));
+        idx_inter_outersections = rmfield(idx_inter_outersections, names_intersections(all_intersection));
+        % now get the pathway of every entry
+        inter_outersections_pathways = structfun(@(x) string(project.models.(reference_model).model.subSystems(x)),...
+                                                 idx_inter_outersections,'UniformOutput',false);
+        C = struct2cell(inter_outersections_pathways);
+        unique_pathways = unique(vertcat(C{:}));
+        
+    
+        % Preprocess pathways: collapse transport
+        S = structfun(@(x) regexprep(x,"^Transport.*","Transport"), inter_outersections_pathways, 'UniformOutput', false);
+        pathways_unique = unique(regexprep(unique_pathways,"^Transport.*","Transport"));
+        
+        barNames = string(fieldnames(S));
+        nBars = numel(barNames);
+        
+        % Build count matrix
+        Y = cellfun(@(b) sum(S.(b)' == pathways_unique, 2)', barNames', 'UniformOutput', false);
+        Y = cat(1, Y{:});
+        
+        % Sort bars by total counts (descending)
+        [~, sortIdx] = sort(sum(Y,2), 'descend');
+        Y = Y(sortIdx,:);
+        barNames_sorted = barNames(sortIdx);
+        
+        % Plot
+        figure
+        b = bar(Y, 'stacked');
+        
+        % Generate a qualitative colormap with enough colors
+        numColors = size(Y,2);
+        % Example 20-color qualitative palette (from ColorBrewer / Tableau)
+        cmap = [ ...
+            166 206 227;
+            31 120 180;
+            178 223 138;
+            51 160 44;
+            251 154 153;
+            227 26 28;
+            253 191 111;
+            255 127 0;
+            202 178 214;
+            106 61 154;
+            255 255 153;
+            177 89 40;
+            141 211 199;
+            255 255 179;
+            190 186 218;
+            251 128 114;
+            128 177 211;
+            253 180 98;
+            179 222 105;
+            252 205 229] / 255;  % Normalize 0-1
+        
+        % Apply colors to each category
+        for k = 1:numColors
+            b(k).FaceColor = cmap(mod(k-1,size(cmap,1))+1,:);
+        end
+        
+        
+        % Labels and legend
+        ax = gca;
+        ax.XTickLabel = regexprep(barNames_sorted, "_", " ");
+        ax.FontSize = 20;
+        xlabel('Model intersections/outersections','FontSize',20)
+        ylabel('# Core Reactions','FontSize',20)
+        title('Count of Core reactions per pathway and intersection/outersection','FontSize',20)
+        
+        lgd = legend(pathways_unique, 'Location','northeast');
+        lgd.FontSize = 20;
+    end
 
     % Further Visualizations ? #TODO ? 
 

@@ -10,29 +10,32 @@ function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names,
 
 %% --- Input checks
 n = size(ordered_feature_matrix,2);
+
+labels = strings(2^n - 1, 1);
+idx = struct();
+    
+
 if n < 2 || n > 4
     disp('Only supports 2 to 4 sets. Therefore a simple intersection heatmap will be plotted here!');
     M = ordered_feature_matrix' * ordered_feature_matrix;
     figure
     fig = heatmap(set_names,set_names, M);
     title(title_plot);
-   
+
 else
 
-%% --- Generate exclusive intersections
-labels = strings(2^n - 1, 1);
-idx = struct();
+    %% --- Generate exclusive intersections
 
-for i = 1:(2^n - 1)
-    mask = dec2bin(i, n) == '1';
-
-    rows_match = all(ordered_feature_matrix(:, mask), 2) & all(~ordered_feature_matrix(:, ~mask), 2);
-
-    name_set = matlab.lang.makeValidName( ...
-        strjoin(set_names(mask), "_"));
-
-    idx.(name_set) = find(rows_match);
-    labels(i) = string(sum(rows_match));
+    for i = 1:(2^n - 1)
+        mask = dec2bin(i, n) == '1';
+    
+        rows_match = all(ordered_feature_matrix(:, mask), 2) & all(~ordered_feature_matrix(:, ~mask), 2);
+    
+        name_set = matlab.lang.makeValidName( ...
+            strjoin(set_names(mask), "_"));
+    
+        idx.(name_set) = find(rows_match);
+        labels(i) = string(sum(rows_match));
 end
 % the labels are per se not in the correct order! needs reordering so that
 % text labels and intersection count positions align
