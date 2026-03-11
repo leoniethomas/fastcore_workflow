@@ -53,7 +53,7 @@ function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_id
         met_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_set_labels (1,:) string = []
-        plot_type  {mustBeMember(plot_type, ["violin","heatmap_model", "heatmap_sample", "heatmap_sample_all_mets"])} =["violin"] 
+        plot_type  {mustBeMember(plot_type, ["violin","heatmap", "heatmap_sample", "heatmap_sample_all_mets"])} =["violin"] 
         exclude_coenzymes (1,1) logical = true
         ignore_compartment (1,1) logical = true
     end
@@ -123,7 +123,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
     %         freely
     %       - type: specifies whether a fluxsum per rxn set should be
     %         visualized per samples or the average over all samples from one
-    %         model: values : "heatmap_sample", "heatmap_sample_all_mets" or "heatmap_model" default is "heatmap_model"
+    %         model: values : "heatmap_sample", "heatmap_sample_all_mets" or "heatmap" default is "heatmap"
     % Output: 
     %       - fluxsum_sets: fluxsum overall metabolites per sample as a
     %         array with matrices stored within
@@ -133,7 +133,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         met_idx  
         rxn_idx
         rxn_set_labels (1,:) string 
-        type {mustBeMember(type, ["heatmap_model", "heatmap_sample","heatmap_sample_all_mets"])} =["heatmap_model"] 
+        type {mustBeMember(type, ["heatmap", "heatmap_sample","heatmap_sample_all_mets"])} =["heatmap"] 
     end
     reference = project.comparisons.(comparison_name).reference_model;
     if isempty(rxn_idx)
@@ -181,7 +181,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         heatmap_data_all_samples_all_mets{end +1} = cell2mat(data_grouped);
     end
 
-    if type == "heatmap_model"
+    if type == "heatmap"
         % z-scaling for the heatmap in order to make the differences between
         % samples for one pathway more visible!
         scaled_data = zscore(heatmap_data')';
