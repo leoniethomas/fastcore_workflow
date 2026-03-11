@@ -224,7 +224,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         end
         
         hold off
-    elseif type == "heatmap_samples"
+    elseif type == "heatmap_sample"
 
         figure
         scaled_data = zscore(heatmap_data_all_samples')';
