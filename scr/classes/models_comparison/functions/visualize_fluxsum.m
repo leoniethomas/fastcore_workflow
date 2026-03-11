@@ -53,7 +53,7 @@ function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_id
         met_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_idx (1,:) cell {mustBeColumnVector} =[]
         rxn_set_labels (1,:) string = []
-        plot_type  {mustBeMember(plot_type, ["violin","heatmap_model", "heatmap_sample"])} =["violin"] 
+        plot_type  {mustBeMember(plot_type, ["violin","heatmap_model", "heatmap_sample", "heatmap_sample_all_mets"])} =["violin"] 
         exclude_coenzymes (1,1) logical = true
         ignore_compartment (1,1) logical = true
     end
@@ -123,7 +123,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
     %         freely
     %       - type: specifies whether a fluxsum per rxn set should be
     %         visualized per samples or the average over all samples from one
-    %         model: values : "heatmap_sample" or "heatmap_model" default is "heatmap_model"
+    %         model: values : "heatmap_sample", "heatmap_sample_all_mets" or "heatmap_model" default is "heatmap_model"
     % Output: 
     %       - fluxsum_sets: fluxsum overall metabolites per sample as a
     %         array with matrices stored within
@@ -133,7 +133,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         met_idx  
         rxn_idx
         rxn_set_labels (1,:) string 
-        type {mustBeMember(type, ["heatmap_model", "heatmap_sample"])} =["heatmap_model"] 
+        type {mustBeMember(type, ["heatmap_model", "heatmap_sample","heatmap_sample_all_mets"])} =["heatmap_model"] 
     end
     reference = project.comparisons.(comparison_name).reference_model;
     if isempty(rxn_idx)
@@ -154,6 +154,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
 
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
+    heatmap_data_all_samples_all_mets = {};
     for subsystem = 1:numel(fluxsum_sets)
         data = fluxsum_sets{subsystem};
         title_fig = rxn_set_labels(subsystem);
@@ -177,7 +178,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         end
         heatmap_data(subsystem,:) = cellfun(@(x) mean(x(:)), data_grouped);
         heatmap_data_all_samples(subsystem,:) = cell2mat(cellfun(@(x) mean(x,1), data_grouped, 'UniformOutput', false));
-        
+        heatmap_data_all_samples_all_mets{end +1} = cell2mat(data_grouped);
     end
 
     if type == "heatmap_model"
@@ -223,7 +224,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         end
         
         hold off
-    else
+    elseif type == "heatmap_samples"
 
         figure
         scaled_data = zscore(heatmap_data_all_samples')';
@@ -248,8 +249,41 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         ax.FontSize = 18;  
         xlabel('Model', 'FontSize', 18)       
         ylabel('Reaction set', 'FontSize', 18)
-    end
+    else
     
+
+    % z-scaling for the heatmap in order to make the differences between
+        % samples for one pathway more visible!
+        scaled_data = zscore(cell2mat(heatmap_data_all_samples_all_mets')')';
+        
+    
+        imagesc(scaled_data)
+        
+        cmap = get_color_pallette();
+        h = colorbar;  
+        min_axis = quantile(scaled_data(:),0.001);
+        max_axis = quantile(scaled_data(:),0.999);
+        axis_limit = max([abs(min_axis), abs(max_axis)]);
+        caxis([-axis_limit,axis_limit])   
+
+        ylabel(h, 'Scaled average fluxsum average value in rxn set', 'FontSize', 18)        % Set title/label of colorbar
+        
+        title("Fluxsum per rxn set overall metabolites")    % grayscale
+        % Set x-axis and y-axis labels
+        [sample_count,~] = hist(samples_cat);
+        xtickposition = ((1:length(unique(samples_cat))) .* (sample_count)) - sample_count/2;
+    
+        count_mets_per_set = cell2mat(arrayfun(@(x)size(x{:},1),heatmap_data_all_samples_all_mets,'UniformOutput',false))'
+        ytickposition = cumsum(count_mets_per_set) - round(count_mets_per_set/2);
+    
+        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
+             'YTick', ytickposition, 'YTickLabel', rxn_set_labels)
+        xtickangle(45)
+        ax = gca;
+        ax.FontSize = 18;  
+        xlabel('Model', 'FontSize', 18)       
+        ylabel('Reaction set', 'FontSize', 18)    
+    end 
 
 end
 
