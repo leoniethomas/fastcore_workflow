@@ -31,7 +31,7 @@ function prepareDataForIDAREVisualization(project, comparison_name,folder_path,o
     model = project.models.(reference_model).model;
     model_file_name = store_models + filesep + reference_model + "_reference";
     save(model_file_name + ".mat",'model');
-    exportToXML(model_file_name + ".mat",model_file_name + ".xml");
+    exportToXML(model_file_name + ".mat",model_file_name + ".xml",model_file_name_orig + ".xml");
 
     % save the data that belongs to the models in the data folder, ready to
     % be load 

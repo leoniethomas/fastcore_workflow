@@ -19,9 +19,9 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
         options.sampling_feature (1,1) string {mustBeMember(options.sampling_feature,["flux", "fluxsum"])} ="flux"
         options.num_clusters =0
         options.pcs_used_dim_red =0
-        options.perform_kmeans =1
+        options.perform_kmeans =0
         options.thinning =5
-        options.n_neighbors =40
+        options.n_neighbors =50
         options.overwrite =0
     end
     if options.num_clusters == 0
@@ -61,8 +61,8 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
     % of PCs specified in the options parameter as function input
     if options.pcs_used_dim_red == 0
         cumulativeVariance = cumsum(pca_samp.explained);
-        numPCs = find(cumulativeVariance >= 70, 1, 'first');
-        fprintf('Number of PCs to reach 70%% variance: %d\n', numPCs);
+        numPCs = find(cumulativeVariance >= 90, 1, 'first');
+        fprintf('Number of PCs to reach 90%% variance: %d\n', numPCs);
     else
         numPCs = options.pcs_used_dim_red;
     end
@@ -142,7 +142,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
          
         
          figure
-         scatter(dim1,dim2,20,...
+         scatter(dim1,dim2,10,...
                  categorical(labels),'filled')
          add_labels(dim1, dim2, labels)
         
@@ -163,7 +163,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
          
         
         figure
-        scatter(dim1,dim2,20,...
+        scatter(dim1,dim2,10,...
                  categorical(labels),'filled')
         add_labels(dim1, dim2, labels)
         
@@ -186,7 +186,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
              labels = "cluster " + string(project.comparisons.(comparison_name).dimension_reduction.kmeans.idx)';
             
              figure
-             scatter(dim1,dim2,20,...
+             scatter(dim1,dim2,10,...
                      categorical(labels),'filled')
              add_labels(dim1, dim2, labels)
             
@@ -205,7 +205,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
          
         
             figure
-            scatter(dim1,dim2,20,...
+            scatter(dim1,dim2,10,...
                      categorical(labels),'filled')
             add_labels(dim1, dim2, labels)
             
