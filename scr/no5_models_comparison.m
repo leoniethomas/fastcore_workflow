@@ -21,12 +21,16 @@ rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
 
 %% perform new single cell analysis - if not already done for the given object
+opts = detectImportOptions('./scr/defaultParametersAnalysis.csv');
+opts.VariableTypes{3} = 'char'; % making sure that the last column with the values is read in as a character 
+% Ensure all rows are read (no early stopping)
+opts.DataLines = [1 Inf];
+parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
-parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv');
 modelList = ["WT","KO","PLV"];
-analysisList = ["FVA", "FBA", "sampling"];
+analysisList = ["FVA", "sampling"];
 
-%project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
+project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
@@ -42,13 +46,19 @@ analysisList = ["FVA", "FBA", "sampling"];
 
 referenceModel = "orig_model";
 comparisonAnalysisList = ["modelStructureComparison",...
-                          "modelFunctionalComparison", ...
-                          "modelsComparisonSampling"]%,...
+                          "modelFunctionalComparison"];%, ...
+                          %"modelsComparisonSampling"]%,...
                           %"IDAREoutput"];
 identifier = "";
 
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
-                                             referenceModel,comparisonAnalysisList,identifier);
+                                            referenceModel,comparisonAnalysisList,identifier);
+%% venn for all reaactions ? 
+subsystem_feature_presence = project.comparisons.(comparison_name).rxn_mapping_table ~= 0;
+
+plotFlexibleVenn(subsystem_feature_presence{:,:},...
+                 project.comparisons.(comparison_name).modelNames, ... 
+                 "Structural model comparison: rxns presence");
 
 %% 
 coa = find(matches(string(project.models.(referenceModel).model.subSystems),"CoA synthesis"));
@@ -65,13 +75,13 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
 
 
 % run a venn for a specific subsystem
- fchoosen_subsystem = "Glycolysis/gluconeogenesis";
+choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
 % create the rxns presence table from it
-subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT__.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
+subsystem_feature_presence = project.comparisons.(comparison_name).rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
 fig = plotFlexibleVenn(subsystem_feature_presence,...
-                 project.comparisons.KO_vs_PLV_vs_WT__.modelNames, ... 
+                 project.comparisons.(comparison_name).modelNames, ... 
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
 
 choosen_subsystem = "Exchange rxns";

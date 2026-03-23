@@ -142,7 +142,7 @@ for i = 1:numel(modelList)
             options.nFiles = 10;  % increase this with the nPointsReturned (ratio 1 file ~ 100 samples)
             options.maxTime = 36000;  % 10 hours
             options.nWarmupPoints = 2*size(model.S, 2);
-            options.nStepsPerPoint = size(model.S, 2);
+            options.nStepsPerPoint = 200;
             if samplerName == "CHRR"
                 options.toRound = 1;
             end
@@ -153,7 +153,28 @@ for i = 1:numel(modelList)
         if params.samplerName == "ACHR"
             [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options, model);
         elseif params.samplerName == "CHRR"
-            [modelSampling, samples] = sampleCbModel(model, sampleFile, samplerName, options);
+            %changeCobraSolverParams('LP', 'feasTol', 1e-9);
+            % we have the problem that the sampling does not investigate
+            % the whole solution space, maybe too slow mixing ? too small
+            % steps -> increase or decrease the threshold -> I think we
+            % need to increase it, to allow faster mixing
+            changeCobraSolverParams('LP','feasTol',1e-5);
+            % getCobraSolverParams('LP','feasTol') -> this function is shit 
+            options.optPercentage = params.obj_threshold*100;
+            model.lb = FVA.minFlux;
+            model.ub = FVA.maxFlux;
+            options.nPointsReturned = round(options.nPointsReturned/options.countSampleProcesses);
+            
+            % start independend strains, in order to account for
+            % randomness in the sampling 
+            samples = [];  % vertical concatenation 
+            for strain=1:options.countSampleProcesses
+                disp("Running strain " + string(strain))
+                rng(strain);  % set seed based on loop inde
+                [modelSampling, samp] = sampleCbModel(model, sampleFile, samplerName, options);
+                samples = [samples, samp];  % vertical concatenation
+            end
+
         elseif params.samplerName == "ADSB" | params.samplerName == "ll_ACHRB" | params.sampler == "EDHRB"
             option.numSamples = params.options.nPointsReturned;
             option.stepsPerPoint = params.options.nStepsPerPoint;
