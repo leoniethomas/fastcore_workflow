@@ -18,6 +18,7 @@ classdef expression_data
         features_metabolic_genes % features in the feature_names_norm slot which can be found in a metabolic model
         mapping_exp_2_rxns % activity score for each rxn in rxn names per sample - generated using the fastcormics function map_expression_2_data_rFASTCORMICS
         model_id
+        FPKM
         feature_names_norm
         dico
         pca
@@ -45,7 +46,7 @@ classdef expression_data
             
                 
                 % read in sample names 
-                obj.metadata = readtable(path_metadata, 'Delimiter',',');
+                obj.metadata = readtable(path_metadata);
                 obj.dico = dico;
                 
                 if ~any(contains(obj.metadata.Properties.VariableNames,sample_label_column))
@@ -55,12 +56,17 @@ classdef expression_data
                 end
                 obj.Properties = string(properties(obj));
                 obj.sample_names = string(obj.metadata.(sample_label_column))';
-                obj.raw_counts = readtable(path_raw_counts, 'Delimiter',',');
+                obj.raw_counts = readtable(path_raw_counts);
                 
                 % bring the raw data into the right format
-                feature_column = find(obj.raw_counts.Properties.VariableTypes ~= "double");                
+                feature_column = find(obj.raw_counts.Properties.VariableTypes ~= "double");   
+                % add postfix to the genes which are double in the table 
+                gene_names = string(obj.raw_counts{:,feature_column});
+                if length(gene_names) ~= length(unique(gene_names))
+                    gene_names = addpostfixtogeneidentifier(gene_names);
+                end
                 if isempty(obj.raw_counts.Properties.RowNames)
-                   obj.raw_counts.Properties.RowNames = string(obj.raw_counts{:,feature_column});
+                   obj.raw_counts.Properties.RowNames = gene_names;
                    obj.raw_counts(:,feature_column) = [];
                 end
                 if isempty(obj.raw_counts.Properties.VariableNames)
@@ -89,12 +95,18 @@ classdef expression_data
             %    file_path (1,1) string {mustBeFileType(file_path,"csv")}
             % end
 
-            obj.norm_counts = readtable(file_path, 'Delimiter',',');
+            obj.norm_counts = readtable(file_path);
 
             % bring the raw data into the right format
-            feature_column = find(obj.norm_counts.Properties.VariableTypes ~= "double");                
+            feature_column = find(obj.norm_counts.Properties.VariableTypes ~= "double"); 
+
+            % add postfix to the genes which are double in the table 
+            gene_names = string(obj.raw_counts{:,feature_column});
+            if length(gene_names) ~= length(unique(gene_names))
+               gene_names = addpostfixtogeneidentifier(gene_names);
+            end
             if isempty(obj.norm_counts.Properties.RowNames)
-               obj.norm_counts.Properties.RowNames = string(obj.norm_counts{:,feature_column});
+               obj.norm_counts.Properties.RowNames = gene_names;
                obj.norm_counts(:,feature_column) = [];
             end
             if isempty(obj.norm_counts.Properties.VariableNames)
@@ -137,32 +149,44 @@ classdef expression_data
                                              'VariableNames', obj.norm_counts.Properties.VariableNames);
         end
         
-        function obj = get_discretized_data(obj,figflag,file_path_results)
+        function obj = get_discretized_data(obj,figflag,file_path_results,fig_format)
             % This function executes the discretize function of fastcormics
             % and saves the output to a folder
-            % arguments
-            %    obj (1,1) expression_data {mustBeValid_expression_data_object(obj)}
-            %    figflag (1,1) double {mustBeMember(figflag,[1,0])}
-            %    file_path_results (1,1) string
-            %    slot (1,1) string {mustBeMember(slot,["TPM","FPKM","vst_normalized","raw_counts"])} ="FPKM"
-            % end
+            arguments
+               obj 
+               figflag (1,1) 
+               file_path_results (1,1) string
+               fig_format ='.png'
+            end
 
-            mkdir(file_path_results + "fig")
+            mkdir(file_path_results)
             [obj.discretized, ...
-             obj.znorm_counts] = discretize_FPKM(obj.norm_counts{:,:}, ...
+             obj.znorm_counts] = discretizeFPKM(obj.norm_counts{:,:}, ...
                                                    obj.sample_names,figflag,...
-                                                   char(file_path_results + "fig" + filesep));
+                                                   char(file_path_results), fig_format);
             
-            num_disc = hist(obj.discretized,3);
+            vals = obj.discretized(:);              % flatten if needed
+            [uVals, ~, idx] = unique(vals);        % unique values
+            
+            % Count occurrences per sample (column-wise)
+            num_disc = zeros(numel(uVals), size(obj.discretized,2));
+            for i = 1:numel(uVals)
+                num_disc(i,:) = sum(obj.discretized == uVals(i), 1);
+            end
+            
             figure
-            %bar(perc_disc','stacked')
-            bar(num_disc','stacked')
+            bar(num_disc', 'stacked')
+            
             xticks(1:length(obj.sample_names))
             xticklabels(obj.sample_names)
-            xtickangle(90); 
-            hold off
-            saveas(gcf,char(file_path_results + "fig" + filesep) +  "discretized_count.png");
+            xtickangle(90)
             
+            % Legend automatically from unique values
+            legend(string(uVals), 'Location','best')
+            hold off
+            saveas(gcf,char(file_path_results ) +  "discretized_count.svg");
+            saveas(gcf,char(file_path_results ) +  "discretized_count.png");
+
         end
         
         function obj = get_metabolic_genes(obj,model_used, wanted_id)
@@ -497,9 +521,23 @@ end
 
     
 
+function gene_names = addpostfixtogeneidentifier(gene_names)
+    
+    % Find groups of identical names
+    [uniqueNames, ~, idx] = unique(gene_names, 'stable');
+    
+    % Count occurrences within each group
+    counts = zeros(size(gene_names));
+    for i = 1:numel(uniqueNames)
+        mask = (idx == i);
+        counts(mask) = 1:nnz(mask);
+    end
+    
+    % Append suffix only to duplicates
+    dupMask = counts > 1;
+    gene_names(dupMask) = gene_names(dupMask) + "." + (counts(dupMask)-1);
 
-
-
+end
 
 
 
