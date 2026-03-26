@@ -101,7 +101,7 @@ classdef expression_data
             feature_column = find(obj.norm_counts.Properties.VariableTypes ~= "double"); 
 
             % add postfix to the genes which are double in the table 
-            gene_names = string(obj.raw_counts{:,feature_column});
+            gene_names = string(obj.norm_counts{:,feature_column});
             if length(gene_names) ~= length(unique(gene_names))
                gene_names = addpostfixtogeneidentifier(gene_names);
             end
