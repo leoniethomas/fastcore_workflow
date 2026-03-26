@@ -50,11 +50,11 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
     
     if options.threshold_flux == "upper"
-        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) <0), ...
+        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix < 0,2) ~= 0), ...
                                           idx_to_vis);  
         title_word = "negative flux reactions";
     elseif options.threshold_flux == "lower"
-        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) > 0), ...
+        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix > 0,2) ~= 0), ...
                                                       idx_to_vis); 
         title_word = "positive flux reactions";
     elseif options.threshold_flux == "none"
