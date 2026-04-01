@@ -18,7 +18,9 @@ addpath(genpath("C:\Users\leonie.thomas\looplessFluxSampler"))
 rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
-load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
+%load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project_2603.mat")
+
 
 %% perform new single cell analysis - if not already done for the given object
 opts = detectImportOptions('./scr/defaultParametersAnalysis.csv');
@@ -28,31 +30,27 @@ opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
 modelList = ["WT","KO","PLV"];
-analysisList = ["FVA", "sampling"];
+analysisList = ["FBA", "FVA", "sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
-%save(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat",'project')
-
-
-%% Check object structure for running the model comparison
-
-
-
+%save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_2603.mat",'project')
 
 %% Main analysis 
 
-referenceModel = "orig_model";
+referenceModel = "consistent_medium_constrained_model";
 comparisonAnalysisList = ["modelStructureComparison",...
-                          "modelFunctionalComparison"];%, ...
-                          %"modelsComparisonSampling"]%,...
+                          "modelFunctionalComparison",...
+                          "modelsComparisonSampling"]%,...
                           %"IDAREoutput"];
 identifier = "";
 
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
                                             referenceModel,comparisonAnalysisList,identifier);
+
+
 %% venn for all reaactions ? 
 subsystem_feature_presence = project.comparisons.(comparison_name).rxn_mapping_table ~= 0;
 
@@ -71,6 +69,80 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
                                  ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
                                  "heatmap",true);
 
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap_sample_all_features",true);
+
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap_sample_all_features",true,true,"ordered_fba", "reactions");
+
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
+                                 ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
+                                 "heatmap",true,true,"ordered_fba", "reactions");
+%% subsystem of interest for Letizia 
+
+gly = find(matches(string(project.models.(referenceModel).model.subSystems),"Glycolysis/gluconeogenesis"));
+tca = find(matches(string(project.models.(referenceModel).model.subSystems),"Citric acid cycle"));
+PPP = find(matches(string(project.models.(referenceModel).model.subSystems),"Pentose phosphate pathway"));
+pyr = find(matches(string(project.models.(referenceModel).model.subSystems),"Pyruvate metabolism"));
+purine = find(contains(string(project.models.(referenceModel).model.subSystems),"Purine "));
+
+pyrimidine =find(contains(string(project.models.(referenceModel).model.subSystems),"Pyrimidine "));
+
+nuc = find(matches(string(project.models.(referenceModel).model.subSystems),"Nucleotide interconversion"));
+glut = find(matches(string(project.models.(referenceModel).model.subSystems),"Glutamate metabolism"));
+Urea_cycle = find(matches(string(project.models.(referenceModel).model.subSystems),"Urea cycle"));
+
+proline = find(matches(string(project.models.(referenceModel).model.subSystems),"Arginine and proline metabolism"));
+
+% pick amino acids and lipids as one system
+subs = string(project.models.(referenceModel).model.subSystems);
+mask = contains(lower(subs), ...
+    ["alanine","glycine","valine","leucine","isoleucine","serine","threonine","cysteine","methionine","aspartate","asparagine","glutamate","glutamine","arginine","proline","histidine","phenylalanine","tyrosine","tryptophan"]);
+AA = find(mask);
+
+lipid_subsystems = [
+    "Fatty acid oxidation"
+    "Fatty acid synthesis"
+    "Glycerophospholipid metabolism"
+    "Sphingolipid metabolism"
+    "Cholesterol metabolism"
+];
+
+mask = ismember(subs, lipid_subsystems);
+Lipids = find(mask);
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap",true,true,"ordered_fba", "reactions");
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap",true,true,"ordered_fba", "incoming");
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap_sample_all_features",true,true,"ordered_fba", "incoming");
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap_sample",true,true,"ordered_samples", "reactions");
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap_sample",true,true,"ordered_samples", "incoming");
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA, Lipids},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism", "Lipid metabolism"],...
+                                 "heatmap",true);
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA, Lipids},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism", "Lipid metabolism"],...
+                                 "heatmap_sample",true);
+
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
+                                 "heatmap_sample_all_features",true);
 %% Investigations up to the user (for example for specific subsystems)
 
 
@@ -85,18 +157,15 @@ fig = plotFlexibleVenn(subsystem_feature_presence,...
                  "Structural model comparison: rxns presence in the " + choosen_subsystem);
 
 choosen_subsystem = "Exchange rxns";
-idx_subsystem_reference_model = find(findExcRxns(project.models.orig_model.model));
-subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT__.rxn_mapping_table{idx_subsystem_reference_model,:} ~= 0;
-plotFlexibleVenn(subsystem_feature_presence,...
-                 project.comparisons.KO_vs_PLV_vs_WT__.modelNames, ... 
-                 "Structural model comparison: rxns presence in the " + choosen_subsystem);
+idx_subsystem_reference_model = find(findExcRxns(project.models.(referenceModel).model));
+
+fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
+                                 ["exchangers"],"positive");
 
 %%
 
-subsystem_feature_presence = project.comparisons.KO_vs_PLV_vs_WT__.rxn_mapping_table{:,:} ~= 0;
-plotFlexibleVenn(subsystem_feature_presence,...
-                 project.comparisons.KO_vs_PLV_vs_WT__.modelNames, ... 
-                 "Rxn presence in different models");
+
+
 %% genes of interest 
 gene = "5831"; 
 genes_in_model = string(project.models.(referenceModel).model.genes);
@@ -118,19 +187,19 @@ visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
 choosen_subsystem = "Pentose Phosphate Pathway";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",false)
+get_flux_plot(project,comparison_name,idx_subsystem_reference_model, "FVA",false)
 
 
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"WT_vs_KO_vs_PLV__",idx_subsystem_reference_model, "FVA",false)
+get_flux_plot(project,comparison_name,idx_subsystem_reference_model, "FVA",false)
 
 
 choosen_subsystem = "Arginine and proline metabolism";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+get_flux_plot(project,comparson_name,idx_subsystem_reference_model, "FVA",true)
 
 
 %% get rxns which show a reduced cost ~= 0 
@@ -144,15 +213,15 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",reduced_cost_idx, ...
  
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^4hpro_LT";
+met_name_pattern = "^o2s[";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
 rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
 [~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
-              "threshold_flux","none","FVA", true ,'threshold_flux', "all", ...
+get_flux_plot(project,comparison_name,rxns_met_id, ...
+              "threshold_flux","none","FVA", false ,'threshold_flux', "none", ...
               'title_plots',"Functional model comparison: all reactions including proline");
 
 %% get rxns associated with a specific metabolite 
@@ -332,7 +401,7 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],idx_cell,...
 choosen_subsystem = "Arginine and proline metabolism";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+get_flux_plot(project,comparison_name,idx_subsystem_reference_model, "FVA",true)
 
 ppp = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
@@ -346,7 +415,7 @@ fluxsum_sets = visualize_flux(project,comparison_name,[],{ppp},...
 choosen_subsystem = "Glycolysis/gluconeogenesis";
 % pull the subsystem presence from the stored rxns mapping table
 idx_subsystem_reference_model = find(choosen_subsystem == string(project.models.(referenceModel).model.subSystems));
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",idx_subsystem_reference_model, "FVA",true)
+
 
 ppp = find(matches(string(project.models.(referenceModel).model.subSystems),choosen_subsystem));
 
