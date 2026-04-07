@@ -46,7 +46,7 @@ function fluxsum = get_model_fluxsum(S_matrix,samples,flux_summed_up)
         if flux_summed_up == "reactions"
             % fluxsum over the reaction fluxes, for that we do not need
             % stochiometry
-            fluxsum = sum(samples,1);     
+            fluxsum = sum(abs(samples),1); % better to sum over absolute fluxes ?   
         else
             % fluxsum for each metabolite, either all outgoing or all incoming
             
