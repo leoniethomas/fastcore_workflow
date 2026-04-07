@@ -16,6 +16,6 @@ function map = get_color_pallette()
         
         % Combine to single colormap
         cmap = [cmap_neg; cmap_pos];
-        map = colormap(cmap)
+        map = colormap(cmap);
 
 end

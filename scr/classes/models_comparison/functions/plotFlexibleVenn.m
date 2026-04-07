@@ -198,7 +198,7 @@ switch n
 end
 
 % figure settings
-vennfig = figure('Position',[20 20 800 450],'Color','w');
+vennfig = figure('Position',[20 20 600 300],'Color','w','Visible','off');
 axis off
 daspect([1,1,1])
 

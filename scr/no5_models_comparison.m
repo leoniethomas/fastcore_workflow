@@ -19,7 +19,9 @@ rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
-load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project_2603.mat")
+%load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat")
+
 
 
 %% perform new single cell analysis - if not already done for the given object
@@ -30,26 +32,29 @@ opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
 modelList = ["WT","KO","PLV"];
-analysisList = ["FBA", "FVA", "sampling"];
+analysisList = ["FBA", "FVA","sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
-%save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_2603.mat",'project')
+save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat",'project','-v7.3')
 
 %% Main analysis 
 
 referenceModel = "consistent_medium_constrained_model";
 comparisonAnalysisList = ["modelStructureComparison",...
-                          "modelFunctionalComparison",...
-                          "modelsComparisonSampling"]%,...
+                          "modelFunctionalComparison"]%,...
+                          %"modelsComparisonSampling"];%,...
                           %"IDAREoutput"];
 identifier = "";
 
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
                                             referenceModel,comparisonAnalysisList,identifier);
 
+%%
+
+visualize_sampling_landscape(project,comparison_name, rxn_to_visualize,options)
 
 %% venn for all reaactions ? 
 subsystem_feature_presence = project.comparisons.(comparison_name).rxn_mapping_table ~= 0;
@@ -74,6 +79,7 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly},...
                                  "heatmap_sample_all_features",true);
 
 
+
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
                                  ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
                                  "heatmap_sample_all_features",true,true,"ordered_fba", "reactions");
@@ -82,6 +88,8 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{coa,gly,oxpho},...
                                  ["CoA synthesis", "Glycolysis/gluconeogenesis", "Oxidative phosphorylation"],...
                                  "heatmap",true,true,"ordered_fba", "reactions");
+
+
 %% subsystem of interest for Letizia 
 
 gly = find(matches(string(project.models.(referenceModel).model.subSystems),"Glycolysis/gluconeogenesis"));
@@ -123,26 +131,26 @@ fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,pu
                                  "heatmap",true,true,"ordered_fba", "incoming");
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
                                  ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
-                                 "heatmap_sample_all_features",true,true,"ordered_fba", "incoming");
+                                 "heatmap_sample_all_features",true,true,"ordered_fba", "reactions");
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
                                  ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
-                                 "heatmap_sample",true,true,"ordered_samples", "reactions");
+                                 "heatmap",true,true,"ordered_samples", "reactions");
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
                                  ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
                                  "heatmap_sample",true,true,"ordered_samples", "incoming");
 
-fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA, Lipids},...
-                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism", "Lipid metabolism"],...
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
                                  "heatmap",true);
 
-fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA, Lipids},...
-                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism", "Lipid metabolism"],...
+fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
+                                 ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
                                  "heatmap_sample",true);
 
 fluxsum_sets = visualize_fluxsum(project,comparison_name,[],{gly,tca,PPP, pyr,purine,pyrimidine,nuc,glut,Urea_cycle,proline, AA},...
                                  ["gly","tca","PPP", "pyruvate","purine metabolism","pyrimidine metabolism", "nucleotide metabolism","glutamate metabolism","urea cycle" ,"proline and arginine metabolism", "Amino acid metabolism"],...
-                                 "heatmap_sample_all_features",true);
+                                 "heatmap",true,true,"ordered_samples", "incoming");
 %% Investigations up to the user (for example for specific subsystems)
 
 
@@ -160,7 +168,7 @@ choosen_subsystem = "Exchange rxns";
 idx_subsystem_reference_model = find(findExcRxns(project.models.(referenceModel).model));
 
 fluxsum_sets = visualize_flux(project,comparison_name,[],{idx_subsystem_reference_model},...
-                                 ["exchangers"],"positive");
+                                 ["exchangers"]);
 
 %%
 
@@ -238,16 +246,17 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_id, ...
 
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^glc_D[.*";
+met_name_pattern = "^cys_L[.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
 rxns_met = findRxnsFromMets(project.models.(referenceModel).model, met_names);
 [~,rxns_met_id] = ismember(rxns_met, project.models.(referenceModel).model.rxns);
 
-get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_met_id, ...
-              "threshold_flux","all","FVA", true ,...
+get_flux_plot(project,comparison_name,rxns_met_id, ...
+              "threshold_flux","none","FVA", false ,...
               'title_plots',"Functional model comparison: all reactions including pyruvate");
+
 %% get rxns associated with a specific metabolite 
 
 met_name_pattern = "^akg[.*";
