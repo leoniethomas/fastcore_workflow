@@ -87,6 +87,7 @@ for i = 1:numel(modelList)
         
         % Loading parameters
         params = tableToParamsStruct(parameterTable, 'sampling', model);
+        mkdir(params.path);
         
         if ~isfield(params, 'osenseStr') && ~isfield(params, 'minNorm')
             if isfield(analysis, 'FBA')
