@@ -296,7 +296,8 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     cmap = lines(length(all_values));
     
     % Create figure
-    figure('Color','w','Position',[100 100 300*numDatasets 500])
+    plots.data_discretization = figure('Color','w','Position',[100 100 2000*numDatasets 2000],...
+                                       'Visible','off');
     
     for k = 1:numDatasets
         dataset = datasets{k};
@@ -323,6 +324,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         % percentages
         tot = sum(counts,1);
         pct = 100 * counts ./ tot;
+        pct = round(pct);
     
         % write percentages inside bars
         for i = 1:size(counts,2)
@@ -330,10 +332,10 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
             for j = 1:size(counts,1)
                 if counts(j,i) > 0
                     text(i, y0 + counts(j,i)/2, ...
-                        sprintf('%.1f', pct(j,i)), ...
+                        sprintf('%g%%', pct(j,i)), ...
                         'HorizontalAlignment','center', ...
                         'VerticalAlignment','middle', ...
-                        'FontSize',15,'Color','w','FontWeight','bold');
+                        'FontSize',13,'Color','w','FontWeight','bold');
                 end
                 y0 = y0 + counts(j,i);
             end
@@ -361,7 +363,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     % to each other than others ? 
    
     
-    [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
+    [rxn_presence,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
     structure_analysis.rxn_mapping_table = array2table(rxn_mapping,"VariableNames",modelList,"RowNames",string(project.models.(reference_model).model.rxns));
    
 
@@ -370,13 +372,15 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
             project, modelList, field_to_investigate, reference_model);
     
         % Plot Venn / Heatmap of intersections based on presence
-        plotFlexibleVenn( ...
-            ordered_feature, ...
-            structure_analysis.modelNames, ...
-            "Structural model comparison: " + field_to_investigate + " presence");
+        plots.intersections.(field_to_investigate) =  plotFlexibleVenn( ...
+                                                                    ordered_feature, ...
+                                                                    structure_analysis.modelNames, ...
+                                                                    "Structural model comparison: " + field_to_investigate + " presence");
     
         % get the jaccard distances - based on reaction presence
         % Compute Jaccard distances
+        plots.jaccard_dist.(field_to_investigate) = figure('Position',[20 20 700 300],'Visible','off');
+ 
         Jacc_distance = 1 - squareform(pdist(ordered_feature','jaccard'));
         title_fig = "Jaccard similarity of " + field_to_investigate + " presence (0 or 1) between models";
         
@@ -387,6 +391,19 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         h.FontSize = 20;           
         h.Title = title_fig;    
     end
+    
+
+    % -- Visualization: Rxns presence jaccard similarity per pathway ? 
+   
+    pathway_names = string(project.models.(reference_model).model.subSystems);
+    
+    pathway_wise_jaccard_sim = [];
+    for x=unique(pathway_names)'
+        rxn_presence_pathway = rxn_presence(find(matches(pathway_names,x)),:);
+        Jacc_distance = 1 - pdist(rxn_presence_pathway','jaccard');
+        pathway_wise_jaccard_sim = [pathway_wise_jaccard_sim,Jacc_distance];
+    end
+    
     
     % -- Visualization: Get reaction presence for each model in comparison
     % to the defined reference model -> visualization per subsystem
@@ -437,7 +454,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
 
     %%%%%%%%%%
 
-    figure
+    plots.reaction_pathway_presence = figure('Position',[20 20 700 300],'Visible','off');
     tiledlayout(1,4, ...
         'TileSpacing','compact', ...
         'Padding','compact')
@@ -465,12 +482,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
 
     
     % ---- Heatmap (RIGHT, spanning 2 tiles) ----
+    % z-scaling of the data -> so that the colorod
     ax2 = nexttile(2,[1 3]);
     
     imagesc(data)
-    nColors = 256;
-    whiteToBlue = [linspace(1,0,nColors)', linspace(1,0,nColors)', ones(nColors,1)];
-    colormap(ax2, whiteToBlue)
+    cmap = get_color_pallette();
     colorbar
     title("relative counts of subsystem rxn occurence/reference model" )    % grayscale
     ax2.XTick = 1:numel(colNames);
@@ -530,7 +546,8 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     % figure
         
 
-    figure
+    
+    plots.core_reactions = figure('Visible','off');
     tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
     
     % --- first barplot
@@ -695,7 +712,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         barNames_sorted = barNames(sortIdx);
         
         % Plot
-        figure
+        plots.core_reactions_intersections = figure('Visible','off');
         b = bar(Y, 'stacked');
         
         % Generate a qualitative colormap with enough colors
@@ -742,8 +759,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     end
 
     % Further Visualizations ? #TODO ? 
-
-
+    structure_analysis.plots = plots;
 end
 
 
