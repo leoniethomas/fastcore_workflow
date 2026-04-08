@@ -1,4 +1,4 @@
-function project = visualize_sampling_landscape(project,comparison_name, rxn_to_visualize,options)
+function fig_out = visualize_sampling_landscape(project,comparison_name, rxn_to_visualize,options)
     % This function will visualize your reaction of interest on the a
     % dimension reduced space. 
     % 
@@ -13,7 +13,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
     arguments
         project 
         comparison_name
-        rxn_to_visualize (:,1) string =["biomass_reaction"]
+        rxn_to_visualize (1,1) string ="biomass_reaction"
         options.dim_reduction_type (1,1) string {mustBeMember(options.dim_reduction_type,["PCA", "UMAP"])} ="UMAP"
         options.pcs_vis (1,2) =[1,2]
         options.sampling_feature (1,1) string {mustBeMember(options.sampling_feature,["flux", "fluxsum"])} ="flux"
@@ -23,7 +23,9 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
         options.thinning =10
         options.n_neighbors =50
         options.overwrite =0
+        options.visible_plot ="on"
     end
+    fig_out = struct();
     if options.num_clusters == 0
         options.num_clusters = length(unique(project.comparisons.(comparison_name).sample_model_labels));
     end
@@ -46,7 +48,6 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
     % run the Principle component analysis
     pc_x = options.pcs_vis(1);
     pc_y = options.pcs_vis(2);
-    rxn_color = rxn_to_visualize;
 
     % filter out dimensions which are always 0
     ordered_samples_filter = ordered_samples(find(any(ordered_samples ~= 0,2)),:);
@@ -61,19 +62,21 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
     % of PCs specified in the options parameter as function input
     if options.pcs_used_dim_red == 0
         cumulativeVariance = cumsum(pca_samp.explained);
-        numPCs = find(cumulativeVariance >= 70, 1, 'first');
+        exp_var = 70;
+        numPCs = find(cumulativeVariance >= exp_var, 1, 'first');
         fprintf('Number of PCs to reach 70%% variance: %d\n', numPCs);
     else
         numPCs = options.pcs_used_dim_red;
+        exp_var = sum(pca_samp.explained(1:numPCs));
     end
     project.comparisons.(comparison_name).dimension_reduction.pca = pca_samp;
     
-    
+    thin = options.thinning;
     % perform umap 
     if options.dim_reduction_type == "UMAP"
         % prepare data for dimension reduction 
         X = pca_samp.score(:,1:numPCs);
-        thin = options.thinning;
+        
         X = X(1:thin:end,:);
         fprintf('Computing umap dimension reduction ...!');
         [reduction,~] = run_umap(X, ...
@@ -141,7 +144,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
          labels = sample_model_labels;
          
         
-         figure
+         fig = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
          scatter(dim1,dim2,10,...
                  categorical(labels),'filled')
          add_labels(dim1, dim2, labels)
@@ -150,7 +153,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
          xlabel("PC" + num2str(pc_x) + " var: " + pca_samp.explained(pc_x), 'FontSize',18)
          ylabel("PC" + num2str(pc_y) + " var: " + pca_samp.explained(pc_y), 'FontSize',18)
          hold off
-        
+        fig_out.label = fig;
 
     else
 
@@ -162,16 +165,18 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
         dim_used = umap_res.used_pcs;
          
         
-        figure
+        fig = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
+         
         scatter(dim1,dim2,10,...
                  categorical(labels),'filled')
         add_labels(dim1, dim2, labels)
         
         title("UMAP with the model lables", 'FontSize',18)
-        xlabel("UMAP1 " + num2str(dim_used) + "PCs -> 2D", 'FontSize',14)
-        ylabel("UMAP2 " + num2str(dim_used) + "PCs -> 2D", 'FontSize',14)
+        xlabel("UMAP1 " + num2str(dim_used) + "PCs -> 2D ,var: " + exp_var, 'FontSize',14)
+        ylabel("UMAP2 " + num2str(dim_used) + "PCs -> 2D, var: " + exp_var, 'FontSize',14)
 
         hold off
+        fig_out.label = fig;
 
     end
 
@@ -185,7 +190,8 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
              dim2 = pca_samp.score(umap_res.used_samples_idx,pc_y);
              labels = "cluster " + string(project.comparisons.(comparison_name).dimension_reduction.kmeans.idx)';
             
-             figure
+             fig2 = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
+         
              scatter(dim1,dim2,10,...
                      categorical(labels),'filled')
              add_labels(dim1, dim2, labels)
@@ -194,6 +200,7 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
              xlabel("PC" + num2str(pc_x) + " var: " + pca_samp.explained(pc_x), 'FontSize',18)
              ylabel("PC" + num2str(pc_y) + " var: " + pca_samp.explained(pc_y), 'FontSize',18)
              hold off
+             
         else
              umap_res = project.comparisons.(comparison_name).dimension_reduction.umap;
              labels = project.comparisons.(comparison_name).dimension_reduction.kmeans.idx;
@@ -204,26 +211,74 @@ function project = visualize_sampling_landscape(project,comparison_name, rxn_to_
             dim_used = umap_res.used_pcs;
          
         
-            figure
+            fig2 = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
+         
             scatter(dim1,dim2,10,...
                      categorical(labels),'filled')
             add_labels(dim1, dim2, labels)
             
             title("UMAP with the model lables", 'FontSize',18)
-            xlabel("UMAP1 " + num2str(dim_used) + "PCs -> 2D", 'FontSize',14)
-            ylabel("UMAP2 " + num2str(dim_used) + "PCs -> 2D", 'FontSize',14)
+        
+            xlabel("UMAP1 " + num2str(dim_used) + "PCs -> 2D,var: " + exp_var, 'FontSize',14)
+            ylabel("UMAP2 " + num2str(dim_used) + "PCs -> 2D,var: " + exp_var, 'FontSize',14)
     
             hold off
+            
+        end
+        fig_out.cluster = fig2;
+    end
+
+    % visualize flux(sum) value on the dim reduction
+    [~,rxn_idx] = ismember(rxn_to_visualize,project.models.(reference_model).model.rxns);
+     value_color = ordered_samples(rxn_idx,:);
+     
+
+            
+        if options.dim_reduction_type == "PCA"
+
+            pca_samp = project.comparisons.(comparison_name).dimension_reduction.pca;
+         
+            dim1 = pca_samp.score(:,pc_x);
+            dim2 = pca_samp.score(:,pc_y);
+            labels = sample_model_labels;
+            
+             fig3 = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
+         
+             scatter(dim1,dim2,10,...
+                     value_color,'filled')
+             add_labels(dim1, dim2, labels)
+             colormap(jet)
+             colorbar
+            
+             title("PC "+ num2str(pc_x) +  " & " +  num2str(pc_y) + " with the cluster assignment from the kmeans!", 'FontSize',18)
+             xlabel("PC" + num2str(pc_x) + " var: " + pca_samp.explained(pc_x), 'FontSize',18)
+             ylabel("PC" + num2str(pc_y) + " var: " + pca_samp.explained(pc_y), 'FontSize',18)
+             hold off
+             
+        else
+            value_color = value_color(1:thin:end);
+             umap_res = project.comparisons.(comparison_name).dimension_reduction.umap;
+             
+            dim1 = umap_res.reduction(:,1);
+            dim2 = umap_res.reduction(:,2);
+            dim_used = umap_res.used_pcs;
+            
+            fig3 = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
+         
+            scatter(dim1, dim2, 10, value_color, 'filled')
+            add_labels(dim1, dim2, labels)
+            colormap(jet)
+            colorbar
+            
+            title("UMAP with the model lables + " + rxn_to_visualize + " flux value" , 'FontSize',18)
+            xlabel("UMAP1 " + num2str(dim_used) + "PCs -> 2D,var: " + exp_var, 'FontSize',16)
+            ylabel("UMAP2 " + num2str(dim_used) + "PCs -> 2D,var: " + exp_var, 'FontSize',16)
+    
+            hold off
+            
         end
 
-
-    end
-
-    if ~isempty(rxn_to_visualize)
-
-       
-    end
-
+    fig_out.(rxn_to_visualize) = fig3;
 end
 
 
