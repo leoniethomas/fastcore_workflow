@@ -66,18 +66,34 @@ function [project, comparison_name] = modelsComparison(project, modelList,analys
     % -- create comparison slot
     % give the comparison the name of all models + a identifier choosen
     comparison_name = join(modelList, "_vs_") + "__" + identifier;
-    project.comparisons.(comparison_name).modelList = modelList;
-    project.comparisons.(comparison_name).reference_model = reference_model;
-    project.comparisons.(comparison_name).analysisID = analysisID;
+    % does this comparison object already exist, was the structural
+    % analysis performed ?
+    if ismember(comparison_name,string(fieldnames(project.comparisons)))
+        structure_analysis_already_ran = project.comparisons.(comparison_name).structure_analysis_status;
+    else
+        structure_analysis_already_ran = 0;
+    end
     
-    % -- run structural comparison - always has to be run 
-
-    project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
-    project.comparisons.(comparison_name).reference_model = reference_model;
+    % run structure comparison if: it was the input of the function, if
+    % another comparison was input but the structure analysis was not run
+    % yet (no comparison object in the comparisons slot, or a comparison
+    % object that is not complete -> structure_analysis_already_ran  not
+    % defined
+    if any(matches(analyses, "modelStructureComparison")) | ~structure_analysis_already_ran | ~ismember(comparison_name,string(fieldnames(project.comparisons)))
+        project.comparisons.(comparison_name).modelList = modelList;
+        project.comparisons.(comparison_name).reference_model = reference_model;
+        project.comparisons.(comparison_name).analysisID = analysisID;
+        
+        % -- run structural comparison - always has to be run 
+    
+        project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
+        project.comparisons.(comparison_name).reference_model = reference_model;
+        project.comparisons.(comparison_name).structure_analysis_status = 1;
+    end
 
     % -- fun functional comparions
     if any(matches(analyses, "modelFunctionalComparison"))
-        modelFunctionalComparison(project, comparison_name);
+        project.comparisons.(comparison_name).plots.funct = modelFunctionalComparison(project, comparison_name);
     end
 
     % -- run sampling comparison
@@ -93,7 +109,7 @@ function [project, comparison_name] = modelsComparison(project, modelList,analys
     end
 end
 
-function modelFunctionalComparison(project, comparison_name)
+function plots = modelFunctionalComparison(project, comparison_name)
     % This function runs the functional model comparison. 
     % The models are compared on basis of the FBA & FVA results from the singleModelAnalysis. 
     % So the functional capacity the model has in context of the defined
@@ -121,7 +137,9 @@ function modelFunctionalComparison(project, comparison_name)
     %%% ---------- Visualization: objective values per model
     fba_objective_values = cell2mat(cellfun(@(x) project.models.(x).analysis.FBA.f(1,1) ,modelList,"UniformOutput",false));
     get_exchange_rxns_idx = find(findExcRxns(project.models.(reference_model).model));    
-    figure
+
+    plots.obj_value = figure('Position',[20 20 700 300],'Visible','off');
+ 
     bar(fba_objective_values)
     title('Model comparison: flux of optimized reaction')
     ylabel('Reaction flux value for objective function [mMol/(gDW*h)]')
@@ -133,17 +151,18 @@ function modelFunctionalComparison(project, comparison_name)
     %%%             for the different models - filtered for exchange rxns
     
     % Import
-    get_flux_plot(project, comparison_name,get_exchange_rxns_idx, ...
-                  'threshold_flux','upper','FVA',false,'reducedCost',false);
+ 
+    plots.import = get_flux_plot(project, comparison_name,get_exchange_rxns_idx, ...
+                                    'threshold_flux','upper','FVA',false,'reducedCost',false,'visible_plots',"off");
     % Export
-    get_flux_plot(project, comparison_name,get_exchange_rxns_idx,...
-                  'threshold_flux','lower','FVA',false,'reducedCost',false);
+    plots.export = get_flux_plot(project, comparison_name,get_exchange_rxns_idx,...
+                  'threshold_flux','lower','FVA',false,'reducedCost',false,'visible_plots',"off");
     
     %%% ---------- Visualization: FVA Similarity between Models
 
     [fva_sim,fva_sim_rxns, fva_sim_pathways] = compute_fva_similariy(project,comparison_name);
 
-    plot_clustergram(fva_sim,...
+    plots.fva_sim.overall = plot_clustergram(fva_sim,...
                              modelList,...
                              modelList,...
                              {'Similarity of FVA boundaries'},...
@@ -152,7 +171,7 @@ function modelFunctionalComparison(project, comparison_name)
     
     %%% ---------- Visualization: FVA Similarity per reaction histogramm
 
-    FVA_sim_values_hist(fva_sim_rxns, modelList)
+    plots.fva_sim.hist = FVA_sim_values_hist(fva_sim_rxns, modelList);
     
     %%% ---------- Visualization: FVA Similarity per reaction - enrichment
     %%%            for low fva similarity scores per pathway in the model
@@ -191,8 +210,8 @@ function modelFunctionalComparison(project, comparison_name)
     FDR_tbl = FDR_tbl(filter_for_sig,:);
     NES_tbl = NES_tbl(filter_for_sig,:);
 
-    dotplot(NES_tbl,FDR_tbl)
-
+    plots.fva_sim.enrich = dotplot(NES_tbl,FDR_tbl);
+    
     
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
     
@@ -759,7 +778,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     end
 
     % Further Visualizations ? #TODO ? 
-    structure_analysis.plots = plots;
+    structure_analysis.plots.struct = plots;
 end
 
 
@@ -1045,7 +1064,7 @@ function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_ke
      
 end
 
-function dotplot(NES_tbl,FDR_tbl)
+function fig = dotplot(NES_tbl,FDR_tbl)
     % #TODO better documentation of the function!!
 
 
@@ -1076,7 +1095,7 @@ function dotplot(NES_tbl,FDR_tbl)
     cVals(cVals > 0.05) = NaN;  % values >0.05 will be grey
     
     % Create figure
-    figure('Position',[100 100 900 500])
+    fig = figure('Position',[100 100 900 500],"Visible","off");
     hold on
     
     % Scatter plot for FDR ≤ 0.05
@@ -1113,7 +1132,7 @@ end
 
 
 
-function FVA_sim_values_hist(fva_sim_rxns, modelList)
+function fig = FVA_sim_values_hist(fva_sim_rxns, modelList)
     % This function visualizes the FVA values in a histogramm per
     % comparison. These histogramms give us an indication of how similary
     % models are in their FVA min and max boundaries, and although the
@@ -1139,8 +1158,9 @@ function FVA_sim_values_hist(fva_sim_rxns, modelList)
     
     [nRows, nCols] = size(fva_lower2x2);
     
+    fig = figure('Visible','off');
     % Create tiled layout
-    t = tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
+    t = tiledlayout(fig,nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
     
     for i = 1:nRows
         for j = 1:nCols
@@ -1173,7 +1193,7 @@ function FVA_sim_values_hist(fva_sim_rxns, modelList)
     end
     
     sgt = sgtitle('Histogram of FVA similarity values between models per rxns (<1)');
-    sgt.FontSize = 20;
+    sgt.FontSize = 20;   % set desired font size
     
 
 end
