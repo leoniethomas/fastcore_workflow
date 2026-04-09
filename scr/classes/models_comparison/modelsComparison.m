@@ -138,7 +138,7 @@ function plots = modelFunctionalComparison(project, comparison_name)
     fba_objective_values = cell2mat(cellfun(@(x) project.models.(x).analysis.FBA.f(1,1) ,modelList,"UniformOutput",false));
     get_exchange_rxns_idx = find(findExcRxns(project.models.(reference_model).model));    
 
-    plots.obj_value = figure('Position',[20 20 700 300],'Visible','off');
+    plots.obj_value = figure('Color','w','Position',[20 20 700 300],'Visible','off');
  
     bar(fba_objective_values)
     title('Model comparison: flux of optimized reaction')
@@ -176,27 +176,25 @@ function plots = modelFunctionalComparison(project, comparison_name)
     %%% ---------- Visualization: FVA Similarity per reaction - enrichment
     %%%            for low fva similarity scores per pathway in the model
 
-    [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
-    idx_to_keep = find(sum(rxn_mapping ~=0,2) > 0);
-    
 
-    res_enrichment = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_keep,reference_model,[]);
+
+    res_enrichment = get_enrichment_table(project,modelList,fva_sim_rxns,reference_model,[]);
     % put the results of FDR and NES in one matrix each
 
     comparisons = fieldnames(res_enrichment);
-    
+
     % All unique pathways
     allPathways = unique(vertcat(res_enrichment.(comparisons{1}).Subsystem));
     for k = 2:numel(comparisons)
         allPathways = unique([allPathways; res_enrichment.(comparisons{k}).Subsystem]);
     end
-    
+
     % Preallocate tables
     NES_tbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
         'RowNames', allPathways, 'VariableNames', comparisons);
     FDR_tbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
         'RowNames', allPathways, 'VariableNames', comparisons);
-    
+
     % Fill tables
     for c = 1:numel(comparisons)
         comp = comparisons{c};
@@ -214,8 +212,56 @@ function plots = modelFunctionalComparison(project, comparison_name)
     
     
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
+
+    replacement_value = "analysis.FBA.v"; % get the fba solution values
+    project.comparisons.(comparison_name).ordered_fba = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
     
     % compute Fluxsum 
+
+    gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
+    tca = find(matches(string(project.models.(reference_model).model.subSystems),"Citric acid cycle"));
+    PPP = find(matches(string(project.models.(reference_model).model.subSystems),"Pentose phosphate pathway"));
+    ex = find(matches(string(project.models.(reference_model).model.subSystems),"Exchange/demand reaction"));
+    pyr = find(matches(string(project.models.(reference_model).model.subSystems),"Pyruvate metabolism"));
+    purine = find(contains(string(project.models.(reference_model).model.subSystems),"Purine "));
+
+    pyrimidine =find(contains(string(project.models.(reference_model).model.subSystems),"Pyrimidine "));
+
+    nuc = find(matches(string(project.models.(reference_model).model.subSystems),"Nucleotide interconversion"));
+    glut = find(matches(string(project.models.(reference_model).model.subSystems),"Glutamate metabolism"));
+    Urea_cycle = find(matches(string(project.models.(reference_model).model.subSystems),"Urea cycle"));
+    
+    proline = find(matches(string(project.models.(reference_model).model.subSystems),"Arginine and proline metabolism"));
+    
+    % pick amino acids and lipids as one system
+    subs = string(project.models.(reference_model).model.subSystems);
+    mask = contains(lower(subs), ...
+        ["alanine","glycine","valine","leucine","isoleucine","serine","threonine","cysteine","methionine","aspartate","asparagine","glutamate","glutamine","arginine","proline","histidine","phenylalanine","tyrosine","tryptophan"]);
+    AA = find(mask);
+    
+    lipid_subsystems = [
+        "Fatty acid oxidation"
+        "Fatty acid synthesis"
+        "Glycerophospholipid metabolism"
+        "Sphingolipid metabolism"
+        "Cholesterol metabolism"
+    ];
+    
+    mask = ismember(subs, lipid_subsystems);
+    Lipids = find(mask);
+
+    idx_pathways = {gly,tca,PPP,ex, pyr,purine, pyrimidine,nuc,glut,Urea_cycle,proline,Lipids};
+    names_pathways = ["Glycolysis/gluconeogenesis","Citric acid cycle","Pentose phosphate pathway","Exchange/demand reaction","Pyruvate metabolism",...
+                      "Purine metabolism", "Pyrimidine metabolism", "Nucleotide interconversion", "Glutamate metabolism","Urea cycle",...
+                      "Arginine and proline metabolism","Lipid metabolism"];
+                                     
+
+    [fluxsum_sets,plots.fba.heatmap_rxn_fluxsum] = visualize_fluxsum(project,comparison_name,[],idx_pathways,...
+                                                                            names_pathways,...
+                                                                            "heatmap",true,true,"ordered_fba", "reactions");
+    [fluxsum_sets,plots.fba.heatmap_mets_fluxsum] = visualize_fluxsum(project,comparison_name,[],idx_pathways,...
+                                                                      names_pathways,...
+                                                                      "heatmap",true,true,"ordered_fba", "incoming");
 
     %%% -> show the top 20 most variant metabolites excluding known cofactors 
     % cofactorNames = ["atp", "adp", "amp", "nad", "nadh", "nadp", "nadph", ...
@@ -394,21 +440,22 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         plots.intersections.(field_to_investigate) =  plotFlexibleVenn( ...
                                                                     ordered_feature, ...
                                                                     structure_analysis.modelNames, ...
-                                                                    "Structural model comparison: " + field_to_investigate + " presence");
+                                                                    "Structural model comparison: " + field_to_investigate + " presence",...
+                                                                    "visible_plot","off");
     
         % get the jaccard distances - based on reaction presence
         % Compute Jaccard distances
-        plots.jaccard_dist.(field_to_investigate) = figure('Position',[20 20 700 300],'Visible','off');
+
+        plots.jaccard_dist.(field_to_investigate) =  plotJaccard( ...
+                                                                 ordered_feature, ...
+                                                                 structure_analysis.modelNames, ...
+                                                                 "Jaccard similarity of " + field_to_investigate + " presence (0 or 1) between models",...
+                                                                 "visible_plot","off");
+        
  
-        Jacc_distance = 1 - squareform(pdist(ordered_feature','jaccard'));
-        title_fig = "Jaccard similarity of " + field_to_investigate + " presence (0 or 1) between models";
         
-        % Create heatmap
-        h = heatmap(structure_analysis.modelNames, structure_analysis.modelNames, Jacc_distance);
         
-        % Set font sizes
-        h.FontSize = 20;           
-        h.Title = title_fig;    
+         
     end
     
 
@@ -473,7 +520,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
 
     %%%%%%%%%%
 
-    plots.reaction_pathway_presence = figure('Position',[20 20 700 300],'Visible','off');
+    plots.reaction_pathway_presence = figure('Color','w','Position',[20 20 700 300],'Visible','off');
     tiledlayout(1,4, ...
         'TileSpacing','compact', ...
         'Padding','compact')
@@ -551,7 +598,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     data = [data{:}];
     
     % ---- Create layout ----
-    upper_data = data(2:3,:);
+    upper_data = data([3,2],:);
 
     %figure
     categories = fieldnames(models_list)';  % model names
@@ -566,7 +613,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         
 
     
-    plots.core_reactions = figure('Visible','off');
+    plots.core_reactions = figure('Color','w','Visible','off','Position', [100 100 1500 1500]);
     tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
     
     % --- first barplot
@@ -580,7 +627,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     ylabel('# rxns', 'FontSize', 14)
     
     % Legend
-    legend({"non-core reactions", "core reactions"}, 'Location','northwest', 'FontSize', 14)
+    legend({"non-core reactions","core reactions"}, 'Location','northwest', 'FontSize', 14)
     
     % Title
     title('Core and non-core reactions per model', 'FontSize', 14)
@@ -644,7 +691,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     
     core_presence = structure_analysis.rxn_mapping_table{core_reactions_included,:} ~= 0;
     [figV,idx_inter_outersections,~] = plotFlexibleVenn(core_presence, structure_analysis.modelNames, ... 
-                                                        "Structural model comparison: core rxns presence");
+                                                        "Structural model comparison: core rxns presence","visible_plot","off");
 
     
     if string(class(figV)) == 'matlab.ui.Figure'
@@ -731,7 +778,7 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
         barNames_sorted = barNames(sortIdx);
         
         % Plot
-        plots.core_reactions_intersections = figure('Visible','off');
+        plots.core_reactions_intersections = figure('Color','w','Position',[100 100 6000 2000], 'Visible','off');
         b = bar(Y, 'stacked');
         
         % Generate a qualitative colormap with enough colors
@@ -1004,21 +1051,24 @@ function results = pathway_enrichment(sets, metric_matrix,feature_names)
 end
 
 
-function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_keep,reference_model, subSystems)
+function Results = get_enrichment_table(project,modelList,fva_sim_rxns,reference_model, subSystems)
     % This function visualizes the enrichment results in a dotplot!!
     % #TODO: better documentation of the function1!!!
     arguments
         project
         modelList
         fva_sim_rxns 
-        idx_to_keep
         reference_model
         subSystems =[]
     end
+
+    [~,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns", reference_model);
+
+
     if isempty(subSystems)
-        subSystems = string(project.models.(reference_model).model.subSystems(idx_to_keep)); 
+        subSystems = string(project.models.(reference_model).model.subSystems); 
     end
-    rxns       = string(project.models.(reference_model).model.rxns(idx_to_keep));        
+    rxns = string(project.models.(reference_model).model.rxns);        
 
     [uniqSubs, ~, idx] = unique(subSystems);
 
@@ -1032,8 +1082,12 @@ function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_ke
         subStruct.(fieldName).name = subName;
         subStruct.(fieldName).rxns = rxns(idx == k);
     end
-    
+    n = length(modelList);
+    [I, J] = ndgrid(1:n, 1:n);
+    modelindex = arrayfun(@(i,j) [i j], I, J, 'UniformOutput', false);
+
     fvaSim = getLowerTriangleBlock(fva_sim_rxns);
+    modelindex = getLowerTriangleBlock(modelindex);
  
     modelPairs = cell(numel(modelList));  % preallocate
     
@@ -1053,12 +1107,19 @@ function Results = get_enrichment_table(project,modelList,fva_sim_rxns,idx_to_ke
 
         x = fvaSim{k};
         y = strjoin(modelPairs2x2{k},'_');
-    
+
+        model1idx = modelindex{k}(1);
+        model2idx = modelindex{k}(2);
+
         if isempty(x) || isempty(y)
             continue
         end
+
+        rxn_ids_in_both_models = find(sum(rxn_mapping(:,[model1idx,model2idx]) ~= 0,2) ==2);
+        % filter for the rxn similarities that are in both models 
+        rxns_in_both_models = rxns(rxn_ids_in_both_models);
         
-        Results.(string(y)) = pathway_enrichment(subStruct , x(idx_to_keep),rxns);
+        Results.(string(y)) = pathway_enrichment(subStruct , x(rxn_ids_in_both_models),rxns_in_both_models);
 
     end
      
@@ -1066,20 +1127,29 @@ end
 
 function fig = dotplot(NES_tbl,FDR_tbl)
     % #TODO better documentation of the function!!
-
-
-    % Extract pathways and comparisons
+    
+    % --- Sort pathways by overall NES magnitude ---
+    [~, sorted_idx] = sort(sum(abs(NES_tbl{:,:}),2), 'descend');
+    NES_tbl = NES_tbl(sorted_idx,:);
+    FDR_tbl = FDR_tbl(sorted_idx,:);
+    
+    % --- Handle zeros in FDR and transform ---
+    low_values = 1e-10;
+    FDR_tbl{:,:}(FDR_tbl{:,:} == 0) = low_values;
+    FDR_tbl{:,:} = -log10(FDR_tbl{:,:});
+    
+    % --- Extract labels ---
     pathways = regexprep(string(NES_tbl.Properties.RowNames), "_", " ");
     comparisons = string(NES_tbl.Properties.VariableNames);
     
-    % Extract numeric matrices
+    % --- Extract numeric matrices ---
     NES = NES_tbl{:,:};
     FDR = FDR_tbl{:,:};
     
     nP = numel(pathways);
     nC = numel(comparisons);
-
-    % Create grid coordinates
+    
+    % --- Create grid for scatter ---
     [X, Y] = meshgrid(1:nC, 1:nP);
     x = X(:);
     y = Y(:);
@@ -1087,24 +1157,52 @@ function fig = dotplot(NES_tbl,FDR_tbl)
     nesVals = NES(:);
     fdrVals = FDR(:);
     
-    % Dot size proportional to |NES|
-    dotSize = abs(nesVals) * 200;   % increase for pronounced size differences
+    % --- Prepare FDR for coloring ---
+    cVals = fdrVals;              
+    cVals(cVals < -log10(0.05)) = NaN;  % values >0.05 will be grey
+
+    % --- Dot size proportional to |NES| with enhanced visual difference ---
+    scatter_min = 10;    % smallest dot area (points^2)
+    scatter_max = 500;  % largest dot area (points^2)
+
+    nes = nesVals(~isnan(cVals));
     
-    % Prepare FDR for coloring
-    cVals = fdrVals;            % base colors from FDR
-    cVals(cVals > 0.05) = NaN;  % values >0.05 will be grey
+    absNES_norm = (abs(nes) - min(abs(nes))) / (max(abs(nes)) - min(abs(nes))); % normalize 0-1
+    dotSize = scatter_min + (absNES_norm.^0.5) * (scatter_max - scatter_min);  % power 0.5 emphasizes large values
     
-    % Create figure
-    fig = figure('Position',[100 100 900 500],"Visible","off");
+    
+    % --- Create figure ---
+    fig = figure('Color','w','Position',[100 100 1000 1000],"Visible","off");
     hold on
     
-    % Scatter plot for FDR ≤ 0.05
-    scatter(x(~isnan(cVals)), y(~isnan(cVals)), dotSize(~isnan(cVals)), cVals(~isnan(cVals)), 'filled')
+    % Scatter plot for significant FDR (≤ 0.05)
+    scatter(x(~isnan(cVals)), y(~isnan(cVals)), dotSize, cVals(~isnan(cVals)), 'filled')
+    hold on
     
-    % Scatter grey dots for FDR > 0.05
-    scatter(x(isnan(cVals)), y(isnan(cVals)), dotSize(isnan(cVals)), [0.7 0.7 0.7], 'filled')
+    % --- Size legend for |NES| with min, percentiles, max ---
+    size_vals = [min(abs(nes)), ...
+                 prctile(abs(nes), 25), ...
+                 prctile(abs(nes), 50), ...
+                 prctile(abs(nes), 75), ...
+                 max(abs(nes))];
     
-    % Axes formatting
+    size_scaled = [min(dotSize), ...
+                 prctile(dotSize, 25), ...
+                 prctile(dotSize, 50), ...
+                 prctile(dotSize, 75), ...
+                 max(dotSize)];
+   
+    % Custom "legend" inside axes
+    legend_sizes = size_scaled;      % sizeData
+    legend_labels = string(round(size_vals,2));
+    legend_x = max(x) + 1;  % x position outside plot
+    legend_y = y(1:length(legend_sizes)) ;        % y positions
+    
+    for i = 1:length(legend_sizes)
+        scatter(legend_x, legend_y(i), legend_sizes(i), 'k', 'filled')
+        text(legend_x+0.2, legend_y(i), legend_labels{i}, 'FontSize', 12, 'VerticalAlignment','middle')
+    end
+    % --- Axes formatting ---
     xticks(1:nC)
     xticklabels(regexprep(comparisons,"_", " vs "))
     yticks(1:nP)
@@ -1113,21 +1211,20 @@ function fig = dotplot(NES_tbl,FDR_tbl)
     xlabel('Model comparison')
     ylabel('Pathway')
     
-    xlim([0.5, nC + 0.5])
+    xlim([0.5, nC + 1.5])
     ylim([0.5, nP + 0.5])
     set(gca,'YDir','reverse','FontSize',18)
     title("Pathway enrichment (dot size = |NES|, color = FDR)")
     
-    % Colorbar with red to blue
+    % --- Colorbar ---
     nColors = 256;
     cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0,1,nColors)']; 
     colormap(cmap)        % red (low) -> blue (high)
-    caxis([0 0.05])       % fix color scaling
+    clim([-log10(0.05) -log10(low_values)])       
     cb = colorbar;
-    cb.Label.String = 'FDR';
+    cb.Label.String = '-log10(FDR)';
     cb.FontSize = 14;
     
-    box on
 end
 
 
@@ -1158,7 +1255,7 @@ function fig = FVA_sim_values_hist(fva_sim_rxns, modelList)
     
     [nRows, nCols] = size(fva_lower2x2);
     
-    fig = figure('Visible','off');
+    fig = figure('Color','w','Visible','off','Position', [100 100 2000*3 2000]);
     % Create tiled layout
     t = tiledlayout(fig,nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
     

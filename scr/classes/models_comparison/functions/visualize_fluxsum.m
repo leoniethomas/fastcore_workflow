@@ -1,4 +1,4 @@
-function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,plot_type,exclude_coenzymes,ignore_compartment,slot,flux_summed_up)
+function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,plot_type,exclude_coenzymes,ignore_compartment,slot,flux_summed_up)
     % This function visualizes the fluxsum either in a heatmap or in a
     % violinplot between different models to enable easy comparison of
     % model results in sampling. 
@@ -110,16 +110,16 @@ function fluxsum_sets = visualize_fluxsum(project,comparison_name,met_idx,rxn_id
     
     % depending on the choosen plot type different functions are executed
     if plot_type == "violin"
-            fluxsum_sets = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment,flux_summed_up);
+            [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment,flux_summed_up);
     else
-            fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type,slot,flux_summed_up);
+            [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type,slot,flux_summed_up);
     end
 
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 end
 
-function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type,slot,flux_summed_up)
+function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type,slot,flux_summed_up)
     % This function visualizes the mean fluxsum over the specified rxn_id
     % sets. By getting the fluxsum for metabolites that are participating
     % in the specified sets + are part of the met_idx and then computing
@@ -243,7 +243,8 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         % samples for one pathway more visible!
         scaled_data = zscore(heatmap_data')';
         
-        figure
+        fig = figure('Color','w','Position',[100 100 800 800],...
+                                       'Visible','off');
         imagesc(scaled_data)
         
         cmap = get_color_pallette();
@@ -284,7 +285,8 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         hold off
     elseif type == "heatmap_sample"
 
-        figure
+        fig = figure('Color','w','Position',[100 100 800 800],...
+                                       'Visible','off');
         scaled_data = zscore(heatmap_data_all_samples')';
     
         imagesc(scaled_data)
@@ -314,7 +316,8 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
         % samples for one pathway more visible!
         scaled_data = zscore(cell2mat(heatmap_data_all_samples_all_features')')';
         
-        figure
+        fig = figure('Color','w','Position',[100 100 800 800],...
+                                       'Visible','off');
         imagesc(scaled_data)
         
         cmap = get_color_pallette();
@@ -346,7 +349,7 @@ function fluxsum_sets = get_comparison_heatmap(project,comparison_name,met_idx,r
 
 end
 
-function fluxsum_sets = get_violin_plots(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, ignore_compartment,model_name_flux_boundaries,flux_summed_up)
+function [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, ignore_compartment,model_name_flux_boundaries,flux_summed_up)
     % This function visualizes the fluxsum distribution per metabolite and model 
     % over the specified rxn_id sets into a violin plot.
     % By getting the fluxsum for metabolites that are participating
@@ -475,7 +478,7 @@ function fluxsum_sets = get_violin_plots(project,comparison_name,met_idx,rxn_idx
         nCols = ceil(nMet / nRows);
         
         % Create figure with quadratic tiled layout
-        figure
+        fig = figure;
         tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact')
         
         for m = 1:nMet

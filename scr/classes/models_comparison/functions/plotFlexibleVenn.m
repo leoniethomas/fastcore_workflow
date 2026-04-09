@@ -1,4 +1,10 @@
-function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot)
+function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot, options)
+arguments
+    ordered_feature_matrix 
+    set_names 
+    title_plot
+    options.visible_plot ="on"
+end
 % ordered_feature_matrix : cell array of vectors (strings/chars/numerics)
 % set_names              : cell array of set names
 % title                  : figure title
@@ -43,12 +49,12 @@ labels_sorted = reorder_venn_labels(idx, set_names);
 
 
 %% --- Plot Venn diagram
-fig = venn(n, ...
+fig = venn(n, options.visible_plot,...
     'sets', set_names, ...
     'labels', labels_sorted, ...
     'alpha', 0.1, ...
     'edgeC', [1 1 1], ...
-    'edgeW', 2);
+    'edgeW', 2 );
 
 %% --- Add title
 text(0.5, -0.05, title_plot, ...
@@ -58,7 +64,8 @@ text(0.5, -0.05, title_plot, ...
     'FontWeight', 'bold');
 end
 
- function vennfig = venn(n,varargin)
+    function vennfig = venn(n,visible_plot,varargin)
+
 %% Draw venn diagram with two to four sets with optional text labels.
 % User can specify the number of sets to draw (maximum four) and label each
 % set and the intersectional regions between sets.
@@ -139,6 +146,7 @@ edgeC = p.Results.edgeC;
 edgeW = p.Results.edgeW;
 labelC = p.Results.labelC;
 
+
 % repeat colors if number of colors given is less than n
 %if height(colors) < n
  %   colors = repmat(colors,n/height(colors),1);
@@ -198,7 +206,7 @@ switch n
 end
 
 % figure settings
-vennfig = figure('Position',[20 20 600 300],'Color','w','Visible','off');
+vennfig = figure('Position',[20 20 600 300],'Color','w','Visible',options.visible_plot);
 axis off
 daspect([1,1,1])
 

@@ -23,6 +23,7 @@ function [fig] = plot_clustergram(data,rownames, colnames,title,colorbarLabel,al
 
            fig = gcf;
            fig.Visible = 'off';
+           fig.Color = 'w';
            ax = findall(fig, 'Type', 'Axes');
            set(ax, 'FontSize', 16);
            txt = findall(fig, 'Type', 'Text');
