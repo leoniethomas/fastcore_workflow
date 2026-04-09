@@ -2,19 +2,21 @@ Parameter,Analysis,Value
 obj_function,all,biomass_reaction
 osenseStr,FBA,max
 minNorm,FBA,zero
-optPercentage,FVA,100
+optPercentage,FVA,90
 osenseStr,sampling,max
 minNorm,sampling,zero
-obj_threshold,sampling,1
+obj_threshold,sampling,0.9
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
 options.toRound,sampling,1
+options.countSampleProcesses,sampling,3
 options.nPointsReturned,sampling,2000
 options.nFiles,sampling,10
+Options.nWorkers,sampling,5
 options.numCores,sampling,10
 options.maxTime,sampling,36000
-options.nWarmupPoints,sampling,"2*size(model.S, 2)"
-options.nStepsPerPoint,sampling,"size(model.S, 2)"
+options.nWarmupPoints,sampling,"10*size(model.S, 2)"
+options.nStepsPerPoint,sampling,"round(size(model.S, 2)/10)"
 modelSampling,sampling,model
 path,sampling,samplingResults/CHRR/
 nPointsReturned,kld,1000

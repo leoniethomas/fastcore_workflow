@@ -8,62 +8,46 @@ clearvars -except solverOK, close all, clc % clean environment
 delete clone*.log % delet old log file 
 feature astheightlimit 2000 % enable long file names
 
-% read in the parameters needed for the analysis
-%def_run_file = "/Volumes/FSTC_SYSBIO/0- UserFolders/Leonie.THOMAS/projects/20250225_glynn_bulk_metabolic_model/data/def_run_paramters.txt";
-
 % define which discretization run you want to use for model building
-disc_data_id = "20251125_0837";
-def_run_file = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/discretization" + filesep + ...
-                disc_data_id + filesep + disc_data_id + "_def_run_paramters.txt";
+disc_data_id = "20260326_1114";
+disc_data_folder = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/discretization" + filesep +  disc_data_id + filesep;
+disc_data_obj = disc_data_folder + disc_data_id + "_disc_data.mat";
+
+def_run_file = disc_data_folder + disc_data_id + "_def_run_paramters.txt";
+
+% load needed libraries to run script
 addpath(genpath("/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille"))
 addpath(genpath("C:\Users\leonie.thomas\rFASTCORMICS"))
 addpath(genpath("C:\Users\leonie.thomas\scFASTCORMICS"))
+%initCobraToolbox -> init cobratoolbox if needed
+changeCobraSolver("gurobi")
 
 %% read in all the script parameters and set working directory, directory the discretization is saved into
 
-exp = fastcore_experiment(def_run_file);
+exp = fastcore_experiment(def_run_file); % create fastcore experiment to store models in 
+load(disc_data_obj) % load data to constrain the models with
 
-% add the working path to the path & set the github repo location to be the working directory
 addpath(genpath(exp.script_parameters.set_working_directory));
 cd(exp.script_parameters.set_working_directory);
 
 % define a unique identifier to be used to name the different  discretizations created
-date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output 
-
-% creating a directory for the following discretzation to be stored into - copying the defined parameters 
-mkdir((exp.script_parameters.save_disc_data_to), date)
-mkdir((exp.script_parameters.QC_figures_path), date)
-copyfile(def_run_file, ...
-         string(exp.script_parameters.save_disc_data_to) + date+ filesep + date + "_def_run_paramters.txt")
-     
-
-clear input_paramters 
-changeCobraSolver("gurobi")
+date = char(datetime('now', 'Format', 'yyyyMMdd_hhss')); % to name the model and all the output  
 
 %% start a fastcore experiment & test the consistency of input model
 
-model = load(exp.script_parameters.model_used);
-model = model.(string(fieldnames(model)));
-model = generateRules(model);
-load(exp.script_parameters.gene_dic_file, "dico")
+model = load(exp.script_parameters.model_used); %load reference model to use
+model = model.(string(fieldnames(model))); % store read in model under the variable name model
+model = generateRules(model); % generate model.rules field
+
 
 % BUILD generic CONSISTENT model - fast consistency check (fastcc)
-exp = exp.add_models(model,dico) % 
-clear dico model
-%% load preprocessed gene expression data
+exp = exp.add_model(model) % 
+clear model
 
-% perform the discretization here 
+%% add disc data 
 
-disc_data = string(exp.script_parameters.set_working_directory) + filesep + "discretization" + filesep + disc_data_id + filesep + disc_data_id + "_disc_data.mat";
-
-load(disc_data)
-
-
-%% BUILT transcriptomics constrained CONTEXT SPECIFIC MODELS -> reconstruction using rFASTCORMICS
-
-exp = exp.add_expression_data(data, disc_data)
-clear data disc_data disc_data_id
-
+exp = exp.add_expression_data(data,disc_data_obj)
+clear data disc_data_obj
 
 %% create medium for the models % do it before 
 
@@ -75,8 +59,8 @@ exp.medium.medium_composition.Flux_mmol_gDW_h = - conc2Rate(exp.medium.medium_co
                                                        exp.script_parameters.t_in_hours,...
                                                        exp.script_parameters.cell_dry_weight_gDW); % TODO put the values from the description file here 
 
-exp = exp.add_additional_rxns_boundaries(string(split(exp.script_parameters.unwanted_uptakes_export_ub, ";"))',...
-                                         string(split(exp.script_parameters.unwanted_uptakes_export_lb, ";"))',...
+ exp = exp.add_additional_rxns_boundaries(string(split(exp.script_parameters.unwanted_uptakes_export_lb, ";"))',...
+                                         string(split(exp.script_parameters.unwanted_uptakes_export_ub, ";"))',...
                                          string(split(exp.script_parameters.needed_mets_medium, ";"))',...
                                          [])
 
@@ -92,8 +76,8 @@ clear med
 %                                                         strsplit(exp.script_parameters.unpenalizedSystems,";")));
 
 % forcing the medium in by setting it into fun option
-biomass_rxn = {'biomass_reaction'}  
-optional_settings.func = {'DM_atp_c_', biomass_rxn{:,:}, exp.medium.medium_composition.ExRxns_Recon3D{:}}; % depends if you want to foce in the medium, even though the model does not need it 
+biomass_rxn = exp.script_parameters.objective_function;
+optional_settings.func = {'DM_atp_c_', biomass_rxn{:}, exp.medium.medium_composition.ExRxns_Recon3D{:}}; % depends if you want to foce in the medium, even though the model does not need it 
 % depends on what you want how confident you are in your uptakes -> are
 % they actually forced in ? not ? 
 optional_settings.medium = exp.medium.medium_composition.Mets_Recon3D;
@@ -122,16 +106,16 @@ for cond = unique(exp.data.metadata.(condition_column))'
         model_cond = struct();
         % run rfastcormics on consistent global metabolic model
         tic; % mearuse the time the model takes to run
-        model_cond.expression_data = table(cellstr(exp.data.feature_names_norm),...
-                                            exp.data.FPKM(:,idx),...
+        model_cond.expression_data = table(string(exp.data.norm_counts.Properties.RowNames),...
+                                            exp.data.norm_counts{:,idx},...
                                             'VariableNames',["gene_names","values"]);% add the data used for the model to the resulting model
-        model_cond.discretized_data = table(cellstr(exp.data.feature_names_norm),...
+        model_cond.discretized_data = table(string(exp.data.norm_counts.Properties.RowNames),...
                                             exp.data.discretized(:,idx),...
                                             'VariableNames',["gene_names","values"]);
         model_cond.sample_metadata = exp.data.metadata(idx,:); % add metadta of the samples used to compute the model!s
         reference_model = "consistent_medium_constrained_model";
-        [model_cond.model,~, core_reaction_indices] = rFastcormics4cobra_v2(exp.(reference_model),exp.data.discretized(:,idx), ...
-                                                                                    cellstr(exp.data.feature_names_norm), exp.dico,...
+        [model_cond.model,~, core_reaction_indices] = rFastcormics4cobra_v2(exp.(reference_model),model_cond.discretized_data.values, ...
+                                                                                    model_cond.discretized_data.gene_names, exp.dico,...
                                                                                     exp.script_parameters.consensus_proportion, ...
                                                                                     exp.script_parameters.epsilon,...
                                                                                     optional_settings, biomass_rxn, 0, 0);

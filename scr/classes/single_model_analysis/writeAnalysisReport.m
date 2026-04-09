@@ -1,0 +1,527 @@
+function [] = writeAnalysisReport(project, modelName, analysisId, varargin)
+
+%% (Optional) arguments
+p = inputParser;
+addParameter(p,'path','');
+addParameter(p,'pathwaysOfInterest',{});
+addParameter(p,'metsOfInterest',{});
+parse(p,varargin{:});
+
+path = p.Results.path;
+pathwaysOfInterest = p.Results.pathwaysOfInterest;
+metsOfInterest = p.Results.metsOfInterest;
+
+% Formatting inputs
+path = char(path);
+
+if isempty(pathwaysOfInterest)
+    pathwaysOfInterest = {};
+else
+    pathwaysOfInterest = cellstr(string(pathwaysOfInterest));
+end
+
+if isempty(metsOfInterest)
+    metsOfInterest = {};
+else
+    metsOfInterest = cellstr(string(metsOfInterest));
+end
+
+%% Checking existence of path folder
+if ~exist(path, 'dir')   
+    mkdir(path) % create folder if it doesn't exist
+end
+
+%% Shortcut variables
+
+% Checking existence of the required fields? --> FBA and FVA = minimal
+% requirements
+model = project.models.(modelName).model;
+analysis = project.models.(modelName).analysis.(analysisId);
+FBAflux = analysis.FBA.x;
+GR = analysis.FBA.f;
+minFlux = analysis.FVA.minFlux;
+maxFlux = analysis.FVA.maxFlux;
+
+%% Required folders for saving 
+import mlreportgen.report.*
+import mlreportgen.dom.*
+
+%% Creating and opening the report
+reportName = modelName + "_AnalysisReport_" + analysisId;
+rpt = Report(reportName, "pdf");
+open(rpt)
+rpt.Layout.PageNumberFormat = 'n';
+
+%% Title
+dateStr = extractAfter(analysisId, "analysis_");
+tp = TitlePage;
+titleText = Text( ...
+    modelName + " Model - Analysis Report " + ...
+    string(datetime(dateStr, ...
+        'InputFormat','yyyyMMdd_HHmm', ...
+        'Format','dd MMMM yyyy, HH:mm')));
+titleText.Bold = true;
+titleText.FontSize = "24pt";
+tp.Title = titleText;
+
+add(rpt, tp);
+
+%% Table of contents
+toc = TableOfContents();
+toc.Layout.PageNumberFormat = 'n';
+add(rpt,toc);
+
+add(rpt, PageBreak);
+
+%% Define Table Style
+tableStyle = {ColSep("solid"), ...
+              RowSep("solid"), ...
+              Border("solid")};
+          
+tableHeaderStyle = {BackgroundColor("lightblue"), ...
+                      Bold(true), ...
+                      mlreportgen.dom.Hyphenation(true)};
+                  
+TableEntriesStyle = { ...
+    FontSize("10pt"), ...
+    mlreportgen.dom.InnerMargin("2pt","2pt","2pt","2pt"), ...
+    mlreportgen.dom.WhiteSpace("preserve"), ...
+    mlreportgen.dom.Hyphenation(false), ... % prevent from cutting words
+    HAlign("center"), ...
+    VAlign("middle") ...
+    };
+
+TableEntriesStyle2 = { ...
+    FontSize("8pt"), ...
+    mlreportgen.dom.InnerMargin("2pt","2pt","2pt","2pt"), ...
+    mlreportgen.dom.WhiteSpace("preserve"), ...
+    mlreportgen.dom.Hyphenation(true), ... % prevent from cutting words
+    HAlign("center"), ...
+    VAlign("middle") ...
+    };
+
+TableEntriesStyle3 = { ...
+    FontSize("6pt"), ...
+    mlreportgen.dom.InnerMargin("2pt","2pt","2pt","2pt"), ...
+    mlreportgen.dom.WhiteSpace("preserve"), ...
+    mlreportgen.dom.Hyphenation(false), ... % prevent from cutting words
+    HAlign("left"), ...
+    VAlign("middle") ...
+    };
+
+TableEntriesStyle4 = { ...
+    FontSize("8pt"), ...
+    mlreportgen.dom.InnerMargin("2pt","2pt","2pt","2pt"), ...
+    mlreportgen.dom.WhiteSpace("preserve"), ...
+    mlreportgen.dom.Hyphenation(true), ... % prevent from cutting words
+    mlreportgen.dom.NumberFormat("%0.4f"), ...
+    HAlign("left"), ...
+    VAlign("middle") ...
+    };
+
+TableEntriesStyle5 = { ...
+    FontSize("8pt"), ...
+    mlreportgen.dom.InnerMargin("2pt","2pt","2pt","2pt"), ...
+    mlreportgen.dom.WhiteSpace("preserve"), ...
+    mlreportgen.dom.Hyphenation(" "), ... % prevent from cutting words
+    mlreportgen.dom.NumberFormat("%0.4f"), ...
+    HAlign("left"), ...
+    VAlign("middle") ...
+    };
+
+lineBreak = Paragraph("");
+lineBreak.Style = {OuterMargin("0pt", "0pt", "1pt", "1pt")}; % OuterMargin(left, right, top, bottom)
+
+%HeadingStyle = {OuterMargin('0pt','0pt','0pt','0pt')};
+
+%% Analysis Parameters
+add(rpt, Heading(1, "Analysis Parameters"));
+add(rpt, lineBreak);
+
+parameters = analysis.parameters;
+
+% Header
+headerLabels = parameters.Properties.VariableNames;
+% Body
+tableBody = table2cell(parameters);
+
+parametersTable = FormalTable(headerLabels, tableBody);
+
+parametersTable.Style = [parametersTable.Style, tableStyle];
+parametersTable.Header.Style = [parametersTable.Header.Style, tableHeaderStyle];
+
+parametersTable.TableEntriesStyle = TableEntriesStyle;
+
+parametersTable.Width = "100%";
+
+add(rpt, parametersTable);
+
+%% Model Characteristics
+add(rpt, Heading(1, "Model Characteristics"))
+add(rpt, lineBreak);
+
+characteristics = struct(); 
+
+% Consistency
+nbConsistentRxns = fastcc(model, 1e-4, 0);
+if length(nbConsistentRxns) == length(model.rxns)
+    characteristics.modelConsistency = "YES";
+else
+    characteristics.modelConsistency = "NO";
+end
+characteristics.nbRxns = length(model.rxns);
+characteristics.nbConsistentRxns = length(nbConsistentRxns);
+
+% Nb of uptake rxns
+[~, upt] = findExcRxns(model);
+characteristics.nbUptakeRxns = sum(upt);
+
+% GPR rules
+characteristics.nbGPRrules = length(~cellfun(@isempty, model.grRules));
+
+% Nb of core retained in the model
+if isfield(project.models.(modelName), 'core_reactions')
+    characteristics.nbCoreRxnsAfterDiscretization = length(project.models.(modelName).core_reactions);
+    retainedRxns = model.rxns;
+    coreRetained = intersect(retainedRxns, project.models.(modelName).core_reactions);
+    characteristics.nbCoreRetained = length(coreRetained);
+end
+
+characteristicsT = struct2table(characteristics);
+
+% Header
+headerLabels = characteristicsT.Properties.VariableNames;
+headerLabelsSpaced = regexprep(headerLabels, '([a-z])([A-Z])', '$1 $2');
+
+% Body
+tableBody = table2cell(characteristicsT);
+
+characteristicsTable = FormalTable(headerLabelsSpaced, tableBody);
+
+characteristicsTable.Style = [characteristicsTable.Style, tableStyle];
+characteristicsTable.Header.Style = [characteristicsTable.Header.Style, tableHeaderStyle];
+
+characteristicsTable.TableEntriesStyle = TableEntriesStyle2;
+
+characteristicsTable.Width = "100%";
+
+add(rpt, characteristicsTable);
+add(rpt, PageBreak);
+
+%% Medium
+if isfield(project.models.(modelName).settings, 'medium')
+    medium = project.models.(modelName).settings.medium.medium_composition;
+    idx = strcmp(parameters.Parameter, "modelReference");
+    if any(idx)
+        modelRef = parameters.Value(idx);
+        if isequal(modelRef, "Recon3D") && all(ismember(["Mets_Recon3D","ExRxns_Recon3D","Concentration_mM"], medium.Properties.VariableNames))
+            mediumShort = medium(:, ["Mets_Recon3D","ExRxns_Recon3D","Concentration_mM"]);
+            if ismember("Flux_mmol_gDW_h", medium.Properties.VariableNames)
+                mediumShort.Flux_mmol_gDW_h = medium.Flux_mmol_gDW_h;
+            end
+        elseif isequal(modelRef, "HumanGEM") && all(ismember(["Mets_HumanGEM","ExRxns_HumanGEM","Concentration_mM"], medium.Properties.VariableNames))
+            mediumShort = medium(:, ["Mets_HumanGEM","ExRxns_HumanGEM","Concentration_mM"]);
+            if ismember("Flux_mmol_gDW_h", medium.Properties.VariableNames)
+                mediumShort.Flux_mmol_gDW_h = medium.Flux_mmol_gDW_h;
+            end
+        else
+            mediumShort = '';
+        end
+    else
+        mediumShort = '';
+    end
+    if ~isempty(mediumShort)
+        add(rpt, Heading(1, "Medium Composition"))
+        add(rpt, lineBreak);
+        
+        headerLabels = mediumShort.Properties.VariableNames;
+        tableBody = table2cell(mediumShort);
+
+        mediumTable = FormalTable(headerLabels, tableBody);
+        
+        mediumTable.Style = [mediumTable.Style, tableStyle];
+        mediumTable.Header.Style = [mediumTable.Header.Style, tableHeaderStyle];
+
+        mediumTable.TableEntriesStyle = TableEntriesStyle3;
+
+        mediumTable.Width = "100%";
+
+        add(rpt, mediumTable);
+    end
+end
+
+%% Table of Exchangers
+add(rpt, Heading(1,"Table of Exchangers"))
+add(rpt, lineBreak);
+
+p = Paragraph(sprintf("FBA for objective function: %.4f", GR));
+p.Style = {FontSize("9pt")};   
+add(rpt, p);
+add(rpt, lineBreak);
+
+% Exchangers
+idxEX = startsWith(model.rxns, 'EX_');
+EXrxns = model.rxns(idxEX);
+
+allFluxEX = sortrows(table(EXrxns, FBAflux(idxEX), minFlux(idxEX), maxFlux(idxEX), ...
+    FBAflux(idxEX)/GR, minFlux(idxEX)/GR, maxFlux(idxEX)/GR, ...
+    'VariableNames', {'ReactionID', 'FBA', 'FVAmin', 'FVAmax', 'NormalizedFBA', 'NormalizedFVAmin', 'NormalizedFVAmax'}), 2);
+
+% Header
+headerLabels = allFluxEX.Properties.VariableNames;
+% Body
+tableBody = table2cell(allFluxEX);
+
+FluxEXTable = FormalTable(headerLabels, tableBody);
+
+FluxEXTable.Style = [FluxEXTable.Style, tableStyle];
+FluxEXTable.Header.Style = [FluxEXTable.Header.Style, tableHeaderStyle];
+
+FluxEXTable.TableEntriesStyle = TableEntriesStyle4;
+
+FluxEXTable.Width = "100%";
+
+add(rpt, FluxEXTable);
+add(rpt, PageBreak);
+
+
+%% Fluxes Per Pathway
+
+if ~isempty(pathwaysOfInterest)
+    
+    add(rpt, Heading(1,"Fluxes Per Pathway"));
+    add(rpt, lineBreak);
+    
+    nbPathwaysIn = 0;
+    for i = 1:numel(pathwaysOfInterest)
+        
+        pathway = pathwaysOfInterest{i};
+        
+        if ismember(pathway, model.subSystems)
+            nbPathwaysIn = nbPathwaysIn + 1;
+            
+            add(rpt, Heading(2, pathway));
+            add(rpt, lineBreak);
+    
+            pathwayRxns = findRxnsFromSubSystem(model, pathway);
+            idxPathway = find(ismember(model.rxns, pathwayRxns));
+            pathwayFluxes = table(model.rxns(idxPathway), printRxnFormula(model, pathwayRxns, 0), ...
+                FBAflux(idxPathway), minFlux(idxPathway), maxFlux(idxPathway), ...
+                FBAflux(idxPathway)/GR, minFlux(idxPathway)/GR, maxFlux(idxPathway)/GR, ...
+                'VariableNames', {'ReactionID', 'Formula', 'FBA', 'FVAmin', 'FVAmax', ...
+                'NormalizedFBA', 'NormalizedFVAmin', 'NormalizedFVAmax'});
+            
+            % Pathway Flux Sum 
+            % with FBA
+            fluxSumFBA = computeFluxSum(model, analysis, 'FBA', 'pathway', pathway);
+            % with sampling
+            if isfield(analysis, 'sampling')
+                fluxSumSampling = computeFluxSum(model, analysis, 'sampling', 'pathway', pathway);
+            end
+
+        else
+            fprintf('%s is not part of the model.\n', pathway);
+        end
+        
+        if exist('pathwayFluxes','var')
+            % Header
+            headerLabels = pathwayFluxes.Properties.VariableNames;
+            % Body
+            tableBody = table2cell(pathwayFluxes);
+            
+            pathwayFluxesTable = FormalTable(headerLabels, tableBody);
+            
+            pathwayFluxesTable.Style = [pathwayFluxesTable.Style, tableStyle];
+            pathwayFluxesTable.Header.Style = [pathwayFluxesTable.Header.Style, tableHeaderStyle];
+            
+            pathwayFluxesTable.TableEntriesStyle = TableEntriesStyle5;
+            
+            pathwayFluxesTable.Width = "100%";
+            
+            add(rpt, Heading(3, "Fluxes"));
+            add(rpt, lineBreak);
+            add(rpt, pathwayFluxesTable);
+            add(rpt, lineBreak);
+            
+            % Flux Sum with FBA
+            add(rpt, Heading(3, "FBA Flux Sum"));
+            add(rpt, lineBreak);
+            % Header
+            headerLabels = fluxSumFBA.Properties.VariableNames;
+            % Body
+            tableBody = table2cell(fluxSumFBA);
+
+            pathwayFBAFluxSumTable = FormalTable(headerLabels, tableBody);
+
+            pathwayFBAFluxSumTable.Style = [pathwayFBAFluxSumTable.Style, tableStyle];
+            pathwayFBAFluxSumTable.Header.Style = [pathwayFBAFluxSumTable.Header.Style, tableHeaderStyle];
+
+            pathwayFBAFluxSumTable.TableEntriesStyle = TableEntriesStyle5;
+
+            pathwayFBAFluxSumTable.Width = "100%";
+
+            add(rpt, pathwayFBAFluxSumTable);
+
+            if exist('fluxSumSampling', 'var')
+                add(rpt, Heading(3, "Sampling Flux Sum"));
+                add(rpt, lineBreak);
+                % Header
+                headerLabels = fluxSumSampling.Properties.VariableNames;
+                % Body
+                tableBody = table2cell(fluxSumSampling);
+    
+                pathwaySamplingFluxSumTable = FormalTable(headerLabels, tableBody);
+    
+                pathwaySamplingFluxSumTable.Style = [pathwaySamplingFluxSumTable.Style, tableStyle];
+                pathwaySamplingFluxSumTable.Header.Style = [pathwaySamplingFluxSumTable.Header.Style, tableHeaderStyle];
+    
+                pathwaySamplingFluxSumTable.TableEntriesStyle = TableEntriesStyle5;
+    
+                pathwaySamplingFluxSumTable.Width = "100%";
+    
+                add(rpt, pathwaySamplingFluxSumTable);
+            end
+
+        end
+        add(rpt, PageBreak);
+    end
+    if nbPathwaysIn == 0
+        fprintf("None of the given pathways were found in the model.\n Please check the subSystem field of your model.\n");
+    end
+end
+
+%% Fluxes per metabolite
+if ~isempty(metsOfInterest)
+    
+    add(rpt, Heading(1,"Fluxes Per Metabolite"));
+    add(rpt, lineBreak);
+    
+    nbMetsIn = 0;
+    for i = 1:numel(metsOfInterest)
+        
+        met = metsOfInterest{i};
+        pattern = ['^', met, '\['];
+        idx = ~cellfun('isempty', regexp(model.mets, pattern, 'once'));
+        matchedMets = model.mets(idx);
+        
+        if ~isempty(matchedMets)
+            
+            nbMetsIn = nbMetsIn + 1;
+            
+            metName = string(model.metNames(find(strcmp(model.mets, matchedMets(1)))));
+            add(rpt, Heading(2, sprintf('%s (%s)', metName, met)));
+            add(rpt, lineBreak);
+    
+            [metsRxns, ~] = findRxnsFromMets(model, matchedMets);
+            idxMetsRxns = find(ismember(model.rxns, metsRxns));
+            %idxMets = find(ismember(model.mets, matchedMets)); % for Flux Sum
+            
+            % FBA/FVA for reactions associated with the metabolite
+            metFluxes = table(model.rxns(idxMetsRxns), printRxnFormula(model, metsRxns, 0), FBAflux(idxMetsRxns),...
+                minFlux(idxMetsRxns), maxFlux(idxMetsRxns), ...
+                FBAflux(idxMetsRxns)/GR, minFlux(idxMetsRxns)/GR, maxFlux(idxMetsRxns)/GR, ...
+                'VariableNames', {'ReactionID', 'Formula', 'FBA', 'FVAmin', 'FVAmax', 'NormalizedFBA', 'NormalizedFVAmin', 'NormalizedFVAmax'});
+
+            % Metabolite Flux Sum 
+            % with FBA
+            fluxSumFBA = computeFluxSum(model, analysis, 'FBA', 'metabolite', met);
+            % with sampling
+            if isfield(analysis, 'sampling')
+                fluxSumSampling = computeFluxSum(model, analysis, 'sampling', 'metabolite', met);
+            end
+        else
+            fprintf('No metabolite corresponding to %s was found in the model.\n', met);
+        end
+        
+        if exist('metFluxes','var')
+            % Fluxes
+            % Header
+            headerLabels = metFluxes.Properties.VariableNames;
+            % Body
+            tableBody = table2cell(metFluxes);
+            
+            metFluxesTable = FormalTable(headerLabels, tableBody);
+            
+            metFluxesTable.Style = [metFluxesTable.Style, tableStyle];
+            metFluxesTable.Header.Style = [metFluxesTable.Header.Style, tableHeaderStyle];
+            
+            metFluxesTable.TableEntriesStyle = TableEntriesStyle5;
+            
+            metFluxesTable.Width = "100%";
+            
+            add(rpt, Heading(3, "Fluxes"));
+            add(rpt, lineBreak);
+            add(rpt, metFluxesTable);
+            add(rpt, lineBreak);
+
+            % Flux Sum with FBA
+            add(rpt, Heading(3, "FBA Flux Sum"));
+            add(rpt, lineBreak);
+            % Header
+            headerLabels = fluxSumFBA.Properties.VariableNames;
+            % Body
+            tableBody = table2cell(fluxSumFBA);
+
+            metFBAFluxSumTable = FormalTable(headerLabels, tableBody);
+
+            metFBAFluxSumTable.Style = [metFBAFluxSumTable.Style, tableStyle];
+            metFBAFluxSumTable.Header.Style = [metFBAFluxSumTable.Header.Style, tableHeaderStyle];
+
+            metFBAFluxSumTable.TableEntriesStyle = TableEntriesStyle5;
+
+            metFBAFluxSumTable.Width = "100%";
+
+            add(rpt, metFBAFluxSumTable);
+
+            if exist('fluxSumSampling', 'var')
+                add(rpt, Heading(3, "Sampling Flux Sum"));
+                add(rpt, lineBreak);
+                % Header
+                headerLabels = fluxSumSampling.Properties.VariableNames;
+                % Body
+                tableBody = table2cell(fluxSumSampling);
+    
+                metSamplingFluxSumTable = FormalTable(headerLabels, tableBody);
+    
+                metSamplingFluxSumTable.Style = [metSamplingFluxSumTable.Style, tableStyle];
+                metSamplingFluxSumTable.Header.Style = [metSamplingFluxSumTable.Header.Style, tableHeaderStyle];
+    
+                metSamplingFluxSumTable.TableEntriesStyle = TableEntriesStyle5;
+    
+                metSamplingFluxSumTable.Width = "100%";
+    
+                add(rpt, metSamplingFluxSumTable);
+            end
+
+        end
+        add(rpt, PageBreak);
+    end
+    if nbMetsIn == 0
+        fprintf("None of the given metabolites were found in the model.\n Please check the mets field of your model.\n");
+    end
+end
+
+close(rpt);
+%% Needed to be integrated
+% add(rpt, Heading(1,"Shadow Prices"))
+% add(rpt, Heading(1,"Flux Sum from FBA"))
+% add(rpt, Heading(1,"Flux Sum from Sampling"))
+% 
+% 
+% 
+% % Crée la figure
+% f = figure;
+% plot(1:10,(1:10).^2);
+% title("Quadratic plot");
+% 
+% % Ajoute la figure directement au rapport via handle
+% add(rpt, Figure(f));
+% 
+% T = table((1:5)', rand(5,1), 'VariableNames',{'ID','Value'});
+% add(rpt, BaseTable(T))
+% 
+% close(rpt)
+% rptview(rpt)
+
+end
+

@@ -15,8 +15,7 @@ function project = modelsComparisonSampling(project,comparison_name)
     
     sample_count_models = structfun(@(x) size(x.analysis.sampling.samples,2), models_list);
     project.comparisons.(comparison_name).sample_model_labels = repelem(list_model_names, sample_count_models);
-    
-    visualize_sampling_landscape(project,comparison_name)
+    project.comparisons.(comparison_name).plots.sampling = visualize_sampling_landscape(project,comparison_name,'visible_plot',"off")
 
 
 end

@@ -37,6 +37,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
         options.reducedCost (1,1) logical = false
         options.threshold_flux (1,1) string {mustBeMember(options.threshold_flux,["lower", "upper","none","all"])} ="none" 
         options.title_plots = ""
+        options.visible_plots ="on"
     end
 
 
@@ -50,11 +51,11 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
     
     if options.threshold_flux == "upper"
-        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) <0), ...
+        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix < 0,2) ~= 0), ...
                                           idx_to_vis);  
         title_word = "negative flux reactions";
     elseif options.threshold_flux == "lower"
-        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & mean(ordered_fba_matrix,2) > 0), ...
+        get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix > 0,2) ~= 0), ...
                                                       idx_to_vis); 
         title_word = "positive flux reactions";
     elseif options.threshold_flux == "none"
@@ -212,7 +213,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
 
     fig = uifigure('Name', title_word + " with Table", ...
-                       'Position',[100 100 1000 450]);
+                       'Position',[100 100 1000 450],'Visible',options.visible_plots);
         
     plotWidth = 0.52;
     

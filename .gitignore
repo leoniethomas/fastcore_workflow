@@ -20,3 +20,4 @@ scr/fastcormics_module/FVAsimilarity.m
 scr/fastcormics_module/discretize_FPKM.m
 scr/fastcormics_module/visualize_sampling.ipynb
 scr/test/*
+**/SamplingResults

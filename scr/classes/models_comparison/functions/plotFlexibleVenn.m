@@ -1,4 +1,10 @@
-function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot)
+function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names, title_plot, options)
+arguments
+    ordered_feature_matrix 
+    set_names 
+    title_plot
+    options.visible_plot ="on"
+end
 % ordered_feature_matrix : cell array of vectors (strings/chars/numerics)
 % set_names              : cell array of set names
 % title                  : figure title
@@ -10,29 +16,32 @@ function [fig,idx, labels] = plotFlexibleVenn(ordered_feature_matrix, set_names,
 
 %% --- Input checks
 n = size(ordered_feature_matrix,2);
+
+labels = strings(2^n - 1, 1);
+idx = struct();
+    
+
 if n < 2 || n > 4
     disp('Only supports 2 to 4 sets. Therefore a simple intersection heatmap will be plotted here!');
     M = ordered_feature_matrix' * ordered_feature_matrix;
     figure
     fig = heatmap(set_names,set_names, M);
     title(title_plot);
-   
+
 else
 
-%% --- Generate exclusive intersections
-labels = strings(2^n - 1, 1);
-idx = struct();
+    %% --- Generate exclusive intersections
 
-for i = 1:(2^n - 1)
-    mask = dec2bin(i, n) == '1';
-
-    rows_match = all(ordered_feature_matrix(:, mask), 2) & all(~ordered_feature_matrix(:, ~mask), 2);
-
-    name_set = matlab.lang.makeValidName( ...
-        strjoin(set_names(mask), "_"));
-
-    idx.(name_set) = find(rows_match);
-    labels(i) = string(sum(rows_match));
+    for i = 1:(2^n - 1)
+        mask = dec2bin(i, n) == '1';
+    
+        rows_match = all(ordered_feature_matrix(:, mask), 2) & all(~ordered_feature_matrix(:, ~mask), 2);
+    
+        name_set = matlab.lang.makeValidName( ...
+            strjoin(set_names(mask), "_"));
+    
+        idx.(name_set) = find(rows_match);
+        labels(i) = string(sum(rows_match));
 end
 % the labels are per se not in the correct order! needs reordering so that
 % text labels and intersection count positions align
@@ -40,12 +49,12 @@ labels_sorted = reorder_venn_labels(idx, set_names);
 
 
 %% --- Plot Venn diagram
-fig = venn(n, ...
+fig = venn(n, options.visible_plot,...
     'sets', set_names, ...
     'labels', labels_sorted, ...
     'alpha', 0.1, ...
     'edgeC', [1 1 1], ...
-    'edgeW', 2);
+    'edgeW', 2 );
 
 %% --- Add title
 text(0.5, -0.05, title_plot, ...
@@ -55,7 +64,8 @@ text(0.5, -0.05, title_plot, ...
     'FontWeight', 'bold');
 end
 
- function vennfig = venn(n,varargin)
+    function vennfig = venn(n,visible_plot,varargin)
+
 %% Draw venn diagram with two to four sets with optional text labels.
 % User can specify the number of sets to draw (maximum four) and label each
 % set and the intersectional regions between sets.
@@ -136,6 +146,7 @@ edgeC = p.Results.edgeC;
 edgeW = p.Results.edgeW;
 labelC = p.Results.labelC;
 
+
 % repeat colors if number of colors given is less than n
 %if height(colors) < n
  %   colors = repmat(colors,n/height(colors),1);
@@ -195,7 +206,7 @@ switch n
 end
 
 % figure settings
-vennfig = figure('Position',[20 20 800 450],'Color','w');
+vennfig = figure('Position',[20 20 600 300],'Color','w','Visible',options.visible_plot);
 axis off
 daspect([1,1,1])
 

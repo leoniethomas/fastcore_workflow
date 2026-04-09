@@ -30,26 +30,40 @@ function params = tableToParamsStruct(defaultParametersAnalysis, analysisName, m
     % -------- Nested helper functions --------
 
     function out = parseValue(v, model)
-        % Try numeric
+
+        % Try numeric scalar
         num = str2double(v);
         if ~isnan(num)
             out = num;
             return
         end
 
-        % Try to evaluate expressions involving model (e.g. size(model.S,2))
+        % Evaluate arrays or cell arrays encoded as string
+        % Content is NOT modified (strings stay strings)
+        if (startsWith(v, "{") && endsWith(v, "}")) || ...
+           (startsWith(v, "[") && endsWith(v, "]"))
+            try
+                out = eval(v);
+                return
+            catch
+                error('Invalid array/cell expression: %s', v);
+            end
+        end
+
+        % Evaluate expressions involving model
         if nargin > 1 && contains(v, "model")
             try
                 out = eval(v);
                 return
             catch
-                % Fall through to string if eval fails
+                error('Invalid model expression: %s', v);
             end
         end
 
         % Otherwise keep as string
         out = v;
     end
+
 
     function s = assignNested(s, fields, value)
         % Recursive nested assignment

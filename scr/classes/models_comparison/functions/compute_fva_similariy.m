@@ -6,12 +6,10 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
             replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
             ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
             replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
-            ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            [ordered_fva_min_matrix,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
             
             n = numel(modelList);
 
-            
-            
             fva_similarity = eye(n); % Diagonal is 1
             fva_similarity_rxns = cell(n);
             
@@ -28,8 +26,13 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
                 y = rowIdx(k);
                 x = colIdx(k);
 
-                [overallSim, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
-                
+                [~, rxnSim] = FVAsimilarity(fvaData{y}, fvaData{x});
+
+                % filter out reactions that are not in both of the models
+                % the differences on structural level are not interesting
+                % in this figure
+                rxnidx_in_both_models = find(sum(rxn_mapping(:,[x,y])~= 0,2) == 2);
+                overallSim = mean(rxnSim(rxnidx_in_both_models,:));
 
                 % Fill both [y,x] and [x,y] due to symmetry
                 fva_similarity(y,x) = overallSim;
@@ -60,13 +63,13 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
                         x = colIdx(k);
         
                         matrix_fva_rxns = fva_similarity_rxns{y,x};
-                        G = zeros(num_groups, size(matrix_fva_rxns,1));
+                        G = {};
                     
                         for g = 1:num_groups
-                            G(g, groups{g}) = matrix_fva_rxns(groups{g},1);
+                            G{g} = matrix_fva_rxns(intersect(rxnidx_in_both_models,groups{g}),1);
                         end
-                        fva_similarity_pathways{y,x} = mean(G,2);
-                        fva_similarity_pathways{x,y} = mean(G,2);
+                        fva_similarity_pathways{y,x} = cellfun(@mean, G);
+                        fva_similarity_pathways{x,y} = cellfun(@mean, G);
             end
 end
 
