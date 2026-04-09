@@ -9,8 +9,8 @@ obj_threshold,sampling,0.9
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
 options.toRound,sampling,1
-options.nPointsReturned,sampling,10000
 options.countSampleProcesses,sampling,3
+options.nPointsReturned,sampling,2000
 options.nFiles,sampling,10
 Options.nWorkers,sampling,5
 options.numCores,sampling,10
@@ -26,4 +26,3 @@ geneList,singleGeneDeletion,
 method,doubleGeneDeletion,FBA
 geneList1,doubleGeneDeletion,
 geneList2,doubleGeneDeletion,
-
