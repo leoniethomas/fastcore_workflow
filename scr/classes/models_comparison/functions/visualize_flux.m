@@ -1,4 +1,4 @@
-function flux_sets = visualize_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,threshold)
+function [flux_sets,figs] = visualize_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,threshold,plot_visible)
     arguments
         project
         comparison_name
@@ -6,6 +6,7 @@ function flux_sets = visualize_flux(project,comparison_name,met_idx,rxn_idx,rxn_
         rxn_idx =[]
         rxn_set_labels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["all"] 
+        plot_visible ="on"
     end
     %     plot_type  {mustBeMember(plot_type, ["violin","heatmap"])} =["violin"] 
     %     exclude_coenzymes (1,1) logical = true
@@ -20,11 +21,11 @@ function flux_sets = visualize_flux(project,comparison_name,met_idx,rxn_idx,rxn_
         met_idx = find(ones(length(project.models.(reference).model.mets),1));
     end
 
-    flux_sets = get_violin_plots_flux(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,threshold);
+    [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,threshold,plot_visible);
 
 end
 
-function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, threshold)
+function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, threshold,plot_visible)
     arguments
         project
         comparison_name
@@ -32,6 +33,7 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
         rxn_idx =[]
         rxn_set_labels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["positive"] 
+        plot_visible ="on"
     end
 
     reference = project.comparisons.(comparison_name).reference_model;
@@ -53,11 +55,12 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 
-    
+    figs = struct();
 
     for subsystem = 1:numel(flux_sets)
         data = flux_sets{subsystem};
         title_fig = rxn_set_labels(subsystem);
+        plot_name = replace(title_fig, ["_", "-", "/"], "");
 
         rxns_names = project.models.(reference).model.rxns(rxn_idx{subsystem});
         
@@ -106,42 +109,50 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
             end
         end
         
-        % Compute rows and columns to make layout roughly square
-        nRows = ceil(sqrt(nMet));
-        nCols = ceil(nMet / nRows);
-        nCols = ceil(nMet / nRows);
+        maxPlotsPerFig = 12;
+        nFigs = ceil(nMet / maxPlotsPerFig);
         
-        %% Create figure with quadratic tiled layout
-        figure
-        tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact')
-        
-        for m = 1:nMet
-            ax = nexttile;
-            hold on
-        
-            % Step 1: prepare data for violinplot
-            dat = data_for_plot(m,:);        % 1 x nGroups cell
-            dat = vertcat(dat{:})';          % column vector of all samples
-        
-            % Step 2: create group vector for violinplot
-            group_vector = repelem(groups, cellfun(@numel, data_for_plot(m,:)))';
-        
-            % Step 3: plot
-            columns_to_keep = find(~all(dat == 0));
-            obj = violinplot(dat(:,columns_to_keep), groups(columns_to_keep),'ShowData', false);    % leave out 'ShowData' for compatibility
-        
-            % Step 4: labels
-            % xticks(1:numel(groups))
-            % xticklabels(groups)
-            ylabel(ax, 'Flux Value', 'FontSize', 18)
-            title(ax, rxns_names{m}, 'Interpreter','none', 'FontSize', 18)
-            ax.FontSize = 18;     % sets tick labels
+        figStruct = struct();
+
+        for f = 1:nFigs
+            
+            fig = figure('Color','w','Position',[100 100 800 800],...
+                                       'Visible',plot_visible);
+            
+            t = tiledlayout(3,4);
+            title(t,"Fluxsum for metabolites in : " + title_fig, ...
+                  'FontSize', 20, 'FontWeight','bold', 'Interpreter','none');
+            
+            % Store using dynamic field name
+            fieldName = sprintf('fig%d', f);
+            figStruct.(fieldName) = fig;
+            
+            startIdx = (f-1)*maxPlotsPerFig + 1;
+            endIdx   = min(f*maxPlotsPerFig, nMet);
+            
+            for m = startIdx:endIdx
+                
+                ax = nexttile(t);
+                hold(ax, 'on')
+                
+                dat = data_for_plot(m,:);
+                dat = vertcat(dat{:})';
+                
+                columns_to_keep = find(~all(dat == 0));
+                
+                evalc('violinplot(dat(:,columns_to_keep), groups(columns_to_keep), "ShowData", false);');
+                
+                ylabel(ax, 'Flux Value', 'FontSize', 18);
+                title(ax, rxns_names{m}, 'Interpreter','none', 'FontSize', 14);
+                
+                ax.FontSize = 18;
+            end
         end
+        
+        if plot_visible == "on"
     
-        sgtitle("Rxns Flux in subSystem: " + title_fig,'FontSize',20)
 
-
-        %% table with rxnforumlas etc 
+        %table with rxnforumlas etc 
 
         ref = fieldnames(models);
         ref = models.(ref{1,1}).settings.medium;
@@ -174,8 +185,9 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
         ordered_ub = ordered_ub(rxn_ids,:);
         ordered_lb = ordered_lb(rxn_ids,:);
         ordered_mapping_rxn_matrix = ordered_mapping_rxn_matrix(rxn_ids,:);
-        rxn_formulas = string(printRxnFormula(reference_model));
-        rxn_formulas = rxn_formulas(rxn_ids);
+       
+        rxn_abbr = reference_model.rxns(rxn_ids);
+        rxn_formulas = string(printRxnFormula(reference_model,rxn_abbr,false));
   
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference),...
@@ -209,6 +221,9 @@ function flux_sets = get_violin_plots_flux(project,comparison_name,met_idx,rxn_i
             'Position',[0 0 1 1], ...
             'FontSize',18, ...
             'ColumnWidth','auto');
+        end
+        figs.("violing_flux_" + plot_name) = figStruct;
+
     end
 
 end

@@ -1,4 +1,4 @@
-function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,plot_type,exclude_coenzymes,ignore_compartment,slot,flux_summed_up)
+function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,plot_type,exclude_coenzymes,ignore_compartment,slot,flux_summed_up,model_name_flux_boundaries,plot_visible)
     % This function visualizes the fluxsum either in a heatmap or in a
     % violinplot between different models to enable easy comparison of
     % model results in sampling. 
@@ -66,6 +66,8 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
         ignore_compartment (1,1) logical = true
         slot  (1,1) string {mustBeMember(slot,["ordered_fba", "ordered_samples"])} ="ordered_samples" 
         flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
+        model_name_flux_boundaries (1,1) string = "consistent_medium_constrained_model"
+        plot_visible ="on"
     end
     
     % sets the order of the rxns in order to be able to bring the samples
@@ -110,16 +112,16 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
     
     % depending on the choosen plot type different functions are executed
     if plot_type == "violin"
-            [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment,flux_summed_up);
+            [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment,model_name_flux_boundaries,"incoming",plot_visible);
     else
-            [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type,slot,flux_summed_up);
+            [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type,slot,flux_summed_up,plot_visible);
     end
 
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 end
 
-function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type,slot,flux_summed_up)
+function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type,slot,flux_summed_up,plot_visible)
     % This function visualizes the mean fluxsum over the specified rxn_id
     % sets. By getting the fluxsum for metabolites that are participating
     % in the specified sets + are part of the met_idx and then computing
@@ -160,6 +162,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         type {mustBeMember(type, ["heatmap", "heatmap_sample","heatmap_sample_all_features"])} =["heatmap"] 
         slot  (1,1) string {mustBeMember(slot,["ordered_fba", "ordered_samples"])} ="ordered_samples" 
         flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
+        plot_visible ="on"
     end
     reference = project.comparisons.(comparison_name).reference_model;
     if isempty(rxn_idx)
@@ -244,7 +247,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         scaled_data = zscore(heatmap_data')';
         
         fig = figure('Color','w','Position',[100 100 800 800],...
-                                       'Visible','off');
+                                       'Visible',plot_visible);
         imagesc(scaled_data)
         
         cmap = get_color_pallette();
@@ -273,7 +276,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
                 % (or multiply relative_counts by reference_model if needed)
                 value =  heatmap_data(i,j); % +1 because first column is reference_model
                 % Place text at the center of the tile
-                text(j, i, num2str(round(value,2)), ...
+                text(j, i, num2str(round(value,1)), ...
                     'HorizontalAlignment','center', ...
                     'VerticalAlignment','middle', ...
                     'Color','k', ...          % black text
@@ -285,7 +288,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
     elseif type == "heatmap_sample"
 
         fig = figure('Color','w','Position',[100 100 800 800],...
-                                       'Visible','off');
+                                       'Visible',plot_visible);
         scaled_data = zscore(heatmap_data_all_samples')';
     
         imagesc(scaled_data)
@@ -316,7 +319,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         scaled_data = zscore(cell2mat(heatmap_data_all_samples_all_features')')';
         
         fig = figure('Color','w','Position',[100 100 800 800],...
-                                       'Visible','off');
+                                       'Visible',plot_visible);
         imagesc(scaled_data)
         
         cmap = get_color_pallette();
@@ -333,7 +336,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         [sample_count,~] = hist(samples_cat);
         xtickposition = ((1:length(unique(samples_cat))) .* (sample_count)) - sample_count/2;
     
-        count_mets_per_set = cell2mat(arrayfun(@(x)size(x{:},1),heatmap_data_all_samples_all_features,'UniformOutput',false))'
+        count_mets_per_set = cell2mat(arrayfun(@(x)size(x{:},1),heatmap_data_all_samples_all_features,'UniformOutput',false))';
         ytickposition = cumsum(count_mets_per_set) - round(count_mets_per_set/2);
     
         set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
@@ -348,7 +351,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
 
 end
 
-function [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, ignore_compartment,model_name_flux_boundaries,flux_summed_up)
+function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, ignore_compartment,model_name_flux_boundaries,flux_summed_up,plot_visible)
     % This function visualizes the fluxsum distribution per metabolite and model 
     % over the specified rxn_id sets into a violin plot.
     % By getting the fluxsum for metabolites that are participating
@@ -393,6 +396,7 @@ function [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx,r
         ignore_compartment (1,1) logical = true
         model_name_flux_boundaries (1,1) string = "consistent_medium_constrained_model"
         flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
+        plot_visible ="on"
     end
 
     reference = project.comparisons.(comparison_name).reference_model;
@@ -410,15 +414,18 @@ function [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx,r
     end
     
 
-    fluxsum_sets = get_fluxsum(project,comparison_name,met_idx,rxn_idx, flux_summed_up);
+    fluxsum_sets = get_fluxsum(project,comparison_name,met_idx,rxn_idx, "ordered_samples",flux_summed_up);
 
     
     % for every specified set in rxn_idx create one figure with all the
     % fluxsums of the metabolites participating in the rxns + being part of
     % met_idx
+    figs = struct();
     for subsystem = 1:numel(fluxsum_sets)
         data = fluxsum_sets{subsystem};
         title_fig = rxn_set_labels(subsystem);
+        plot_name = replace(title_fig, ["_", "-", "/"], "");
+
         
         met_names = reference_model.mets(met_idx); % filter for mets in met_idx 
         
@@ -472,54 +479,72 @@ function [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx,r
         % model
         % now we loop over all metabolites to visualize on violin per model
         
-        % Compute rows and columns to make layout roughly square
-        nRows = ceil(sqrt(nMet));
-        nCols = ceil(nMet / nRows);
+        maxPlotsPerFig = 12;
+        nFigs = ceil(nMet / maxPlotsPerFig);
         
-        % Create figure with quadratic tiled layout
-        fig = figure;
-        tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact')
-        
-        for m = 1:nMet
-            ax = nexttile;    % get the axes handle
-            hold(ax, 'on')
-        
-            dat = data_for_plot(m,:);        
-            dat = vertcat(dat{:})';         
+        figStruct = struct();
+
+        for f = 1:nFigs
             
-            columns_to_keep = find(~all(dat == 0));
-            violinplot(dat(:,columns_to_keep), groups(columns_to_keep),'ShowData', false);    % leave out 'ShowData' for compatibility
-       
-            title(met_names{m}, 'Interpreter','none');
-            ylabel(ax, 'Flux Value', 'FontSize', 18);
-            title(ax, met_names{m}, 'Interpreter','none', 'FontSize', 18);
-            ax.FontSize = 18;     
+            fig = figure('Color','w','Position',[100 100 800 800],...
+                                       'Visible',plot_visible);
+            
+            t = tiledlayout(3,4);
+            title(t,"Fluxsum for metabolites in : " + title_fig, ...
+                  'FontSize', 20, 'FontWeight','bold', 'Interpreter','none');
+            
+            % Store using dynamic field name
+            fieldName = sprintf('fig%d', f);
+            figStruct.(fieldName) = fig;
+            
+            startIdx = (f-1)*maxPlotsPerFig + 1;
+            endIdx   = min(f*maxPlotsPerFig, nMet);
+            
+            for m = startIdx:endIdx
+                
+                ax = nexttile(t);
+                hold(ax, 'on')
+                
+                dat = data_for_plot(m,:);
+                dat = vertcat(dat{:})';
+                
+                columns_to_keep = find(~all(dat == 0));
+                
+                evalc('violinplot(dat(:,columns_to_keep), groups(columns_to_keep), "ShowData", false);');
+                
+                ylabel(ax, 'Flux Value', 'FontSize', 18);
+                title(ax, met_names{m}, 'Interpreter','none', 'FontSize', 14);
+                
+                ax.FontSize = 18;
+            end
         end
+        
+        if plot_visible == "on"
+            % get Table with rxn formula, discretization status, concentration
+            % in the medium etc
+            warning('off', 'all')
+            T_display = get_rxn_overview_table(project, comparison_name,models,reference_model, met_names,model_name_flux_boundaries,modelNames,reference);
+            warning('on', 'all')
     
-        sgtitle("Metabolite Fluxsum in subSystem: " + title_fig,'FontSize',20)
-
-        % get Table with rxn formula, discretization status, concentration
-        % in the medium etc
-        T_display = get_rxn_overview_table(project, comparison_name,models,reference_model, met_names,model_name_flux_boundaries,modelNames,reference);
-        
-        T_display = addvars(T_display, string(T_display.Properties.RowNames), ...
-                            'Before', 1, ...
-                            'NewVariableNames', "Reaction");
-        
-        % Create UI figure
-        fig = uifigure('Name', "Metabolite Fluxsum in subSystem: " + title_fig, ...
-                       'Position',[100 100 1200 600]);
-        
-        % Create table filling the entire figure
-        tbl = uitable(fig, ...
-            'Data', T_display{:,:}, ...
-            'ColumnName', T_display.Properties.VariableNames, ...
-            'Units','normalized', ...
-            'Position',[0 0 1 1], ...
-            'FontSize',18, ...
-            'ColumnWidth','auto');
-
-        
+            T_display = addvars(T_display, string(T_display.Properties.RowNames), ...
+                                'Before', 1, ...
+                                'NewVariableNames', "Reaction");
+            
+            % Create UI figure
+            fig = uifigure('Name', "Metabolite Fluxsum in subSystem: " + title_fig, ...
+                           'Position',[100 100 1200 600],...
+                                           'Visible',plot_visible);
+            
+            % Create table filling the entire figure
+            tbl = uitable(fig, ...
+                'Data', T_display{:,:}, ...
+                'ColumnName', T_display.Properties.VariableNames, ...
+                'Units','normalized', ...
+                'Position',[0 0 1 1], ...
+                'FontSize',18, ...
+                'ColumnWidth','auto');
+        end
+        figs.("violing_fluxsum_" + plot_name) = figStruct;
 
     end
 
@@ -559,8 +584,8 @@ function T_display = get_rxn_overview_table(project, comparison_name,models,refe
         ordered_ub = ordered_ub(rxn_ids,:);
         ordered_lb = ordered_lb(rxn_ids,:);
         ordered_mapping_rxn_matrix = ordered_mapping_rxn_matrix(rxn_ids,:);
-        rxn_formulas = string(printRxnFormula(reference_model));
-        rxn_formulas = rxn_formulas(rxn_ids);
+        rxn_abbr = reference_model.rxns(rxn_ids);
+        rxn_formulas = string(printRxnFormula(reference_model,rxn_abbr,false));
   
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference),...
