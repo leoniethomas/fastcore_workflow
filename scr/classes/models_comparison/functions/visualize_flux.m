@@ -120,7 +120,7 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
                                        'Visible',plot_visible);
             
             t = tiledlayout(3,4);
-            title(t,"Fluxsum for metabolites in : " + title_fig, ...
+            title(t,"Flux for reactions in : " + title_fig, ...
                   'FontSize', 20, 'FontWeight','bold', 'Interpreter','none');
             
             % Store using dynamic field name
