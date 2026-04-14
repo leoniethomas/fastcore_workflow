@@ -221,7 +221,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
     
         %
         samples_cat = categorical(samples_cat);  % now KO/PLV/WT are categories
-        groups = categories(samples_cat);        % {"KO","PLV","WT"}
+        groups = unique(samples_cat, 'stable');          % {"KO","PLV","WT"}
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
         data_grouped = cell(1,nGroups);
@@ -458,7 +458,7 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
         
         
         samples_cat = categorical(samples_cat);  
-        groups = categories(samples_cat);       
+        groups = unique(samples_cat, 'stable');       
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
         data_grouped = cell(1,nGroups);
@@ -506,9 +506,13 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
                 hold(ax, 'on')
                 
                 dat = data_for_plot(m,:);
-                dat = vertcat(dat{:})';
+                % in order to be able to put it all in one matrix we need
+                % to make the sample count the same length, so we add NaNs
                 
-                columns_to_keep = find(~all(dat == 0));
+                maxLen = max(cellfun(@numel, dat));
+                dat = cell2mat(cellfun(@(x) [x, nan(1, maxLen-numel(x))], dat, 'UniformOutput', false));
+                dat = reshape(dat, maxLen, []);
+                columns_to_keep = find(~all(dat == 0 | isnan(dat)));
                 
                 evalc('violinplot(dat(:,columns_to_keep), groups(columns_to_keep), "ShowData", false);');
                 

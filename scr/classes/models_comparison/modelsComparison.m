@@ -65,7 +65,14 @@ function [project, comparison_name] = modelsComparison(project, modelList,analys
 
     % -- create comparison slot
     % give the comparison the name of all models + a identifier choosen
-    comparison_name = join(modelList, "_vs_") + "__" + identifier;
+
+    order = string(fieldnames(project.models));
+    [~, idx] = ismember(modelList, order);
+    [~, sortIdx] = sort(idx);
+    
+    model_list_ordered = modelList(sortIdx);
+    clear modelList
+    comparison_name = join(model_list_ordered, "_vs_") + "__" + identifier;
     % does this comparison object already exist, was the structural
     % analysis performed ?
     if ismember(comparison_name,string(fieldnames(project.comparisons)))
@@ -80,13 +87,13 @@ function [project, comparison_name] = modelsComparison(project, modelList,analys
     % object that is not complete -> structure_analysis_already_ran  not
     % defined
     if any(matches(analyses, "modelStructureComparison")) | ~structure_analysis_already_ran | ~ismember(comparison_name,string(fieldnames(project.comparisons)))
-        project.comparisons.(comparison_name).modelList = modelList;
+        project.comparisons.(comparison_name).modelList = model_list_ordered;
         project.comparisons.(comparison_name).reference_model = reference_model;
         project.comparisons.(comparison_name).analysisID = analysisID;
         
         % -- run structural comparison - always has to be run 
     
-        project.comparisons.(comparison_name) = modelStructuralComparison(project,modelList,reference_model);
+        project.comparisons.(comparison_name) = modelStructuralComparison(project,model_list_ordered,reference_model);
         project.comparisons.(comparison_name).reference_model = reference_model;
         project.comparisons.(comparison_name).structure_analysis_status = 1;
     end
