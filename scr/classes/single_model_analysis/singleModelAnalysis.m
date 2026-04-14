@@ -78,6 +78,11 @@ for i = 1:numel(modelList)
         
         % Storing the results
         project.models.(name).analysis.(id).FVA = FVA;
+
+        % check which rxns can loop without an input - tag the loops in the model
+        model_test_loops = changeRxnBounds(model, model.rxns(findExcRxns(model)), 0, 'b');
+        [Vmin,Vmax] = fluxVariability(model_test_loops);
+        project.models.(name).analysis.(id).loop_status = Vmin ~= 0 | Vmax ~= 0; % -> loops in the model
         
     end
     
@@ -196,6 +201,22 @@ for i = 1:numel(modelList)
         % Storing the results
         project.models.(name).analysis.(id).sampling.modelSampling = modelSampling;
         project.models.(name).analysis.(id).sampling.samples = samples;
+
+        if params.loopless
+            % get rid of the thermodynamically infeasible loops using cycleFreeFlux!
+            Vthermo_all = zeros(size(samples));
+            thermo_feas_all = zeros(size(samples));
+            step = 500; % RAM can handle up to 1000 per loop approx. with 24RAM machine
+            evalc('initCobraToolbox()') % otherwise cycleFreeFlux function is not found
+            for idx = 1:step:size(samples,2)-1 % needed to do it in multiple interation, cause otherwise RAM runs out!
+                [Vthermo,thermo_feas] = cycleFreeFlux(samples(:,idx:idx+step-1), repmat(model.c,1,step), model);
+                Vthermo_all(:, idx:idx+step-1) = Vthermo;
+                thermo_feas_all(:, idx:idx+step-1) = thermo_feas;
+            end
+            Vthermo_all_new = Vthermo_all(:, find(sum(abs(Vthermo_all),1) ~= 0));
+            project.models.(name).analysis.(id).sampling.samples_loopless = Vthermo_all_new;
+            
+        end
         
     end
 

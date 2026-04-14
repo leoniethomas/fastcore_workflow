@@ -8,6 +8,7 @@ minNorm,sampling,zero
 obj_threshold,sampling,0.9
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
+loopless,sampling,1
 options.toRound,sampling,1
 options.countSampleProcesses,sampling,3
 options.nPointsReturned,sampling,2000
@@ -16,7 +17,7 @@ Options.nWorkers,sampling,5
 options.numCores,sampling,10
 options.maxTime,sampling,36000
 options.nWarmupPoints,sampling,"10*size(model.S, 2)"
-options.nStepsPerPoint,sampling,"round(size(model.S, 2)/10)"
+options.nStepsPerPoint,sampling,"round(size(model.S, 2))"
 modelSampling,sampling,model
 path,sampling,samplingResults/CHRR/
 nPointsReturned,kld,1000
