@@ -32,13 +32,13 @@ opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
 modelList = ["WT","KO","PLV"];
-analysisList = ["FBA", "FVA","sampling"];
+analysisList = ["FBA", "FVA", "sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
-save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat",'project','-v7.3')
+save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_1404_loopless.mat",'project','-v7.3')
 
 %% Main analysis 
 
@@ -246,7 +246,7 @@ get_flux_plot(project,"KO_vs_PLV_vs_WT__",rxns_id, ...
 
 %% get rxns associated with a specific metabolite 
 
-met_name_pattern = "^cys_L[.*";
+met_name_pattern = "^pro_L[.*";
 idx_met_matches = find(~cellfun(@isempty, regexp(project.models.(referenceModel).model.mets, met_name_pattern, 'once')));
 met_names = project.models.(referenceModel).model.mets(idx_met_matches);
 
