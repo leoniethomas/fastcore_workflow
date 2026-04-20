@@ -19,8 +19,8 @@ rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
-%load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project.mat")
-load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project.mat")
+%load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat")
 
 
 
@@ -32,7 +32,7 @@ opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
 modelList = ["WT","KO","PLV"];
-analysisList = ["FBA", "FVA", "sampling"];
+analysisList = [ "sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
