@@ -208,73 +208,61 @@ for i = 1:numel(modelList)
         if isfield(params, 'loopless') && params.loopless
             
             evalc('initCobraToolbox()');% otherwise cycleFreeFlux function is not found
-            step = 1;% RAM can handle up to 1000 per loop approx. with 24RAM machine
+            step = 500;% RAM can handle up to 1000 per loop approx. with 24RAM machine
             n = size(samples, 2);
-            Vthermo_all = zeros(size(samples));
-            thermo_feas_all = zeros(size(samples));
+            Vthermo = zeros(size(samples));
+            thermo_feas = zeros(size(samples));
             thermoStatusMatrix   = zeros(size(samples));  % default 0 = corrected
             needed_attempts   = zeros(size(samples,1),1);  % default 0 = corrected
-            loop_status   = ones(size(samples,1),1);  % default 1 = there are some loops left 
-            %h = waitbar(0, 'Processing samples to get rid of thermodynamic infeasible loops...');counter = 0;N = numel(1:step:n);
-
+            loopless_status   = zeros(size(samples)); %  loopless reaction =1, still looping = 0
+            h = waitbar(0, 'Processing samples to get rid of thermodynamic infeasible loops...');counter = 0;N = numel(1:step:n);
+            
             for idx = 1:step:n
-                idx
-                %counter = counter + 1;
+                counter = counter + 1;
                 cols  = idx:min(idx+step-1, n);
                 chunk = samples(:, cols);
-                for_loop_break = 0;
                 % Vthermo gives you the corrected fluxes
                 % thermo_feas gives you a boolean whether a flux was
                 % already feasible 1 or it was not feasible -1
                 % does not tell us which have been corrected, and whether
                 % they are feasible now!!!
-                for attempt = 1:20 % sometimes the solver just crashes, so we retry a couple of times
-                    [Vthermo_all(:,cols), thermo_feas_all(:,cols)] = cycleFreeFlux(chunk, repmat(model.c, 1, numel(cols)), model);
-                    if any(Vthermo_all(:,cols))
-                        needed_attempts(cols) = attempt;
-                        for_loop_break = 1;
-                        break; 
-                    end% if any of the values are not 0 then the solver did not crash for those solutions -> so we continue with the next sample
-                    
-                end
+                evalc('[Vthermo(:, cols), thermo_feas(:, cols)] = cycleFreeFlux(chunk, repmat(model.c,1,numel(cols)), model)');
+
+                bad = any(~isfinite(Vthermo(:, cols)), 1); 
+                maxAttempts = 5;
+                attempt = 1;
+                while any(bad) && attempt < maxAttempts
                 
-                 % in the case where the for loop broke, a solution was found, so here we optimize this solution to have no infeasible loops 
-                 % cause when running cycleFreeFlux - the optimization  sometimes leads to new infeasible loops being
-                 % introduced, by looping over the solutions we try to get a solution which does not have any, or as least as possible loops
-                 % in the publication they state the a solution is only  fluxfree if the solution we obtain will can be put into  cycleFreeflux 
-                 % again and return the same output as input
-                if for_loop_break == 1 && ~all(thermo_feas_all(:,cols)) && isfield(params, 'iterative_loop_correction') && params.iterative_loop_correction % only go into the loop if set so in the parameter file
-                    for attempt = 1:100 % sometimes the solver just crashes, so we retry a couple of times
-                        old_solution = Vthermo_all(:,cols);
-                        old_feas = thermo_feas_all(:,cols);
-                        [Vthermo_all(:,cols), thermo_feas_all(:,cols)] = cycleFreeFlux(Vthermo_all(:,cols), repmat(model.c, 1, numel(cols)), model);
-                        attempt
-                        sum(thermo_feas_all(:,cols),1)
-                        if sum(thermo_feas_all(:,cols),1) == 0
-                            Vthermo_all(:,cols) = old_solution;
-                            thermo_feas_all(:,cols) = old_feas;
-                        end
-                        if all(thermo_feas_all(:,cols)) % if the found solution can be put into cyclefreeflux and get returned from the function unchanged then the solution is truly thermodynamically feasible 
-                            loop_status(cols) = 0; % a loopless solution was found
-                            break; 
-                        end
-                        
-                    end
+                    attempt = attempt + 1;
+                
+                    [V_retry, feas_retry] = cycleFreeFlux(chunk(:,bad),repmat(model.c,1,sum(bad)),model);
+                
+                    Vthermo(:, cols(bad))     = V_retry;
+                    thermo_feas(:, cols(bad))  = feas_retry;
+                
+                    % recompute ONLY within chunk
+                    bad = any(~isfinite(Vthermo(:, cols)), 1);
                 end
-                %waitbar(counter / N, h);
+                needed_attempts(cols) = attempt;
+
+                % check how many loops are now in the solution 
+                ll_chunk = Vthermo(:, cols);
+                [~, loopless_status(:, cols)] = cycleFreeFlux(ll_chunk, repmat(model.c,1,numel(cols)), model);
+
+                waitbar(counter / N, h);
             end  
-            
+
             close(h);
             eta = getCobraSolverParams('LP', 'feasTol') * 10;
-            fluxChangedBool    = abs(samples - Vthermo_all) >= eta;
-            thermoStatusMatrix(logical(thermo_feas_all))                              =  1;   % already feasible
-            thermoStatusMatrix(~logical(thermo_feas_all) & ~fluxChangedBool)          = -1;   % forced bounds
+            fluxChangedBool    = abs(samples - Vthermo) >= eta;
+            thermoStatusMatrix(logical(thermo_feas))                              =  1;   % already feasible
+            thermoStatusMatrix(~logical(thermo_feas) & ~fluxChangedBool)          = -1;   % forced bounds
 
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samples_ll = Vthermo_all;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermo_feas = thermo_feas_all;
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samples_ll = Vthermo;
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermo_feas = thermo_feas;
             project.models.(name).analysis.(id).sampling.cycleFreeFlux.sample_status_after_correction = thermoStatusMatrix;
             project.models.(name).analysis.(id).sampling.cycleFreeFlux.needed_attempts = needed_attempts;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.loop_status = loop_status;
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.loopless_status = loopless_status;
         end
 
         

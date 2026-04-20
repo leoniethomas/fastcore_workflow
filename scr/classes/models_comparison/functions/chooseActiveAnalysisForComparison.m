@@ -1,4 +1,4 @@
-function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,analysisID)
+function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,loopless,analysisID)
     % This function needs to be run in preparation for the modelsComparison
     % function. For the loaded project object, multiple analysis with a
     % different set of parameters can be performed. Before going into the
@@ -24,6 +24,7 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
     arguments
         project
         modelList (1,:) string
+        loopless =1
         analysisID (1,:) string = []
     end
 
@@ -79,5 +80,10 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
             slot_names = string(fieldnames(analysis));
             project.models.(modelList(m)).analysis.(slot_names(slot)) = analysis.(slot_names(slot));
         end
+
+        if loopless
+            project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.samples_loopless; 
+        end
+        
     end
 end
