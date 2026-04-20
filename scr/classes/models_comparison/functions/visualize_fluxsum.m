@@ -548,6 +548,7 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
                 'FontSize',18, ...
                 'ColumnWidth','auto');
         end
+        plot_name = replace(plot_name, ["_", "-", "/", " "], "");
         figs.("violing_fluxsum_" + plot_name) = figStruct;
 
     end
