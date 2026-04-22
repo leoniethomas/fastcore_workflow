@@ -66,9 +66,9 @@ classdef fastcore_experiment
                 model.lb(idx_fluxes_in_model) = medium_data.medium_composition{idx,"Concentration_M"};
             end
             
-            [EX, UPT] = findExcRxns(model);
+            [EX, ~] = findExcRxns(model);
             needed_mets = medium_data.manual_set_boundaries.wanted_import;
-            Ex_to_close = setdiff(model.rxns(findExcRxns(model)),...
+            Ex_to_close = setdiff(model.rxns(EX),...
                                              [medium_data.medium_composition.(column_media_rxn_abbr);...
                                               findRxnsFromMets(model, needed_mets)]);
 
