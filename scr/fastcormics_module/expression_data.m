@@ -137,11 +137,17 @@ classdef expression_data
             if exist("mapExpressionToModel",'file') == 0
                error("Fastcormics is not installed or the installation was not added to the path variable! The function used for mapping can not be found! map_expression_2_data_rFASTCORMICS function is needed to execute this task!") 
             end
+            
+            gene_names =obj.norm_counts.Properties.RowNames;
+            if all(contains(string(gene_names),".")) % check if the gene names have a postfix, if remove it !!!
+                parts = split(gene_names, ".");
+                gene_names = parts(:,1);
+            end
            
             mapping = mapExpressionToModel(model_used, ...
                                                          obj.discretized,...
                                                          dic_gene_ids_entrez_used,...
-                                                         obj.norm_counts.Properties.RowNames,1);
+                                                         gene_names,1);
             obj.model_id = model_used.id;
             mapping = sparse(mapping);
             obj.mapping_exp_2_rxns = array2table(mapping, ...
@@ -164,7 +170,6 @@ classdef expression_data
              obj.znorm_counts] = discretizeFPKM(obj.norm_counts{:,:}, ...
                                                    obj.sample_names,figflag,...
                                                    char(file_path_results), fig_format);
-            
             vals = obj.discretized(:);              % flatten if needed
             [uVals, ~, idx] = unique(vals);        % unique values
             
