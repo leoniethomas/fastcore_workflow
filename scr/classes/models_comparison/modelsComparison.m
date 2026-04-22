@@ -300,11 +300,11 @@ function structure_analysis = modelStructuralComparison(project, modelList,refer
     
     % get the reaction mapping (sample and model level) as well as the discretization values for each reaction/gene in the model 
     replacement_value = "mappedDiscRxns_sample"; % get the fba solution values
-    ordered_mapping_rxn_matrix_sample_wise = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    ordered_mapping_rxn_matrix_sample_wise = int8(getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value));
     replacement_value = "mappedDiscRxns"; % get the fba solution values
-    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    ordered_mapping_rxn_matrix = int8(getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value));
     replacement_value = "discretized_data.values"; % get the fba solution values
-    ordered_mapping_expr_disc_matrix = getOrderedFeatureMatrix(project,modelList,"genes",reference_model,replacement_value);
+    ordered_mapping_expr_disc_matrix = int8(getOrderedFeatureMatrix(project,modelList,"genes",reference_model,replacement_value));
 
     % get the names of the single samples from the metadata slot - used in the following plots
     columnnames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
@@ -1222,7 +1222,7 @@ function project = modelsComparisonSampling(project,comparison_name)
     
     sample_count_models = structfun(@(x) size(x.analysis.sampling.samples,2), models_list);
     project.comparisons.(comparison_name).sample_model_labels = repelem(list_model_names, sample_count_models);
-    %project.comparisons.(comparison_name).plots.sampling = visualize_sampling_landscape(project,comparison_name,'visible_plot',"off");
+    project.comparisons.(comparison_name).plots.sampling = visualize_sampling_landscape(project,comparison_name,'visible_plot',"off");
 
 
     [idx_pathways,names_pathways] = get_default_subsystems(project, reference_model); 

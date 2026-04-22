@@ -202,7 +202,7 @@ for i = 1:numel(modelList)
         
         % Storing the results
         project.models.(name).analysis.(id).sampling.modelSampling = modelSampling;
-        project.models.(name).analysis.(id).sampling.samples = samples;
+        project.models.(name).analysis.(id).sampling.samples = single(samples);
         
         % get rid of the thermodynamically infeasible loops using cycleFreeFlux!
         if isfield(params, 'loopless') && params.loopless
@@ -258,11 +258,11 @@ for i = 1:numel(modelList)
             thermoStatusMatrix(logical(thermo_feas))                              =  1;   % already feasible
             thermoStatusMatrix(~logical(thermo_feas) & ~fluxChangedBool)          = -1;   % forced bounds
 
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samples_ll = Vthermo;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermo_feas = thermo_feas;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.sample_status_after_correction = thermoStatusMatrix;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.needed_attempts = needed_attempts;
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.loopless_status = loopless_status;
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samples_ll = single(Vthermo);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermo_feas = uint8(thermo_feas);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.sample_status_after_correction = uint8(thermoStatusMatrix);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.needed_attempts = uint8(needed_attempts);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.loopless_status = uint8(loopless_status);
         end
 
         

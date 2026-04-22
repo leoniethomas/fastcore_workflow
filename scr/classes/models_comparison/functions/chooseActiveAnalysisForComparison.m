@@ -82,7 +82,7 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         end
 
         if loopless
-            project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.samples_loopless; 
+            project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.cycleFreeFlux.samples_ll;
         end
         
     end
