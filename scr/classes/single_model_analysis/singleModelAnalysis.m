@@ -203,10 +203,34 @@ for i = 1:numel(modelList)
         % Storing the results
         project.models.(name).analysis.(id).sampling.modelSampling = modelSampling;
         project.models.(name).analysis.(id).sampling.samples = single(samples);
-        
+    end
+
+    % get rid of the thermodynamically infeasible loops using cycleFreeFlux!
+    if any(strcmp(analyses, 'loopless'))
+        params = tableToParamsStruct(parameterTable, 'loopless', model);
         % get rid of the thermodynamically infeasible loops using cycleFreeFlux!
         if isfield(params, 'loopless') && params.loopless
+
+            % if a id was given then the sampling from this analysis id will be used 
+            % check if there are as many ids as there are models given
+            try
+                analysis_id = split(string(params.samplingToUse),"/");
+                assert(length(analysis_id) == length(modelList));
+                [~,modelidx] = ismember(name, modelList);
+                analysis_id_sampling = analysis_id(modelidx);
+                assert(isfield(project.models.(name).analysis,(analysis_id_sampling)));
+                project.models.(name).analysis.(id).sampling = project.models.(name).analysis.(analysis_id_sampling).sampling;
+                samples = double(project.models.(name).analysis.(analysis_id_sampling).sampling.samples);     
+            catch
+                analysis = project.models.(name).analysis.(id);
+                if isfield(analysis,"sampling")
+                    samples = double(project.models.(name).analysis.(id).sampling.samples);  
+                else
+                    error("You did not give a analysis id (or not as many ids as you have models in modelList, or you did not use the separator / between the model names ?) to use to pull the samples from that should be processed to be loopfree, and also did not execute sampling! Either give the analysis ids for every model that you specified in modelList or also put the sampling into your list of analysis to perform!")
+                end
+            end
             
+            samples = double(samples);
             evalc('initCobraToolbox()');% otherwise cycleFreeFlux function is not found
             step = 500;% RAM can handle up to 1000 per loop approx. with 24RAM machine
             n = size(samples, 2);
@@ -227,28 +251,9 @@ for i = 1:numel(modelList)
                 % does not tell us which have been corrected, and whether
                 % they are feasible now!!!
                 evalc('[Vthermo(:, cols), thermo_feas(:, cols)] = cycleFreeFlux(chunk, repmat(model.c,1,numel(cols)), model)');
-
-                bad = any(~isfinite(Vthermo(:, cols)), 1); 
-                maxAttempts = 5;
-                attempt = 1;
-                while any(bad) && attempt < maxAttempts
-                
-                    attempt = attempt + 1;
-                
-                    [V_retry, feas_retry] = cycleFreeFlux(chunk(:,bad),repmat(model.c,1,sum(bad)),model);
-                
-                    Vthermo(:, cols(bad))     = V_retry;
-                    thermo_feas(:, cols(bad))  = feas_retry;
-                
-                    % recompute ONLY within chunk
-                    bad = any(~isfinite(Vthermo(:, cols)), 1);
-                end
-                needed_attempts(cols) = attempt;
-
                 % check how many loops are now in the solution 
                 ll_chunk = Vthermo(:, cols);
-                [~, loopless_status(:, cols)] = cycleFreeFlux(ll_chunk, repmat(model.c,1,numel(cols)), model);
-
+                evalc('[~, loopless_status(:, cols)] = cycleFreeFlux(ll_chunk, repmat(model.c,1,numel(cols)), model)');
                 waitbar(counter / N, h);
             end  
 
