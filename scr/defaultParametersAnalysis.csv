@@ -8,7 +8,8 @@ minNorm,sampling,one
 obj_threshold,sampling,0.9
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
-loopless,sampling,1
+loopless,loopless,1
+samplingToUse,loopless,analysis_20260423_1038/analysis_20260423_1041
 options.toRound,sampling,1
 options.countSampleProcesses,sampling,3
 options.nPointsReturned,sampling,2000
