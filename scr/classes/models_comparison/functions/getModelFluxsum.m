@@ -1,4 +1,4 @@
-function fluxsum = get_model_fluxsum(S_matrix,samples,flux_summed_up)
+function fluxsum = getModelFluxsum(S_matrix,samples,flux_summed_up)
     % This functions computes the fluxsum over all solutions given in the
     % samples matrix. Fluxes can be summed up either for the metabolites or
     % for a set of reactions given. 

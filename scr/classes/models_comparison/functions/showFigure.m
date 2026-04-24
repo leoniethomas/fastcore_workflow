@@ -1,4 +1,4 @@
-function newFig = show_figure(figHandle)
+function newFig = showFigure(figHandle)
 % DUPLICATEFIGURE Creates a copy of a figure safely.
 %   newFig = duplicateFigure(figHandle) duplicates the figure given by
 %   figHandle. Works for figures with UIAxes, tables, clustergrams, etc.

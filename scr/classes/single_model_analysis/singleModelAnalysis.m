@@ -8,8 +8,8 @@ function project = singleModelAnalysis(project, modelList, analyses, parameterTa
 %   FVA
 %   shadow prices % need to be added
 %   sampling
-%   single_gene_deletion
-%   double_gene_deletion
+%   singleGeneDeletion
+%   doubleGeneDeletion
 %   enrichment % need to be added
 % Output : project with a field analysis
 
@@ -40,11 +40,11 @@ for i = 1:numel(modelList)
     model = project.models.(name).model;
     
     % Searching for the objective function in the parameter table
-    objFunction = parameterTable.Value(strcmp(parameterTable.Parameter, 'obj_function'));
+    objFunction = parameterTable.Value(strcmp(parameterTable.Parameter, 'objFuntion'));
     
     % Setting the objective function
     if isempty(objFunction)
-        error('Parameter "obj_function" not found in the parameter table.');
+        error('Parameter "objFuntion" not found in the parameter table.');
         %return
     else
         model = changeObjective(model, objFunction);        
@@ -80,9 +80,9 @@ for i = 1:numel(modelList)
         project.models.(name).analysis.(id).FVA = FVA;
 
         % check which rxns can loop without an input - tag the loops in the model
-        model_test_loops = changeRxnBounds(model, model.rxns(findExcRxns(model)), 0, 'b');
-        [Vmin,Vmax] = fluxVariability(model_test_loops);
-        project.models.(name).analysis.(id).loop_status = Vmin ~= 0 | Vmax ~= 0; % -> loops in the model
+        modelTestLoops = changeRxnBounds(model, model.rxns(findExcRxns(model)), 0, 'b');
+        [Vmin,Vmax] = fluxVariability(modelTestLoops);
+        project.models.(name).analysis.(id).loopStatus = Vmin ~= 0 | Vmax ~= 0; % -> loops in the model
         
     end
     
@@ -108,8 +108,8 @@ for i = 1:numel(modelList)
         end
         
         opt = FBA.f;
-        disp("Setting the rxn bounds for the biomass_rxn to obj_threshold percent of the optimum")
-        model = changeRxnBounds(model, objFunction, params.obj_threshold*opt, 'l'); % 0.9 usually
+        disp("Setting the rxn bounds for the biomassRxn to objThreshold percent of the optimum")
+        model = changeRxnBounds(model, objFunction, params.objThreshold*opt, 'l'); % 0.9 usually
         
         if ~isfield(params, 'sampleFile') || (isfield(params, 'sampleFile') && isempty(params.sampleFile))
             sampleFile = char("sampleFile" + "_" + string(datetime("now", "Format", "yyyyMMdd_HHmm")));
@@ -169,7 +169,7 @@ for i = 1:numel(modelList)
             % steps -> increase or decrease the threshold -> I think we
             % need to increase it, to allow faster mixing
             changeCobraSolverParams('LP','feasTol',1e-5);
-            options.optPercentage = params.obj_threshold*100;
+            options.optPercentage = params.objThreshold*100;
             if any(strcmp(analyses, 'FVA'))
                 model.lb = FVA.minFlux; % constraining the sampling space by the FVA boundaries helps
                 model.ub = FVA.maxFlux; % but that means that the threshold for the FVA is autoomatically applied to the sampling
@@ -214,13 +214,13 @@ for i = 1:numel(modelList)
             % if a id was given then the sampling from this analysis id will be used 
             % check if there are as many ids as there are models given
             try
-                analysis_id = split(string(params.samplingToUse),"/");
-                assert(length(analysis_id) == length(modelList));
+                analysisID = split(string(params.samplingToUse),"/");
+                assert(length(analysisID) == length(modelList));
                 [~,modelidx] = ismember(name, modelList);
-                analysis_id_sampling = analysis_id(modelidx);
-                assert(isfield(project.models.(name).analysis,(analysis_id_sampling)));
-                project.models.(name).analysis.(id).sampling = project.models.(name).analysis.(analysis_id_sampling).sampling;
-                samples = double(project.models.(name).analysis.(analysis_id_sampling).sampling.samples);     
+                analysisIdSampling = analysisID(modelidx);
+                assert(isfield(project.models.(name).analysis,(analysisIdSampling)));
+                project.models.(name).analysis.(id).sampling = project.models.(name).analysis.(analysisIdSampling).sampling;
+                samples = double(project.models.(name).analysis.(analysisIdSampling).sampling.samples);     
             catch
                 analysis = project.models.(name).analysis.(id);
                 if isfield(analysis,"sampling")
@@ -235,10 +235,10 @@ for i = 1:numel(modelList)
             step = 500;% RAM can handle up to 1000 per loop approx. with 24RAM machine
             n = size(samples, 2);
             Vthermo = zeros(size(samples));
-            thermo_feas = zeros(size(samples));
+            thermoFeas = zeros(size(samples));
             thermoStatusMatrix   = zeros(size(samples));  % default 0 = corrected
-            needed_attempts   = zeros(size(samples,1),1);  % default 0 = corrected
-            loopless_status   = zeros(size(samples)); %  loopless reaction =1, still looping = 0
+            neededAttempts   = zeros(size(samples,1),1);  % default 0 = corrected
+            looplessStatus   = zeros(size(samples)); %  loopless reaction =1, still looping = 0
             h = waitbar(0, 'Processing samples to get rid of thermodynamic infeasible loops...');counter = 0;N = numel(1:step:n);
             
             for idx = 1:step:n
@@ -246,28 +246,28 @@ for i = 1:numel(modelList)
                 cols  = idx:min(idx+step-1, n);
                 chunk = samples(:, cols);
                 % Vthermo gives you the corrected fluxes
-                % thermo_feas gives you a boolean whether a flux was
+                % thermoFeas gives you a boolean whether a flux was
                 % already feasible 1 or it was not feasible -1
                 % does not tell us which have been corrected, and whether
                 % they are feasible now!!!
-                evalc('[Vthermo(:, cols), thermo_feas(:, cols)] = cycleFreeFlux(chunk, repmat(model.c,1,numel(cols)), model)');
+                evalc('[Vthermo(:, cols), thermoFeas(:, cols)] = cycleFreeFlux(chunk, repmat(model.c,1,numel(cols)), model)');
                 % check how many loops are now in the solution 
-                ll_chunk = Vthermo(:, cols);
-                evalc('[~, loopless_status(:, cols)] = cycleFreeFlux(ll_chunk, repmat(model.c,1,numel(cols)), model)');
+                llChunk = Vthermo(:, cols);
+                evalc('[~, looplessStatus(:, cols)] = cycleFreeFlux(llChunk, repmat(model.c,1,numel(cols)), model)');
                 waitbar(counter / N, h);
             end  
 
             close(h);
             eta = getCobraSolverParams('LP', 'feasTol') * 10;
             fluxChangedBool    = abs(samples - Vthermo) >= eta;
-            thermoStatusMatrix(logical(thermo_feas))                              =  1;   % already feasible
-            thermoStatusMatrix(~logical(thermo_feas) & ~fluxChangedBool)          = -1;   % forced bounds
+            thermoStatusMatrix(logical(thermoFeas))                              =  1;   % already feasible
+            thermoStatusMatrix(~logical(thermoFeas) & ~fluxChangedBool)          = -1;   % forced bounds
 
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samples_ll = single(Vthermo);
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermo_feas = uint8(thermo_feas);
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.sample_status_after_correction = uint8(thermoStatusMatrix);
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.needed_attempts = uint8(needed_attempts);
-            project.models.(name).analysis.(id).sampling.cycleFreeFlux.loopless_status = uint8(loopless_status);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.samplesLl = single(Vthermo);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.thermoFeas = uint8(thermoFeas);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.sampleStatusAfterCorrection = uint8(thermoStatusMatrix);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.neededAttempts = uint8(neededAttempts);
+            project.models.(name).analysis.(id).sampling.cycleFreeFlux.looplessStatus = uint8(looplessStatus);
         end
 
         
@@ -285,17 +285,17 @@ for i = 1:numel(modelList)
         
         if any(strcmp(analyses, 'sampling'))
             % add the sampling to be one of the sets 
-            sampling_matrix = project.models.(name).analysis.(id).sampling.samples;
+            samplingMatrix = project.models.(name).analysis.(id).sampling.samples;
         else 
-            sampling_matrix = [];
+            samplingMatrix = [];
         end
-        [kld_matrix,...
-            p_value_kld,sampling_sets,fdr] = perform_kdl_divergence_analysis(model,sampling_matrix,...
-                                                     'nPointsReturned',params.nPointsReturned,'number_of_ind_samplings',params.number_of_ind_samplings);
+        [kldMatrix,...
+            pValueKld,samplingSets,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,...
+                                                     'nPointsReturned',params.nPointsReturned,'numberOfIndSamplings',params.numberOfIndSamplings);
         
-        project.models.(name).analysis.(id).kld.sampling_sets = sampling_sets;
-        project.models.(name).analysis.(id).kld.kld_matrix = kld_matrix;
-        project.models.(name).analysis.(id).kld.p_value_kld = p_value_kld;
+        project.models.(name).analysis.(id).kld.samplingSets = samplingSets;
+        project.models.(name).analysis.(id).kld.kldMatrix = kldMatrix;
+        project.models.(name).analysis.(id).kld.pValueKld = pValueKld;
         project.models.(name).analysis.(id).kld.fdr = fdr;
 
     end

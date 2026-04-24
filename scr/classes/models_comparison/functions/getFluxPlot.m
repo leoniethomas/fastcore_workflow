@@ -1,4 +1,4 @@
-function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
+function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     % This function visualizes the values of FVA,FBA, and reduced Cost for
     % the choosen rxns_ids between different models.
     % As an input a singlemodelanalysis needs to be
@@ -13,14 +13,14 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     % - project:                project object which is the output of
     %                           single_model_analysis script
     % - comparison_name:        name of the comparison as a string
-    % - idx_to_vis:             positions of the rxns to be displayed in the
+    % - idxToVis:             positions of the rxns to be displayed in the
     %                           choosen reference model
     % - options:                - FVA = true (default false) to display the FVA boundaries
     %                             around the FBA solution as a grey box.
     %                           - reducedCost = true (default false) to display the reduced
     %                             cost values for every reaction as the color
     %                             of the FBA dot.
-    %                           - threshold_flux= wether to apply an upper
+    %                           - thresholdFlux= wether to apply an upper
     %                             lower ,no upper or lower or to include 
     %                             also the fba =0 reactions(all) to the selected
     %                             reaction fba values
@@ -32,57 +32,57 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     arguments
         project
         comparison_name (1,1) string
-        idx_to_vis
+        idxToVis
         options.FVA  (1,1) logical = false
         options.reducedCost (1,1) logical = false
-        options.threshold_flux (1,1) string {mustBeMember(options.threshold_flux,["lower", "upper","none","all"])} ="none" 
-        options.title_plots = ""
-        options.visible_plots ="on"
+        options.thresholdFlux (1,1) string {mustBeMember(options.thresholdFlux,["lower", "upper","none","all"])} ="none" 
+        options.titlePlots = ""
+        options.visiblePlots ="on"
     end
 
 
     modelList = project.comparisons.(comparison_name).modelNames;
-    reference_model = project.comparisons.(comparison_name).reference_model;
+    referenceModel = project.comparisons.(comparison_name).referenceModel;
     
     replacement_value = "analysis.FBA.v"; % get the fba solution values
-    ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
     replacement_value = "mappedDiscRxns"; % get the fba solution values
-    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+    ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
     
     
-    if options.threshold_flux == "upper"
+    if options.thresholdFlux == "upper"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix < 0,2) ~= 0), ...
-                                          idx_to_vis);  
+                                          idxToVis);  
         title_word = "negative flux reactions";
-    elseif options.threshold_flux == "lower"
+    elseif options.thresholdFlux == "lower"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0 & sum(ordered_fba_matrix > 0,2) ~= 0), ...
-                                                      idx_to_vis); 
+                                                      idxToVis); 
         title_word = "positive flux reactions";
-    elseif options.threshold_flux == "none"
+    elseif options.thresholdFlux == "none"
         get_exchange_rxns_idx = intersect(find(sum(ordered_fba_matrix,2) ~=0), ...
-                                                      idx_to_vis);
+                                                      idxToVis);
 
-        title_word = options.title_plots;
-    elseif options.threshold_flux == "all"
-        get_exchange_rxns_idx = idx_to_vis;
-        title_word = options.title_plots;
+        title_word = options.titlePlots;
+    elseif options.thresholdFlux == "all"
+        get_exchange_rxns_idx = idxToVis;
+        title_word = options.titlePlots;
     else
         error("wrong value for threshold choosen. Possible values: lower, upper, none")
     end
 
     ordered_fba_matrix_ex = ordered_fba_matrix(get_exchange_rxns_idx,:);
     ordered_mapping_rxn_matrix_ex = ordered_mapping_rxn_matrix(get_exchange_rxns_idx,:);
-    rxn_names = project.models.(reference_model).model.rxns(get_exchange_rxns_idx);
+    rxn_names = project.models.(referenceModel).model.rxns(get_exchange_rxns_idx);
 
     if options.FVA
         replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
-        ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+        ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
         replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
-        ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+        ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
         ordered_fva_max_matrix_ex = ordered_fva_max_matrix(get_exchange_rxns_idx,:);
         ordered_fva_min_matrix_ex = ordered_fva_min_matrix(get_exchange_rxns_idx,:);
         
-        if options.threshold_flux == "all"
+        if options.thresholdFlux == "all"
             idx_FVA_var = ~(all(ordered_fva_max_matrix_ex == 0,2) & all(ordered_fva_max_matrix_ex == 0,2));
             ordered_fva_max_matrix_ex = ordered_fva_max_matrix_ex(idx_FVA_var,:);
             ordered_fva_min_matrix_ex = ordered_fva_min_matrix_ex(idx_FVA_var,:);
@@ -94,9 +94,9 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
         
         if options.reducedCost
             replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
-            ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
-            if options.threshold_flux == "all"
+            if options.thresholdFlux == "all"
                 ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix_ex(idx_FVA_var,:);
             end
         end
@@ -108,7 +108,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
 
 
     
-    rxn_formulas = printRxnFormula(project.models.(reference_model).model, 'rxnAbbrList', rxn_names, 'printFlag', false);
+    rxn_formulas = printRxnFormula(project.models.(referenceModel).model, 'rxnAbbrList', rxn_names, 'printFlag', false);
 
     % medium composition 
     % do the models have the same  medium ? 
@@ -132,13 +132,13 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
                                              "rxns",reference_model,"model.ub");
         ordered_ub = ordered_ub(get_exchange_rxns_idx,:);
         ordered_lb = ordered_lb(get_exchange_rxns_idx,:);
-        if options.FVA & options.threshold_flux == "all"
+        if options.FVA & options.thresholdFlux == "all"
             ordered_lb = ordered_lb(idx_FVA_var,:);
             ordered_ub = ordered_ub(idx_FVA_var,:);
         end
 
         % get rxn gene rules to add to the table
-        symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference_model),...
+        symbol_gpr_rules = string(cellfun(@(rxnName)getRxnSymbolRule(project.models.(referenceModel),...
                                                    rxnName),string(rxn_names),'UniformOutput', false));
 
         T = table(rxn_formulas, medium_constrained,...
@@ -159,7 +159,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     %if options.shadowPrice
     %    replacement_value = "analysis.FBA.basis.dual"; % get the fba solution values
     %    % shadow prices are measured for every metabolite therefore mapped according to the mets field
-    %    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,"mets",reference_model,replacement_value);
+    %    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,"mets",referenceModel,replacement_value);
     %end
 
     %%% Parameters for the figure 
@@ -213,7 +213,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     
 
     fig = uifigure('Name', title_word + " with Table", ...
-                       'Position',[100 100 1000 450],'Visible',options.visible_plots);
+                       'Position',[100 100 1000 450],'Visible',options.visiblePlots);
         
     plotWidth = 0.52;
     
@@ -277,7 +277,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
         %%% =========================
         % Reverse direction if needed
         % =========================
-        if options.threshold_flux == "upper"
+        if options.thresholdFlux == "upper"
             set([axTop axBottom], 'XDir','reverse')
         end
         
@@ -511,7 +511,7 @@ function fig = get_flux_plot(project,comparison_name, idx_to_vis,options)
     end
 
     % --- Reverse direction if needed ---
-    if options.threshold_flux=="upper"
+    if options.thresholdFlux=="upper"
         set([axTop axBottom],'XDir','reverse')
     end
 

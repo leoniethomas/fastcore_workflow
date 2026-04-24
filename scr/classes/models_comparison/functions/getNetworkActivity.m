@@ -1,20 +1,20 @@
-function fig = get_network_activity(project,comparison_name,idx_pathways,names_pathways)
+function fig = getNetworkActivity(project,comparisonName,idxPathways,namesPathways)
     arguments
         project 
-        comparison_name 
-        idx_pathways 
-        names_pathways 
+        comparisonName 
+        idxPathways 
+        namesPathways 
     end
     
-    model_names = project.comparisons.(comparison_name).modelNames;
-    mapping_table = project.comparisons.(comparison_name).rxn_mapping_table{:,:} ~=0;
+    modelNames = project.comparisons.(comparisonName).modelNames;
+    mappingTable = project.comparisons.(comparisonName).rxn_mapping_table{:,:} ~=0;
 
     result = reshape(cell2mat(cellfun(@(x) ...
                                       round( ...
-                                            sum(project.comparisons.(comparison_name).ordered_fba(x,:) ~= 0, 1) ./ ...
-                                            sum(mapping_table(x,:), 1) * 100 ...
+                                            sum(project.comparisons.(comparisonName).orderedFba(x,:) ~= 0, 1) ./ ...
+                                            sum(mappingTable(x,:), 1) * 100 ...
                                        ), ...
-                                       idx_pathways, ...
+                                       idxPathways, ...
                                        'UniformOutput', false)...
                                )...
                       , 3, [])';
@@ -22,14 +22,14 @@ function fig = get_network_activity(project,comparison_name,idx_pathways,names_p
     fig = figure('Color','w','Position',[100 100 800 800], 'Visible','off');
     imagesc(result)
     
-    cmap = get_color_pallette();
+    cmap = getColorPallette();
     h = colorbar; 
     clim([0,100])
     
     ylabel(h, 'Percentage of active network rxns under FBA solution', 'FontSize', 18)        % Set title/label of colorbar
     axis equal tight            % Make cells square and remove extra space
-    set(gca,'XTickLabel',model_names,'XTick',1:length(model_names), ...
-         'YTick', 1:length(names_pathways), 'YTickLabel',names_pathways)
+    set(gca,'XTickLabel',modelNames,'XTick',1:length(modelNames), ...
+         'YTick', 1:length(namesPathways), 'YTickLabel',namesPathways)
     xtickangle(45)
     ax = gca;
     ax.FontSize = 18;  

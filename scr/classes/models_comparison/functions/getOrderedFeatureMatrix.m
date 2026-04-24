@@ -1,4 +1,4 @@
-function [ordered_feature_matrix,ordered_rxn_matrix_idx] = getOrderedFeatureMatrix(project,modelList,field_to_investigate,reference_model,replacement_value)
+function [orderedFeatureMatrix,orderedRxnMatrixIdx,columnLabels] = getOrderedFeatureMatrix(project,modelList,fieldToInvestigate,referenceModel,replacementValue)
     % this function brings the features for multiple models (for example the rxns presence (0
     % or 1)) into the same order than the reference model specified. 
     % Input: 
@@ -6,49 +6,54 @@ function [ordered_feature_matrix,ordered_rxn_matrix_idx] = getOrderedFeatureMatr
     %                           single_model_analysis script
     % - modelList:              names from models from which to get the
     %                           feature precence
-    % - field_to_investigate:   feature presence of interest as string
+    % - fieldToInvestigate:   feature presence of interest as string
     %                           "genes", "mets", or "rxns"
-    % - reference_model:        reference model that give the order after
+    % - referenceModel:        reference model that give the order after
     %                           which the choosen feature will be ordered 
-    % - replacement_value:      which value to put into the matrix. Just a
+    % - replacementValue:      which value to put into the matrix. Just a
     %                           1 indicating that the given feature is present 
     %                           or not (0) in each of the choosen models, 
     %                           or the actuall values of sampling,fba, or fva ?  
     % 
     % Output: 
-    % - ordered_feature_matrix: Matrix storing the wanted features 
+    % - orderedFeatureMatrix: Matrix storing the wanted features 
     %                           (presence of genes,mets,rxns,or actuall 
     %                           fva,fba,sampling values) in the order of 
     %                           the reference model.
     %                           dim nxm with n = features in reference model
     %                                   and  m = models to compare
     % 
-    % - ordered_rxn_matrix_idx: Tabel with the actual positions the rxns are 
+    % - orderedRxnMatrixIdx: Tabel with the actual positions the rxns are 
     %                           stored at in the individual models. 
     %                           dim nxm with n = rxns in reference model
     %                                   and  m = models to compare
+    % - columnLabels:        shows to which of the models each solution belongs     
     % 
     arguments
         project
         modelList
-        field_to_investigate (1,1) string ="rxns"
-        reference_model  = strings(0)
-        replacement_value (1,1) =1
+        fieldToInvestigate (1,1) string ="rxns"
+        referenceModel  = strings(0)
+        replacementValue (1,1) =1
     end
     % by default we bring all the models in the same order as the original model
-    if isempty(reference_model)
-        reference_model = project.models.orig_model.model;
+    if isempty(referenceModel)
+        referenceModel = project.models.orig_model.model;
     else
-        reference_model = project.models.(reference_model).model;
+        referenceModel = project.models.(referenceModel).model;
     end
 
     models = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
     %models = structfun(@(x) x.model, models, 'UniformOutput',false);
 
-    ordered_feature_matrix = struct2array(structfun(@(x) getOrderedFeature(x,reference_model,field_to_investigate,replacement_value), ...
-                                             models,'UniformOutput',false));
+    orderedFeatureMatrix = structfun(@(x) getOrderedFeature(x,referenceModel,fieldToInvestigate,replacementValue), ...
+                                             models,'UniformOutput',false);
+
+    size_feature_matrix = structfun(@(x) size(x,2),orderedFeatureMatrix);
+    orderedFeatureMatrix = struct2array(orderedFeatureMatrix);
+    columnLabels = repelem(modelList, size_feature_matrix');
     
-    ordered_rxn_matrix_idx = struct2array(structfun(@(x) getOrderedFeature(x,reference_model,"rxns","idx"), ...
+    orderedRxnMatrixIdx = struct2array(structfun(@(x) getOrderedFeature(x,referenceModel,"rxns","idx"), ...
                                              models,'UniformOutput',false));
 end
 

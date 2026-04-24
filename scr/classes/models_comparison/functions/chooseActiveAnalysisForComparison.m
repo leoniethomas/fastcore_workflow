@@ -81,8 +81,12 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
             project.models.(modelList(m)).analysis.(slot_names(slot)) = analysis.(slot_names(slot));
         end
 
-        if loopless & ismember('sampling', fieldnames(analysis)) 
-            project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.cycleFreeFlux.samples_ll;
+        if loopless
+            if isfield(project.models.(modelList(m)).analysis.sampling,"cycleFreeFlux")
+                project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.cycleFreeFlux.samples_ll;
+            else
+                project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.samples_loopless;
+            end
         end
         
     end

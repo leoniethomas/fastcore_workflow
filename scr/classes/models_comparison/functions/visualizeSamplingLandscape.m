@@ -1,4 +1,4 @@
-function fig_out = visualize_sampling_landscape(project,comparison_name, rxn_to_visualize,options)
+function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_visualize,options)
     % This function will visualize your reaction of interest on the a
     % dimension reduced space. 
     % 

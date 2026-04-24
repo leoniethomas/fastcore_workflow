@@ -1,4 +1,4 @@
-function map = get_color_pallette()
+function map = getColorPallette()
         nColors = 256;        % number of color steps
         negColor = [0 0 1];   % blue
         midColor = [1 1 1];   % white
