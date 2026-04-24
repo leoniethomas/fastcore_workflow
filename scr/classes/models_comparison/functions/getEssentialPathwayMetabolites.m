@@ -1,4 +1,4 @@
-function pathways = get_essential_pathway_metabolites(project,reference_model)
+function pathways = getEssentialPathwayMetabolites(project,reference_model)
     % source for pathway metabolite composition: https://github.com/sysbiolux/MidbrainOrganoid_Miro1_scMetabMod/blob/main/ModelAnalysis/compareFBA_v3_PAPER.m
     
     arguments

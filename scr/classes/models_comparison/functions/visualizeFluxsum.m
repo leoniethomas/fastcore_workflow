@@ -1,6 +1,6 @@
-function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,plot_type,exclude_coenzymes,ignore_compartment,slot,flux_summed_up,model_name_flux_boundaries,plot_visible)
+function [fluxsumSets,fig] = visualizeFluxsum(project,comparisonName,metIdx,rxnIdx,rxnSetLabels,plotType,excludeCoenzymes,ignoreCompartment,slot,fluxSummedUp,modelNameFluxBoundaries,plotVisible)
     % This function visualizes the fluxsum either in a heatmap or in a
-    % violinplot between different models to enable easy comparison of
+    % violinPlot between different models to enable easy comparison of
     % model results in sampling. 
     % Before running this script a modelsComparison must be run. Then the
     % name of the comparison performed (given as output of the
@@ -8,12 +8,12 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
     % project object entailing the comparison + all the needed models. 
     %
     % The function produces as many figures as you define sets in the
-    % rxn_idx argument. This is meant to enable you to visualize different
+    % rxnIdx argument. This is meant to enable you to visualize different
     % sets/subsystems of your choosing to be visualized in one Figure. 
     % 
     % The function allows visualization of the fluxsum on different levels.
-    % If you choose the violin plot_type -> the fluxsum for every metabolite is
-    % computed and then visualized in a separate violinplot for every
+    % If you choose the violin plotType -> the fluxsum for every metabolite is
+    % computed and then visualized in a separate violinPlot for every
     % reaction allowing for easy comparison of the fluxsum of over
     % different models. 
     % If you choose the heatmap then the mean of the fluxsum overall
@@ -25,26 +25,26 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
     % INPUT:
     %       - project: project structure after running modelsComparison
     %         function 
-    %       - comparison_name: name of the comparison you want to visualize
+    %       - comparisonName: name of the comparison you want to visualize
     %         (the second output of the modelsComparison function) 1x1
     %         string
-    %       - met_idx: array 1xn, every element in the array is a double
+    %       - metIdx: array 1xn, every element in the array is a double
     %         1xn with the positions of the mets to be used in the fluxsum
     %         comptutation, the positions need to be the position of that
     %         metabolite in the choosen reference model
-    %       - rxn_idx: same as met_idx
-    %       - rxn_set_labels: names of the defined sets, can be choosen
+    %       - rxnIdx: same as metIdx
+    %       - rxnSetLabels: names of the defined sets, can be choosen
     %         freely
-    %       - plot_type: to visualize a heatmap (fluxsum overall given in
+    %       - plotType: to visualize a heatmap (fluxsum overall given in
     %         one rnx_id set) or violin (fluxsum for all metabolites taking
     %         part in the specified rxns)
-    %       - exclude_coenzymes: option to exclude all the metabolite that
+    %       - excludeCoenzymes: option to exclude all the metabolite that
     %         have a connectivity of over 135 within the reference network
     %         (those are most likely coenzymes -> like h2o)
-    %       - ignore_compartment: allows to ignore the compartment and
+    %       - ignoreCompartment: allows to ignore the compartment and
     %         build an overall fluxsum per metabolite (only relevant for
     %         violin plots)
-    %       - flux_summed_up:   gives the fluxes over which to sum up, either
+    %       - fluxSummedUp:   gives the fluxes over which to sum up, either
     %                       computation of the fluxsum for the single
     %                       metabolites ("incoming" or "outgoing") or
     %                       summing up the flux values over the defined
@@ -53,47 +53,47 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
     %                       the positive or the negative fluxes connected
     %                       to a metabolite will be summed up (abs sum).
     % Output: 
-    %       - fluxsum_sets: fluxsum overall metabolites per sample as a
+    %       - fluxsumSets: fluxsum overall metabolites per sample as a
     %       array with matrices stored within
     arguments
         project struct
-        comparison_name (1,1) string
-        met_idx (1,:) cell {mustBeColumnVector} =[]
-        rxn_idx (1,:) cell {mustBeColumnVector} =[]
-        rxn_set_labels (1,:) string = []
-        plot_type  {mustBeMember(plot_type, ["violin","heatmap", "heatmap_sample", "heatmap_sample_all_features"])} =["violin"] 
-        exclude_coenzymes (1,1) logical = true
-        ignore_compartment (1,1) logical = true
-        slot  (1,1) string {mustBeMember(slot,["ordered_fba", "ordered_samples"])} ="ordered_samples" 
-        flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
-        model_name_flux_boundaries (1,1) string = "consistent_medium_constrained_model"
-        plot_visible ="on"
+        comparisonName (1,1) string
+        metIdx (1,:) cell {mustBeColumnVector} =[]
+        rxnIdx (1,:) cell {mustBeColumnVector} =[]
+        rxnSetLabels (1,:) string = []
+        plotType  {mustBeMember(plotType, ["violin","heatmap", "heatmapSample", "heatmapSampleAllFeatures"])} =["violin"] 
+        excludeCoenzymes (1,1) logical = true
+        ignoreCompartment (1,1) logical = true
+        slot  (1,1) string {mustBeMember(slot,["orderedFba", "orderedSamples"])} ="orderedSamples" 
+        fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming","outgoing","reactions"])} ="incoming" 
+        modelNameFluxBoundaries (1,1) string = "consistent_medium_constrained_model"
+        plotVisible ="on"
     end
     
     % sets the order of the rxns in order to be able to bring the samples
     % from all the models in the same order
-    reference = project.comparisons.(comparison_name).reference_model;
+    reference = project.comparisons.(comparisonName).referenceModel;
 
     % by default if no input is given the fluxsum for all metabolites overa
     % ll reaction is computed
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(length(project.models.(reference).model.rxns),1));
+    if isempty(rxnIdx)
+        rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
-    if isempty(met_idx)
-        met_idx = find(ones(length(project.models.(reference).model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
     
-    if plot_type == "heatmap_sample" & slot == "ordered_fba"
-        % if you choose to plot the fba solutions, the heatmap_sample
+    if plotType == "heatmapSample" & slot == "orderedFba"
+        % if you choose to plot the fba solutions, the heatmapSample
         % option does not exist, cause there is only one solution per model
-        plot_type = "heatmap";
+        plotType = "heatmap";
     end
     
     % in order to prevent coenzymes from inflating the fluxsum of specific
     % pathways all metabolites which have a connectivity higher than 135 in
     % the choosen reference model will be excluded from the computation of
-    % the fluxsum and not be visualized in the violinplot
-    if exclude_coenzymes
+    % the fluxsum and not be visualized in the violinPlot
+    if excludeCoenzymes
         S = project.models.(reference).model.S;
         rxn_count_per_met = sum(S ~= 0, 2);  % sum over columns = number of reactions each metabolite participates in
         idx_coenzymes = find(rxn_count_per_met >135);
@@ -107,42 +107,42 @@ function [fluxsum_sets,fig] = visualize_fluxsum(project,comparison_name,met_idx,
         % metabolites are probably coenzymes 
         % idx_coenzymes = find(rxn_count_per_met > quantile(rxn_count_per_met,0.994));
 
-        met_idx = setdiff(met_idx,idx_coenzymes);
+        metIdx = setdiff(metIdx,idx_coenzymes);
     end
     
     % depending on the choosen plot type different functions are executed
-    if plot_type == "violin"
-            [fluxsum_sets,fig] = get_violin_plots(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,ignore_compartment,model_name_flux_boundaries,"incoming",plot_visible);
+    if plotType == "violin"
+            [fluxsumSets,fig] = getViolinPlots(project,comparisonName,metIdx, rxnIdx,rxnSetLabels,ignoreCompartment,modelNameFluxBoundaries,"incoming",plotVisible);
     else
-            [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,plot_type,slot,flux_summed_up,plot_visible);
+            [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx, rxnIdx,rxnSetLabels,plotType,slot,fluxSummedUp,plotVisible);
     end
 
-    % when met_idx is empyt, or over a specific number of mets -> over 50
+    % when metIdx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 end
 
-function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,type,slot,flux_summed_up,plot_visible)
+function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,rxnIdx,rxnSetLabels,type,slot,fluxSummedUp,plot_visible)
     % This function visualizes the mean fluxsum over the specified rxn_id
     % sets. By getting the fluxsum for metabolites that are participating
-    % in the specified sets + are part of the met_idx and then computing
+    % in the specified sets + are part of the metIdx and then computing
     % the mean over each set. Using this function a comparison over models
     % and different defined subsystems can be visualized. 
     % INPUT:
     %       - project: project structure after running modelsComparison
     %         function 
-    %       - comparison_name: name of the comparison you want to visualize
+    %       - comparisonName: name of the comparison you want to visualize
     %         (the second output of the modelsComparison function) 1x1
     %         string
-    %       - met_idx: with the positions of the mets to be used in the fluxsum
+    %       - metIdx: with the positions of the mets to be used in the fluxsum
     %         comptutation, the positions need to be the position of that
     %         metabolite in the choosen reference model
-    %       - rxn_idx: sets of rxns to be visualized in the heatmap
-    %       - rxn_set_labels: names of the defined sets, can be choosen
+    %       - rxnIdx: sets of rxns to be visualized in the heatmap
+    %       - rxnSetLabels: names of the defined sets, can be choosen
     %         freely
     %       - type: specifies whether a fluxsum per rxn set should be
     %         visualized per samples or the average over all samples from one
-    %         model: values : "heatmap_sample", "heatmap_sample_all_features" or "heatmap" default is "heatmap"
-    %       - flux_summed_up:   gives the fluxes over which to sum up, either
+    %         model: values : "heatmapSample", "heatmapSampleAllFeatures" or "heatmap" default is "heatmap"
+    %       - fluxSummedUp:   gives the fluxes over which to sum up, either
     %                       computation of the fluxsum for the single
     %                       metabolites ("incoming" or "outgoing") or
     %                       summing up the flux values over the defined
@@ -151,69 +151,69 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
     %                       the positive or the negative fluxes connected
     %                       to a metabolite will be summed up (abs sum).
     % Output: 
-    %       - fluxsum_sets: fluxsum overall metabolites per sample as a
+    %       - fluxsumSets: fluxsum overall metabolites per sample as a
     %         array with matrices stored within
     arguments
         project struct
-        comparison_name (1,1) string
-        met_idx  
-        rxn_idx
-        rxn_set_labels (1,:) string 
-        type {mustBeMember(type, ["heatmap", "heatmap_sample","heatmap_sample_all_features"])} =["heatmap"] 
-        slot  (1,1) string {mustBeMember(slot,["ordered_fba", "ordered_samples"])} ="ordered_samples" 
-        flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
+        comparisonName (1,1) string
+        metIdx  
+        rxnIdx
+        rxnSetLabels (1,:) string 
+        type {mustBeMember(type, ["heatmap", "heatmapSample","heatmapSampleAllFeatures"])} =["heatmap"] 
+        slot  (1,1) string {mustBeMember(slot,["orderedFba", "orderedSamples"])} ="orderedSamples" 
+        fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming","outgoing","reactions"])} ="incoming" 
         plot_visible ="on"
     end
-    reference = project.comparisons.(comparison_name).reference_model;
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(length(project.models.(reference).model.rxns),1));
+    reference = project.comparisons.(comparisonName).referenceModel;
+    if isempty(rxnIdx)
+        rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
     
-    if isempty(met_idx)
-        met_idx = find(ones(length(project.models.(reference).model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
     
-    if slot == "ordered_fba" & type == "heatmap_sample_all_features"
+    if slot == "orderedFba" & type == "heatmapSampleAllFeatures"
         % this case is an exeption
         % in this case we just visualize the flux values - no fluxsum
         % calculation needed 
-        fba_values = project.comparisons.(comparison_name).(slot);
-        fluxsum_sets = cellfun(@(x) fba_values(x,:), ...
-                           rxn_idx,'UniformOutput', false);
+        fba_values = project.comparisons.(comparisonName).(slot);
+        fluxsumSets = cellfun(@(x) fba_values(x,:), ...
+                           rxnIdx,'UniformOutput', false);
     else
         % for all the other cases we compute the fluxsum 
-        fluxsum_sets = get_fluxsum(project,comparison_name,met_idx,rxn_idx,slot,flux_summed_up);
+        fluxsumSets = getFluxsum(project,comparisonName,metIdx,rxnIdx,slot,fluxSummedUp);
     end
 
-    if slot ~= "ordered_fba"
-        samples_cat = cellstr(project.comparisons.(comparison_name).sample_model_labels);
+    if slot ~= "orderedFba"
+        samples_cat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
     else
-        samples_cat = cellstr(project.comparisons.(comparison_name).modelNames);
+        samples_cat = cellstr(project.comparisons.(comparisonName).modelNames);
     end
 
-    if flux_summed_up ~= "reactions"
+    if fluxSummedUp ~= "reactions"
         figure_title = "Fluxsum (per metabolite) ";
     else
         figure_title = "Fluxsum (over defined reactionset) ";
     end
-    if slot ~= "ordered_fba"
+    if slot ~= "orderedFba"
         figure_title = figure_title + " for sampling solutions ";
     else
         figure_title = figure_title + " for fba solution ";
     end
 
 
-    heatmap_data = zeros(length(fluxsum_sets), length(unique(samples_cat)));
-    heatmap_data_all_samples = zeros(length(fluxsum_sets), length(samples_cat));
+    heatmap_data = zeros(length(fluxsumSets), length(unique(samples_cat)));
+    heatmap_data_all_samples = zeros(length(fluxsumSets), length(samples_cat));
 
-    % when met_idx is empyt, or over a specific number of mets -> over 50
+    % when metIdx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
     heatmap_data_all_samples_all_features = {};
-    for subsystem = 1:numel(fluxsum_sets)
-        data = fluxsum_sets{subsystem};
-        title_fig = rxn_set_labels(subsystem);
+    for subsystem = 1:numel(fluxsumSets)
+        data = fluxsumSets{subsystem};
+        title_fig = rxnSetLabels(subsystem);
         
-        met_names = project.models.(reference).model.mets(met_idx);
+        met_names = project.models.(reference).model.mets(metIdx);
     
         met_names = met_names(find(any(data ~= 0,2)));
         data = data(find(any(data ~= 0,2)),:);
@@ -250,7 +250,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
                                        'Visible',plot_visible);
         imagesc(scaled_data)
         
-        cmap = get_color_pallette();
+        cmap = getColorPallette();
         h = colorbar;  
         caxis([-max([max(scaled_data(:)),abs(min(scaled_data(:)))]) max([max(scaled_data(:)),abs(min(scaled_data(:)))])])   % colors scaled from -2 (min) to 2 (max)
 
@@ -260,7 +260,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         title(figure_title + "avg overall solutions")    % grayscale
         % Set x-axis and y-axis labels
         set(gca, 'XTick', 1:length(unique(samples_cat)), 'XTickLabel', unique(samples_cat), ...
-             'YTick', 1:length(rxn_set_labels), 'YTickLabel', rxn_set_labels)
+             'YTick', 1:length(rxnSetLabels), 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;
         ax.FontSize = 18;  
@@ -273,8 +273,8 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         for i = 1:nRows
             for j = 1:nCols
                 % You want absolute numbers, not relative counts, so use pathway_counts
-                % (or multiply relative_counts by reference_model if needed)
-                value =  heatmap_data(i,j); % +1 because first column is reference_model
+                % (or multiply relative_counts by referenceModel if needed)
+                value =  heatmap_data(i,j); % +1 because first column is referenceModel
                 % Place text at the center of the tile
                 text(j, i, num2str(round(value,1)), ...
                     'HorizontalAlignment','center', ...
@@ -285,7 +285,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         end
         
         hold off
-    elseif type == "heatmap_sample"
+    elseif type == "heatmapSample"
 
         fig = figure('Color','w','Position',[100 100 800 800],...
                                        'Visible',plot_visible);
@@ -293,7 +293,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
     
         imagesc(scaled_data)
 
-        cmap = get_color_pallette();
+        cmap = getColorPallette();
        
         h = colorbar;  
         caxis([-max([max(scaled_data(:)),abs(min(scaled_data(:)))]) max([max(scaled_data(:)),abs(min(scaled_data(:)))])])   % colors scaled from -2 (min) to 2 (max)
@@ -301,11 +301,13 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         ylabel(h, 'Scaled average fluxsum value per sample', 'FontSize', 18)        % Set title/label of colorbar
         title(figure_title + " values for each solution")    % grayscale
         % Set x-axis and y-axis labels
-        [sample_count,~] = hist(samples_cat);
-        xtickposition = ((1:length(unique(samples_cat))) .* (sample_count)) - sample_count/2;
+        sample_count = histcounts(samples_cat);  % or your existing "a"
+
+        edges = [0 cumsum(sample_count)];
+        xtickposition = edges(1:end-1) + sample_count/2;
     
         set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
-             'YTick', 1:length(rxn_set_labels), 'YTickLabel', rxn_set_labels)
+             'YTick', 1:length(rxnSetLabels), 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;
         ax.FontSize = 18;  
@@ -322,7 +324,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
                                        'Visible',plot_visible);
         imagesc(scaled_data)
         
-        cmap = get_color_pallette();
+        cmap = getColorPallette();
         h = colorbar;  
         min_axis = quantile(scaled_data(:),0.001);
         max_axis = quantile(scaled_data(:),0.999);
@@ -340,7 +342,7 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
         ytickposition = cumsum(count_mets_per_set) - round(count_mets_per_set/2);
     
         set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
-             'YTick', ytickposition, 'YTickLabel', rxn_set_labels)
+             'YTick', ytickposition, 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;
         ax.FontSize = 18;  
@@ -351,32 +353,32 @@ function [fluxsum_sets,fig] = get_comparison_heatmap(project,comparison_name,met
 
 end
 
-function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, ignore_compartment,model_name_flux_boundaries,flux_summed_up,plot_visible)
+function [fluxsumSets,figs] = getViolinPlots(project,comparisonName,metIdx,rxnIdx,rxnSetLabels, ignoreCompartment,modelNameFluxBoundaries,fluxSummedUp,plot_visible)
     % This function visualizes the fluxsum distribution per metabolite and model 
     % over the specified rxn_id sets into a violin plot.
     % By getting the fluxsum for metabolites that are participating
-    % in the specified sets + are part of the met_idx.
+    % in the specified sets + are part of the metIdx.
     % Using this function a comparison over models for the fluxsum of
     % different metabolites can be visualized.  
     % INPUT:
     %       - project: project structure after running modelsComparison
     %         function 
-    %       - comparison_name: name of the comparison you want to visualize
+    %       - comparisonName: name of the comparison you want to visualize
     %         (the second output of the modelsComparison function) 1x1
     %         string
-    %       - met_idx: with the positions of the mets to be used in the fluxsum
+    %       - metIdx: with the positions of the mets to be used in the fluxsum
     %         comptutation, the positions need to be the position of that
     %         metabolite in the choosen reference model
-    %       - rxn_idx: rxn sets, for each set a separate figure is created
+    %       - rxnIdx: rxn sets, for each set a separate figure is created
     %         with all the metabolite fluxsum values for all the metabolite
-    %         participating in the specified rxn_idx
-    %       - rxn_set_labels: names of the defined sets, can be choosen
+    %         participating in the specified rxnIdx
+    %       - rxnSetLabels: names of the defined sets, can be choosen
     %         freely
-    %       - ignore_compartment: allows to compute the fluxsum for a
+    %       - ignoreCompartment: allows to compute the fluxsum for a
     %         metabolite ignoring the cellular location
-    %       - model_name_flux_boundaries: model that saves the
+    %       - modelNameFluxBoundaries: model that saves the
     %         constraints set when constructing the models
-    %   - flux_summed_up:   gives the fluxes over which to sum up, either
+    %   - fluxSummedUp:   gives the fluxes over which to sum up, either
     %                       computation of the fluxsum for the single
     %                       metabolites ("incoming" or "outgoing") or
     %                       summing up the flux values over the defined
@@ -385,57 +387,57 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
     %                       the positive or the negative fluxes connected
     %                       to a metabolite will be summed up (abs sum).
     % Output: 
-    %       - fluxsum_sets: fluxsum overall metabolites per sample as a
+    %       - fluxsumSets: fluxsum overall metabolites per sample as a
     %         array with matrices stored within
     arguments
         project struct
-        comparison_name (1,1) string
-        met_idx
-        rxn_idx
-        rxn_set_labels (1,:)
-        ignore_compartment (1,1) logical = true
-        model_name_flux_boundaries (1,1) string = "consistent_medium_constrained_model"
-        flux_summed_up {mustBeMember(flux_summed_up, ["incoming","outgoing","reactions"])} ="incoming" 
+        comparisonName (1,1) string
+        metIdx
+        rxnIdx
+        rxnSetLabels (1,:)
+        ignoreCompartment (1,1) logical = true
+        modelNameFluxBoundaries (1,1) string = "consistent_medium_constrained_model"
+        fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming","outgoing","reactions"])} ="incoming" 
         plot_visible ="on"
     end
 
-    reference = project.comparisons.(comparison_name).reference_model;
-    reference_model = project.models.(reference).model;
-    modelNames = project.comparisons.(comparison_name).modelNames;
+    reference = project.comparisons.(comparisonName).referenceModel;
+    referenceModel = project.models.(reference).model;
+    modelNames = project.comparisons.(comparisonName).modelNames;
     models = rmfield(project.models,setdiff(fieldnames(project.models),...
                                             modelNames));
 
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(reference_model.rxns),1);
+    if isempty(rxnIdx)
+        rxnIdx = find(ones(referenceModel.rxns),1);
     end
     
-    if isempty(met_idx)
-        met_idx = find(ones(length(reference_model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(referenceModel.mets),1));
     end
     
 
-    fluxsum_sets = get_fluxsum(project,comparison_name,met_idx,rxn_idx, "ordered_samples",flux_summed_up);
+    fluxsumSets = getFluxsum(project,comparisonName,metIdx,rxnIdx, "orderedSamples",fluxSummedUp);
 
     
-    % for every specified set in rxn_idx create one figure with all the
+    % for every specified set in rxnIdx create one figure with all the
     % fluxsums of the metabolites participating in the rxns + being part of
-    % met_idx
+    % metIdx
     figs = struct();
-    for subsystem = 1:numel(fluxsum_sets)
-        data = fluxsum_sets{subsystem};
-        title_fig = rxn_set_labels(subsystem);
+    for subsystem = 1:numel(fluxsumSets)
+        data = fluxsumSets{subsystem};
+        title_fig = rxnSetLabels(subsystem);
         plot_name = replace(title_fig, ["_", "-", "/"], "");
 
         
-        met_names = reference_model.mets(met_idx); % filter for mets in met_idx 
+        met_names = referenceModel.mets(metIdx); % filter for mets in metIdx 
         
         zero_fluxsum_metabolites = find(any(data ~= 0,2)); % filter for metabolites which have zero fluxsum overall samples, overall models
         data = data(zero_fluxsum_metabolites,:);
         met_names = met_names(zero_fluxsum_metabolites);
-        samples_cat = cellstr(project.comparisons.(comparison_name).sample_model_labels);
+        samples_cat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
         % remove the compartment specification to compute the totall
         % fluxsum of a metabolite, and add them up overall compartments
-        if ignore_compartment
+        if ignoreCompartment
             met_names_without_compartment = regexprep(met_names,"\[.\]$", "");
 
             % Get unique specifications and grouping indices
@@ -527,7 +529,7 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
             % get Table with rxn formula, discretization status, concentration
             % in the medium etc
             warning('off', 'all')
-            T_display = get_rxn_overview_table(project, comparison_name,models,reference_model, met_names,model_name_flux_boundaries,modelNames,reference);
+            T_display = get_rxn_overview_table(project, comparisonName,models,referenceModel, met_names,modelNameFluxBoundaries,modelNames,reference);
             warning('on', 'all')
     
             T_display = addvars(T_display, string(T_display.Properties.RowNames), ...
@@ -549,32 +551,32 @@ function [fluxsum_sets,figs] = get_violin_plots(project,comparison_name,met_idx,
                 'ColumnWidth','auto');
         end
         plot_name = replace(plot_name, ["_", "-", "/", " "], "");
-        figs.("violing_fluxsum_" + plot_name) = figStruct;
+        figs.("violinFluxsum" + plot_name) = figStruct;
 
     end
 
 end
 
-function T_display = get_rxn_overview_table(project, comparison_name,models,reference_model, met_names,model_name_flux_boundaries,modelNames,reference )
+function T_display = get_rxn_overview_table(project, comparisonName,models,referenceModel, met_names,modelNameFluxBoundaries,modelNames,reference )
         
         ref = fieldnames(models);
         ref = models.(ref{1,1}).settings.medium;
         
-        % get rxn_idx
-        [rxn_names] = findRxnsFromMets(reference_model,string(met_names));
-        rxn_ids = find(matches(reference_model.rxns,rxn_names));
+        % get rxnIdx
+        [rxn_names] = findRxnsFromMets(referenceModel,string(met_names));
+        rxn_ids = find(matches(referenceModel.rxns,rxn_names));
          
-        % get rxn_idx formulas + filter out rxns that have zero in all
+        % get rxnIdx formulas + filter out rxns that have zero in all
         % samples
-        samples = project.comparisons.(comparison_name).ordered_samples;
+        samples = project.comparisons.(comparisonName).orderedSamples;
         zero_rxns = find(sum(samples == 0,2) == size(samples,2));
         rxn_ids = setdiff(rxn_ids,zero_rxns);
-        rxn_names = reference_model.rxns(rxn_ids);
+        rxn_names = referenceModel.rxns(rxn_ids);
         
         % get lower and upper bound for every rxns 
-        ordered_lb = getOrderedFeatureMatrix(project,model_name_flux_boundaries,...
+        ordered_lb = getOrderedFeatureMatrix(project,modelNameFluxBoundaries,...
                                              "rxns",reference,"model.lb");
-        ordered_ub = getOrderedFeatureMatrix(project,model_name_flux_boundaries,...
+        ordered_ub = getOrderedFeatureMatrix(project,modelNameFluxBoundaries,...
                                              "rxns",reference,"model.ub");
         ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelNames,...
                                                              "rxns",reference,"mappedDiscRxns");
@@ -589,8 +591,8 @@ function T_display = get_rxn_overview_table(project, comparison_name,models,refe
         ordered_ub = ordered_ub(rxn_ids,:);
         ordered_lb = ordered_lb(rxn_ids,:);
         ordered_mapping_rxn_matrix = ordered_mapping_rxn_matrix(rxn_ids,:);
-        rxn_abbr = reference_model.rxns(rxn_ids);
-        rxn_formulas = string(printRxnFormula(reference_model,rxn_abbr,false));
+        rxn_abbr = referenceModel.rxns(rxn_ids);
+        rxn_formulas = string(printRxnFormula(referenceModel,rxn_abbr,false));
   
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference),...
@@ -599,7 +601,7 @@ function T_display = get_rxn_overview_table(project, comparison_name,models,refe
         T = table(rxn_formulas, medium_constrained,...
             join(string(ordered_mapping_rxn_matrix), "|", 2),symbol_gpr_rules,...
                   'VariableNames', ["Reaction Formula","medium constrained",...
-                                    join(string(project.comparisons.(comparison_name).modelNames),"_"),...
+                                    join(string(project.comparisons.(comparisonName).modelNames),"_"),...
                                     "symbol gpr rules"], ...
                   'RowNames',rxn_names);
         T = T(flip(string(T.Properties.RowNames)),:);

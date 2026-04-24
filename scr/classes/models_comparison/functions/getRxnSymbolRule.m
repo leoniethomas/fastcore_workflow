@@ -1,4 +1,4 @@
-function rxn_gene_rule = get_rxn_symbol_rule(model,rxnName)
+function rxn_gene_rule = getRxnSymbolRule(model,rxnName)
         % --- Get gene association for reaction ---
         % repace the gene specifiers by the gene symbol
         

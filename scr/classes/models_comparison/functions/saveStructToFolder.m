@@ -1,4 +1,4 @@
-function save_struct_to_folder(S,outdir)
+function saveStructToFolder(S,outdir)
 
 
 

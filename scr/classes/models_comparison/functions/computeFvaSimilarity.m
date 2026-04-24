@@ -1,12 +1,12 @@
-function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_fva_similariy(project,comparison)
+function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = computeFvaSimilarity(project,comparison)
             
             modelList = project.comparisons.(comparison).modelNames;
-            reference_model = project.comparisons.(comparison).reference_model;
+            referenceModel = project.comparisons.(comparison).referenceModel;
 
             replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
-            ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
-            [ordered_fva_min_matrix,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns",reference_model,replacement_value);
+            [ordered_fva_min_matrix,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             
             n = numel(modelList);
 
@@ -47,7 +47,7 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = compute_
             fva_similarity_pathways = cell(n_models);
         
             
-            pathways = string(project.models.(reference_model).model.subSystems); % get pathways from reference model
+            pathways = string(project.models.(referenceModel).model.subSystems); % get pathways from reference model
             unique_pathways = unique(pathways); 
         
             % for every pathway get the matrix identifying the rnxs from reference

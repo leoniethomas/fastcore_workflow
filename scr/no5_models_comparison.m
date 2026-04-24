@@ -31,8 +31,8 @@ opts.VariableTypes{3} = 'char'; % making sure that the last column with the valu
 opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
-modelList = ["WT","KO","PLV"];
-analysisList = [ "sampling"];
+modelList = ["PLV"];
+analysisList = [ "FBA", "FVA","sampling", "loopless"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 

@@ -1,68 +1,68 @@
-function [flux_sets,figs] = visualize_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels,threshold,plot_visible)
+function [fluxSets,figs] = visualizeFlux(project,comparisonName,metIdx,rxnIdx,rxnSetLabels,threshold,plotVisible)
     arguments
         project
-        comparison_name
-        met_idx =[]
-        rxn_idx =[]
-        rxn_set_labels = []
+        comparisonName
+        metIdx =[]
+        rxnIdx =[]
+        rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["all"] 
-        plot_visible ="on"
+        plotVisible ="on"
     end
     %     plot_type  {mustBeMember(plot_type, ["violin","heatmap"])} =["violin"] 
     %     exclude_coenzymes (1,1) logical = true
     %     ignore_compartment (1,1) logical = true
     % end
-    reference = project.comparisons.(comparison_name).reference_model;
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(length(project.models.(reference).model.rxns),1));
+    reference = project.comparisons.(comparisonName).referenceModel;
+    if isempty(rxnIdx)
+        rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
     
-    if isempty(met_idx)
-        met_idx = find(ones(length(project.models.(reference).model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
 
-    [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_idx, rxn_idx,rxn_set_labels,threshold,plot_visible);
+    [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx, rxnIdx,rxnSetLabels,threshold,plotVisible);
 
 end
 
-function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_idx,rxn_idx,rxn_set_labels, threshold,plot_visible)
+function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx,rxnsIdx,rxnSetLabels, threshold,plotVisible)
     arguments
         project
-        comparison_name
-        met_idx =[]
-        rxn_idx =[]
-        rxn_set_labels = []
+        comparisonName
+        metIdx =[]
+        rxnsIdx =[]
+        rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["positive"] 
-        plot_visible ="on"
+        plotVisible ="on"
     end
 
-    reference = project.comparisons.(comparison_name).reference_model;
-    reference_model = project.models.(reference).model;
-    modelNames = project.comparisons.(comparison_name).modelNames;
+    reference = project.comparisons.(comparisonName).referenceModel;
+    referenceModel = project.models.(reference).model;
+    modelNames = project.comparisons.(comparisonName).modelNames;
     models = rmfield(project.models,setdiff(fieldnames(project.models),...
                                             modelNames));
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(length(project.models.(reference).model.rxns),1));
+    if isempty(rxnsIdx)
+        rxnsIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
     
-    if isempty(met_idx)
-        met_idx = find(ones(length(project.models.(reference).model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
     
 
-    flux_sets = get_flux(project,comparison_name,met_idx,rxn_idx);
+    fluxSets = getFlux(project,comparisonName,metIdx,rxnsIdx);
     
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 
     figs = struct();
 
-    for subsystem = 1:numel(flux_sets)
-        data = flux_sets{subsystem};
-        title_fig = rxn_set_labels(subsystem);
+    for subsystem = 1:numel(fluxSets)
+        data = fluxSets{subsystem};
+        title_fig = rxnSetLabels(subsystem);
         plot_name = replace(title_fig, ["_", "-", "/"], "");
 
-        rxns_names = project.models.(reference).model.rxns(rxn_idx{subsystem});
+        rxns_names = project.models.(reference).model.rxns(rxnsIdx{subsystem});
         
 
         zero_fluxsum_rxns = find(any(data ~= 0,2));
@@ -88,7 +88,7 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
         end
 
         
-        samples_cat = project.comparisons.(comparison_name).sample_model_labels;
+        samples_cat = project.comparisons.(comparisonName).sampleModelLabels;
         groups = unique(samples_cat, 'stable');       
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
@@ -114,7 +114,7 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
         for f = 1:nFigs
             
             fig = figure('Color','w','Position',[100 100 800 800],...
-                                       'Visible',plot_visible);
+                                       'Visible',plotVisible);
             
             t = tiledlayout(3,4);
             title(t,"Flux for reactions in : " + title_fig, ...
@@ -151,7 +151,7 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
             end
         end
         
-        if plot_visible == "on"
+        if plotVisible == "on"
     
 
         %table with rxnforumlas etc 
@@ -161,13 +161,13 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
         %media_for_models = structfun(@(x) x.settings.medium, models);
         %medium_is_equal_between_models = all(arrayfun(@(x) isequaln(x, ref), media_for_models));
 
-        rxn_ids = find(matches(string(reference_model.rxns),rxns_names));
+        rxn_ids = find(matches(string(referenceModel.rxns),rxns_names));
         
 
-        samples = project.comparisons.(comparison_name).ordered_samples;
+        samples = project.comparisons.(comparisonName).orderedSamples;
         zero_rxns = find(sum(samples == 0,2) == size(samples,2));
         rxn_ids = setdiff(rxn_ids,zero_rxns);
-        rxns_names = reference_model.rxns(rxn_ids);
+        rxns_names = referenceModel.rxns(rxn_ids);
         
 
         ordered_lb = getOrderedFeatureMatrix(project,"consistent_medium_constrained_model",...
@@ -188,8 +188,8 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
         ordered_lb = ordered_lb(rxn_ids,:);
         ordered_mapping_rxn_matrix = ordered_mapping_rxn_matrix(rxn_ids,:);
        
-        rxn_abbr = reference_model.rxns(rxn_ids);
-        rxn_formulas = string(printRxnFormula(reference_model,rxn_abbr,false));
+        rxn_abbr = referenceModel.rxns(rxn_ids);
+        rxn_formulas = string(printRxnFormula(referenceModel,rxn_abbr,false));
   
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference),...
@@ -198,7 +198,7 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
         T = table(rxn_formulas, medium_constrained,...
             join(string(ordered_mapping_rxn_matrix), "|", 2),symbol_gpr_rules,...
                   'VariableNames', ["Reaction Formula","medium constrained",...
-                                    join(string(project.comparisons.(comparison_name).modelNames),"_"),...
+                                    join(string(project.comparisons.(comparisonName).modelNames),"_"),...
                                     "symbol gpr rules"], ...
                   'RowNames',rxns_names);
         T = T(flip(string(T.Properties.RowNames)),:);
@@ -225,33 +225,33 @@ function [flux_sets,figs] = get_violin_plots_flux(project,comparison_name,met_id
             'ColumnWidth','auto');
         end
         plot_name = replace(plot_name, ["_", "-", "/", " "], "");
-        figs.("violing_flux_" + plot_name) = figStruct;
+        figs.("violinFlux" + plot_name) = figStruct;
 
     end
 
 end
 
-function flux_cell = get_flux(project,comparison_name,met_idx,rxn_idx)
+function fluxCell = getFlux(project,comparisonName,metIdx,rxnIdx)
     arguments
         project
-        comparison_name
-        met_idx =[]
-        rxn_idx =[]
+        comparisonName
+        metIdx =[]
+        rxnIdx =[]
     end
-    reference = project.comparisons.(comparison_name).reference_model;
-    if isempty(rxn_idx)
-        rxn_idx = find(ones(length(project.models.(reference).model.rxns),1));
+    reference = project.comparisons.(comparisonName).referenceModel;
+    if isempty(rxnIdx)
+        rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
     
-    if isempty(met_idx)
-        met_idx = find(ones(length(project.models.(reference).model.mets),1));
+    if isempty(metIdx)
+        metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
     
 
-    samples = project.comparisons.(comparison_name).ordered_samples;
+    samples = project.comparisons.(comparisonName).orderedSamples;
     
-    flux_cell = cellfun(@(x) samples(x,:), ...
-                           rxn_idx,'UniformOutput', false);
+    fluxCell = cellfun(@(x) samples(x,:), ...
+                           rxnIdx,'UniformOutput', false);
 
 end
 

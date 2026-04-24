@@ -1,4 +1,4 @@
-function [idx_pathways,names_pathways] = get_default_subsystems(project, reference_model)
+function [idx_pathways,names_pathways] = getDefaultSubsystems(project, reference_model)
                 gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
                 tca = find(matches(string(project.models.(reference_model).model.subSystems),"Citric acid cycle"));
                 PPP = find(matches(string(project.models.(reference_model).model.subSystems),"Pentose phosphate pathway"));

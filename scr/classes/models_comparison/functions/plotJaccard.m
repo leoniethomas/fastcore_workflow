@@ -1,12 +1,12 @@
-function fig = plotJaccard(ordered_feature, modelNames, title, options)
+function fig = plotJaccard(orderedFeature, modelNames, title, options)
 arguments
-    ordered_feature 
+    orderedFeature 
     modelNames 
     title 
-    options.visible_plot ="on"
+    options.visiblePlot ="on"
 end
-    Jacc_distance = 1 - squareform(pdist(ordered_feature','jaccard'));
-    fig = plot_clustergram(Jacc_distance,...
+    JaccDistance = 1 - squareform(pdist(orderedFeature','jaccard'));
+    fig = plotClustergram(JaccDistance,...
                                                                      modelNames,...
                                                                      modelNames,...
                                                                      title,...
@@ -16,6 +16,6 @@ end
                                                                       255 51 51;255 0 0; 204 0 0; ...
                                                                       152 0 0; 102 0 0;  51 0 0]/255);
 
-    set(fig,'Visible',options.visible_plot)
+    set(fig,'Visible',options.visiblePlot)
 
 end
