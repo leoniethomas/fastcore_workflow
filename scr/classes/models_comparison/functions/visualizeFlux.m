@@ -191,8 +191,8 @@ function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx,rxns
         rxn_abbr = referenceModel.rxns(rxn_ids);
         rxn_formulas = string(printRxnFormula(referenceModel,rxn_abbr,false));
   
-        % get rxn gene rules to add to the table
-        symbol_gpr_rules = string(cellfun(@(rxnName)get_rxn_symbol_rule(project.models.(reference),...
+        % get rxn gene rules to add to the tabler
+        symbol_gpr_rules = string(cellfun(@(rxnName)getRxnSymbolRule(project.models.(reference),...
                                                    rxnName),string(rxns_names),'UniformOutput', false));
 
         T = table(rxn_formulas, medium_constrained,...

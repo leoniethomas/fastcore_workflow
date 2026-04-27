@@ -126,10 +126,10 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
                          ismember(rxn_names, ref.manual_set_boundaries.unwanted_import);
         
 
-        ordered_lb = getOrderedFeatureMatrix(project,reference_model,...
-                                             "rxns",reference_model,"model.lb");
-        ordered_ub = getOrderedFeatureMatrix(project,reference_model,...
-                                             "rxns",reference_model,"model.ub");
+        ordered_lb = getOrderedFeatureMatrix(project,referenceModel,...
+                                             "rxns",referenceModel,"model.lb");
+        ordered_ub = getOrderedFeatureMatrix(project,referenceModel,...
+                                             "rxns",referenceModel,"model.ub");
         ordered_ub = ordered_ub(get_exchange_rxns_idx,:);
         ordered_lb = ordered_lb(get_exchange_rxns_idx,:);
         if options.FVA & options.thresholdFlux == "all"
