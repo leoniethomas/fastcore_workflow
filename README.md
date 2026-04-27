@@ -20,7 +20,7 @@ project
 |   |   └── model
 |   ├── consistent_medium_constrained_model
 |   |   ├── model
-|   |   └── seetings
+|   |   └── settings
 |   |       └── medium
 |   ├── context_specific_model_A
 |   |   ├── expression_data
@@ -28,11 +28,12 @@ project
 |   |   ├── model
 |   |   ├── core_reactions
 |   |   ├── settings
+|   |   |   ├── reference_model
 |   |   |   ├── dico
 |   |   |   ├── medium
 |   |   |   ├── obj_function
 |   |   |   └── optional_settings
-|   |   └── analysis_name (objFunction_date ?)
+|   |   └── analysis_date
 |   |       ├── parameters
 |   |       ├── FBA
 |   |       ├── FVA
