@@ -172,6 +172,10 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     x  = abs(mu);
     
     % 1D k-means to minimize within-group distances
+
+    assert(length(x) >1,...
+           'In the end only one rxn value was returned after filtering for the rxns that are active in your FBA solution, in order to visualize this plot, you need to formulate more rxns in rxnID or apply other threholds (try "all" threshold)!')
+    
     [idx, C] = kmeans(x, 2, 'Replicates', 10);
     
     % Identify low-flux (dense) cluster
@@ -239,6 +243,13 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
             axTop = uiaxes(fig,'Units','normalized', ...
                 'Position',[0.02 bottomHigh plotWidth heightHigh]);
             fmtAxes(axTop)
+
+            if size(dataHigh, 1) == 1
+                dataHigh = [dataHigh; NaN(1, size(dataHigh, 2))];
+                dataHighOneBar = 1;
+            else
+                dataHighOneBar = 0;
+            end
             
             barh(axTop, dataHigh, 'grouped');
             grid(axTop,'on')
@@ -252,7 +263,9 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
             if heightLow == 0
                 xlabel(axTop, 'Flux value [mMol/(gDW*h)]')
             end
-            
+            if dataHighOneBar
+                ylim(axTop, [0.5, size(dataHigh, 1) - 0.4 ])
+            end
         end
 
         %%% =========================
@@ -263,6 +276,12 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
                 'Position',[0.02 bottomLow plotWidth heightLow]);
             fmtAxes(axBottom)
             
+            if size(dataLow, 1) == 1
+                dataLow = [dataLow; NaN(1, size(dataLow, 2))];
+                dataLowOneBar = 1; 
+            else
+                dataLowOneBar = 0;
+            end
             barh(axBottom, dataLow, 'grouped');
             grid(axBottom,'on')
             
@@ -272,6 +291,9 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
                 title(axBottom, title_word)
             end
             xlabel(axBottom, 'Flux value [mMol/(gDW*h)]')
+            if dataLowOneBar
+                ylim(axBottom, [0.5, size(dataLow, 1) - 0.4 ])
+            end
         end
         
         %%% =========================
