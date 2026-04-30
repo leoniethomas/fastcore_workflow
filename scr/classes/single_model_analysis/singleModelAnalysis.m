@@ -40,11 +40,11 @@ for i = 1:numel(modelList)
     model = project.models.(name).model;
     
     % Searching for the objective function in the parameter table
-    objFunction = parameterTable.Value(strcmp(parameterTable.Parameter, 'objFuntion'));
+    objFunction = parameterTable.Value(strcmp(parameterTable.Parameter, 'objFunction'));
     
     % Setting the objective function
     if isempty(objFunction)
-        error('Parameter "objFuntion" not found in the parameter table.');
+        error('Parameter "objFunction" not found in the parameter table.');
         %return
     else
         model = changeObjective(model, objFunction);        

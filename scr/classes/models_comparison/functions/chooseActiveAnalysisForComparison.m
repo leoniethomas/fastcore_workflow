@@ -111,10 +111,14 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         end
 
         if loopless
-            if isfield(project.models.(modelList(m)).analysis.active.sampling,"cycleFreeFlux")
-                project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.cycleFreeFlux.samples_ll;
+            if isfield(project.models.(modelList(m)).analysis.active,"sampling")
+                if isfield(project.models.(modelList(m)).analysis.active.sampling,"cycleFreeFlux")
+                    project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.cycleFreeFlux.samples_ll;
+                else
+                    project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.samples_loopless;
+                end
             else
-                project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.samples_loopless;
+                error("There is no sampling slot defined in the active analysis slot! Check that there is a sampling analysis specified there!")
             end
         end
         
