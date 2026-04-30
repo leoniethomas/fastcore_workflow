@@ -1,4 +1,4 @@
-function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,loopless,analysisID)
+function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,loopless,emptyDefault, analysisID)
     % This function needs to be run in preparation for the modelsComparison
     % function. For the loaded project object, multiple analysis with a
     % different set of parameters can be performed. Before going into the
@@ -12,6 +12,15 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
     %   - project:      the fastcore project
     %   - modelList:    list of models for which a active analysis should
     %                   be defined
+    %   - loopless:     indicate whether the loopless sampling should be
+    %                   used for the analysis or not (default = 1)
+    %   - emptyDefault: when using 1 (default) then before adding the
+    %                   choosen analysis to the default slot, all the
+    %                   objects that are in there are deleted. In case you
+    %                   want to just replace (for example) the FBA in the
+    %                   current default then you can just overwrite the 
+    %                   FBA slot without deleting (for example the sampling) 
+    %                   by setting emptydefault to 0.
     %   - analysisID:   the name of the analysis for each of the models to
     %                   be set as the active analysis for the following
     %                   comparison. When no analysisID is given the most recent
@@ -25,8 +34,10 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         project
         modelList (1,:) string
         loopless =1
+        emptyDefault =1
         analysisID (1,:) string = []
     end
+
 
     % check the modelList - are the specified models exsistent ? 
     validModels = string(fieldnames(project.models));
@@ -74,18 +85,36 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         if ~ismember(analysisID(m),string(fieldnames(mod.analysis)))
             error("The specified analysis ID: " + analysisID(m) + " does not exsist in model: " + modelList(m))
         end
+        % check if the default analysis slot is defined from previous runs
+        % of chooseActiveAnalysis -> by default this will be removed
+        % in case you want to keep some of the previous slots you need to
+        % define emptyDefaul = 0
+        if ismember("active",string(fieldnames(project.models.(modelList(m)).analysis))) && emptyDefault
+            project.models.(modelList(m)).analysis = rmfield(project.models.(modelList(m)).analysis, "active");
+        end
         
         analysis = mod.analysis.(analysisID(m));
         for slot=1:length(fieldnames(analysis))
             slot_names = string(fieldnames(analysis));
-            project.models.(modelList(m)).analysis.(slot_names(slot)) = analysis.(slot_names(slot));
+            if slot_names(slot) == "parameters" && ~emptyDefault && ismember("active",string(fieldnames(project.models.(modelList(m)).analysis)))
+                parametersReplace = setdiff(slot_names,slot_names(slot));
+                oldParams = project.models.(modelList(m)).analysis.active.(slot_names(slot)); 
+                newParams = analysis.(slot_names(slot));
+                idxValueReplace = ismember(oldParams.Analysis,parametersReplace);
+                if all(string(oldParams.Parameter(idxValueReplace)) == string(newParams.Parameter(idxValueReplace)))
+                    oldParams.Value(idxValueReplace) = newParams.Value(idxValueReplace);
+                    analysis.(slot_names(slot)) = oldParams;
+                end
+            end
+            project.models.(modelList(m)).analysis.active.(slot_names(slot)) = analysis.(slot_names(slot));
+            
         end
 
         if loopless
-            if isfield(project.models.(modelList(m)).analysis.sampling,"cycleFreeFlux")
-                project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.cycleFreeFlux.samples_ll;
+            if isfield(project.models.(modelList(m)).analysis.active.sampling,"cycleFreeFlux")
+                project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.cycleFreeFlux.samples_ll;
             else
-                project.models.(modelList(m)).analysis.sampling.samples = project.models.(modelList(m)).analysis.sampling.samples_loopless;
+                project.models.(modelList(m)).analysis.active.sampling.samples = project.models.(modelList(m)).analysis.active.sampling.samples_loopless;
             end
         end
         
