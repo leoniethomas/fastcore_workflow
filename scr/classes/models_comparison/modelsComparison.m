@@ -23,7 +23,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     %                         on a structural level, is a gene,metabolite,or rxns present or not ? 
     %                       + modelFunctionalComparison: investigates the differences between models on a functional
     %                         level, how much flux do reactions carry in FVA, FBA solutions? 
-    %                       + modelSamplingComparison: investigates the differences between models sampling solutions,
+    %                       + aamplingComparison: investigates the differences between models sampling solutions,
     %                         investigates samples solution space 
     %                         
     %   - identifier:       a string, will be added as a postfix to the analysis name, can be choosen freely
@@ -236,7 +236,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
     
     
     %%% ---------- Visualization: objective values per model
-    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.FBA.f(1,1) ,modelList,"UniformOutput",false));
+    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1,1) ,modelList,"UniformOutput",false));
     getExchangeRxnsIdx = find(findExcRxns(project.models.(referenceModel).model));    
 
     plots.objValue = figure('Color','w','Position',[20 20 700 300],'Visible','off');
@@ -313,7 +313,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
     
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
 
-    replacementValue = "analysis.FBA.v"; % get the fba solution values
+    replacementValue = "analysis.active.FBA.v"; % get the fba solution values
     project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
     
     % compute Fluxsum 
@@ -1331,11 +1331,11 @@ function project = modelSamplingComparison(project,comparisonName)
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
     % run structural model comparison
-    replacementValue = "analysis.sampling.samples"; % get the fba solution values
+    replacementValue = "analysis.active.sampling.samples"; % get the fba solution values
     [project.comparisons.(comparisonName).orderedSamples,~,sampleLabels] = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
 
-    replacementValue = "analysis.FBA.v"; % get the fba solution values
+    replacementValue = "analysis.active.FBA.v"; % get the fba solution values
     project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
     
     %project.comparisons.(comparisonName).plots.sampling = visualizeSamplingLandscape(project,comparisonName,'visiblePlot',"off");
@@ -1453,9 +1453,9 @@ function prepareDataForIDAREVisualization(project, comparisonName,folderPath,opt
     % fba + fbafluxsum 
     orderedFba = project.comparisons.(comparisonName).orderedFba;
     % fva + fvaSim
-    replacementValue = "analysis.FVA.minFlux"; % get the fba solution values
+    replacementValue = "analysis.active.FVA.minFlux"; % get the fba solution values
     orderedFVAmin = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
-    replacementValue = "analysis.FVA.maxFlux"; % get the fba solution values
+    replacementValue = "analysis.active.FVA.maxFlux"; % get the fba solution values
     orderedFVAmax = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
     [fvaSim,orderedFvasim, ~] = computeFvaSimilarity(project,comparisonName);
     % sampling + sampling fluxsum 

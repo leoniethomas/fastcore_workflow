@@ -94,8 +94,9 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
         end
         
         analysis = mod.analysis.(analysisID(m));
-        for slot=1:length(fieldnames(analysis))
-            slot_names = string(fieldnames(analysis));
+        slot_names = string(fieldnames(analysis));
+        for slot=1:length(slot_names)
+            
             if slot_names(slot) == "parameters" && ~emptyDefault && ismember("active",string(fieldnames(project.models.(modelList(m)).analysis)))
                 parametersReplace = setdiff(slot_names,slot_names(slot));
                 oldParams = project.models.(modelList(m)).analysis.active.(slot_names(slot)); 

@@ -44,7 +44,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     modelList = project.comparisons.(comparison_name).modelNames;
     referenceModel = project.comparisons.(comparison_name).referenceModel;
     
-    replacement_value = "analysis.FBA.v"; % get the fba solution values
+    replacement_value = "analysis.active.FBA.v"; % get the fba solution values
     ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
     replacement_value = "mappedDiscRxns"; % get the fba solution values
     ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
@@ -75,9 +75,9 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     rxn_names = project.models.(referenceModel).model.rxns(get_exchange_rxns_idx);
 
     if options.FVA
-        replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
+        replacement_value = "analysis.active.FVA.maxFlux"; % get the fba solution values
         ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
-        replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
+        replacement_value = "analysis.active.FVA.minFlux"; % get the fba solution values
         ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
         ordered_fva_max_matrix_ex = ordered_fva_max_matrix(get_exchange_rxns_idx,:);
         ordered_fva_min_matrix_ex = ordered_fva_min_matrix(get_exchange_rxns_idx,:);
@@ -93,7 +93,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
         end
         
         if options.reducedCost
-            replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
+            replacement_value = "analysis.active.FBA.basis.reducedcost"; % get the fba solution values
             ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
             if options.thresholdFlux == "all"
@@ -157,7 +157,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     
     
     %if options.shadowPrice
-    %    replacement_value = "analysis.FBA.basis.dual"; % get the fba solution values
+    %    replacement_value = "analysis.active.FBA.basis.dual"; % get the fba solution values
     %    % shadow prices are measured for every metabolite therefore mapped according to the mets field
     %    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,"mets",referenceModel,replacement_value);
     %end
