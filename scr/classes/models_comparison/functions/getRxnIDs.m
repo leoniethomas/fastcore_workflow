@@ -74,7 +74,7 @@ function [rxnID,producing,matched] = getRxnIDs(project,referenceModel, pattern)
         allRxns = vertcat(rxnsIDsAll{:});
         allProd = vertcat(producingMetAll{:});
         [resultRxns, ia] = unique(allRxns, 'stable');
-        resultProd = allProd(ia);
+        resultProd = allProd;
     else
         resultRxns = rxnsIDsAll{:,:};
         resultProd = producingMetAll{:,:};
