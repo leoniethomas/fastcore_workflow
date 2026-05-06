@@ -34,7 +34,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     %                       all the output, modelcomparison information
     %   - comparisonName:   gives back the name of the comparison name added
     arguments
-        project (1,1) struct {assertValidProjectStruct(project)}
+        project (1,1) struct %{assertValidProjectStruct(project)}
         modelList (1,:) string
         analysisID (1,:) string
         referenceModel (1,1) string = "orig_model"
@@ -156,31 +156,44 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
         % - only perform the mapping for the models having associated
         % expression data 
         if any(contains(fieldnames(modelStruct),"discretized_data"))
-            % using rfastcormics function to map discretized data to the rxns
-            mapping = mapExpressionToModel( ...
-                modelStruct.model, ...
-                modelStruct.discretized_data.values, ...
-                modelStruct.settings.dico, ...
-                string(modelStruct.discretized_data.gene_names), ...
-                1);
-            
-            numberOfSamples = size(mapping, 2);
-            % store it per sample, column in the discretized expression matrix
-            modelStruct.mappedDiscRxnsSample = mapping;
-            % and also as global mapping for the model, by multiplying it with
-            % the consensus porportion used for the model construction 
-            % parameters used in the model construction can be accessed in the 
-            % settings. slot of each individual model
-            
-            % definition of initialCore reactions
-            modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
-            % definition of the notExpressed genes
-            notExpressed = find(sum(mapping == -1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples));
-            modelStruct.mappedDiscRxns = int32(modelStruct.mappedDiscRxns);
-            modelStruct.mappedDiscRxns(notExpressed) = -1;
-            modelStruct.mappedDiscRxns = int8(modelStruct.mappedDiscRxns); % needs less storage
-            % The definition of the unexpressed and initialCore rxns is done as
-            % performed in rFASTCORMICS_v2
+            if isfield(modelStruct, "settings")
+                if isfield(modelStruct.settings, "dico")
+                    % using rfastcormics function to map discretized data to the rxns
+                    mapping = mapExpressionToModel( ...
+                        modelStruct.model, ...
+                        modelStruct.discretized_data.values, ...
+                        modelStruct.settings.dico, ...
+                        string(modelStruct.discretized_data.gene_names), ...
+                        1);
+                    
+                    numberOfSamples = size(mapping, 2);
+                    % store it per sample, column in the discretized expression matrix
+                    modelStruct.mappedDiscRxnsSample = mapping;
+                    % and also as global mapping for the model, by multiplying it with
+                    % the consensus porportion used for the model construction 
+                    % parameters used in the model construction can be accessed in the 
+                    % settings. slot of each individual model
+                    
+                    if isfield(modelStruct.settings,"script_parameters")
+                        if isfield(modelStruct.settings.script_parameters,"consensus_proportion")
+                            % definition of initialCore reactions
+                            modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
+                            % definition of the notExpressed genes
+                            notExpressed = find(sum(mapping == -1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples));
+                            modelStruct.mappedDiscRxns = int32(modelStruct.mappedDiscRxns);
+                            modelStruct.mappedDiscRxns(notExpressed) = -1;
+                            modelStruct.mappedDiscRxns = int8(modelStruct.mappedDiscRxns); % needs less storage
+                        else
+                            modelStruct.mappedDiscRxns = int8(repmat(-13,size(mapping,1),1));
+                        end
+                    else
+                        modelStruct.mappedDiscRxns = int8(repmat(-13,size(mapping,1),1));
+                    end
+                    % The definition of the unexpressed and initialCore rxns is done as
+                    % performed in rFASTCORMICS_v2
+                end
+            end
+
         end
     end
 
@@ -190,19 +203,23 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
         % model.genes slot. In addition it adds the gene symbol to the discretized data slot.
         % The discretized data is given back as a matrix. 
         if any(contains(fieldnames(modelStruct),"discretized_data"))
-            if size(modelStruct.discretized_data,1) ~= length(string(modelStruct.settings.dico.SYMBOL))% in case this is the second time you run a modelComparison, the disc slot is already ordered so we skip this function in that case
-                geneSymbol = string(modelStruct.settings.dico.SYMBOL);
-                geneIdInModel = string(modelStruct.settings.dico.gene_id_in_model);
-                discTbl     = modelStruct.discretized_data;   % table with gene_names + data
-                % Map discretized genes into full gene list
-                [isPresent, idx] = ismember(geneSymbol, string(discTbl.gene_names));
-                % Preallocate output table with NaNs
-                outTbl = zeros(numel(geneSymbol), size(discTbl.values,2));
-                % Fill rows that exist
-                outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
-                % Add gene names as first column
-                modelStruct.discretized_data = table(geneIdInModel,geneSymbol,outTbl, 'VariableNames',...
-                                                     ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
+            if isfield(modelStruct,"settings")
+                if isfield(modelStruct,"dico")
+                    if size(modelStruct.discretized_data,1) ~= length(string(modelStruct.settings.dico.SYMBOL))% in case this is the second time you run a modelComparison, the disc slot is already ordered so we skip this function in that case
+                        geneSymbol = string(modelStruct.settings.dico.SYMBOL);
+                        geneIdInModel = string(modelStruct.settings.dico.gene_id_in_model);
+                        discTbl     = modelStruct.discretized_data;   % table with gene_names + data
+                        % Map discretized genes into full gene list
+                        [isPresent, idx] = ismember(geneSymbol, string(discTbl.gene_names));
+                        % Preallocate output table with NaNs
+                        outTbl = zeros(numel(geneSymbol), size(discTbl.values,2));
+                        % Fill rows that exist
+                        outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
+                        % Add gene names as first column
+                        modelStruct.discretized_data = table(geneIdInModel,geneSymbol,outTbl, 'VariableNames',...
+                                                             ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
+                    end
+                end
             end
         end
     end
@@ -774,43 +791,90 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     array2table(data, ...
                     'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
                     'RowNames', string(fieldnames(models))')
+
+    [rxnPresence,rxnMapping] = getOrderedFeatureMatrix(project,modelList,"rxns", referenceModel);
+    structureAnalysis.rxn_mapping_table = array2table(rxnMapping,"VariableNames",modelList,"RowNames",string(project.models.(referenceModel).model.rxns));
+
     
     % -- Visualization: Discretization status for expression of genes in model on sample level, on model level as well as the mapping/discretization on rxn level
     % -> gives you a feeling of how many reactions in the model are from the core, how many of the rxns that were notExpressed made it in regardless etc.
     
-    % get the reaction mapping (sample and model level) as well as the discretization values for each reaction/gene in the model 
-    replacementValue = "mappedDiscRxnsSample"; % get the fba solution values
-    orderedMappingRxnMatrixSampleWise = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
-    replacementValue = "mappedDiscRxns"; % get the fba solution values
-    orderedMappingRxnMatrix = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
-    replacementValue = "discretized_data.values"; % get the fba solution values
-    orderedMappingExprDiscMatrix = int8(getOrderedFeatureMatrix(project,modelList,"genes",referenceModel,replacementValue));
-
-    % get the names of the single samples from the metadata slot - used in the following plots
-    columnNames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
-                                  string(x.sample_metadata.(x.settings.script_parameters.columns_to_define_model_samples_on)),...
-                            modelsList,"UniformOutput",false));
-    columnNames = vertcat(columnNames{:});
-
-    % get the data into one object to loop over
-    datasets = { orderedMappingExprDiscMatrix,orderedMappingRxnMatrixSampleWise, orderedMappingRxnMatrix};   % replace with your actual dataset variables
-    datasetNames = ["ordered_mapping_rxn_matrix_sample_wise", "ordered_mapping_expr_disc_matrix", "ordered_mapping_rxn_matrix"];  % optional titles
-    xlabelsPlots = ["Samples", "Samples", "Models"]; 
-    xticksPlots = {columnNames, columnNames, string(fieldnames(modelsList))}; 
-    ylabelsPlots = ["# genes for genes which are in the context specific models", "# reactions for reactions which are in the context specific models", "# reactions for reactions which are in the context specific models"];  
-    titlePlots = ["after discretization: ", "after mapping the gpr rules: ", "after applying " + project.models.(modelList(1)).settings.script_parameters.consensus_proportion + " consensus proportion"];  
-
+    % check if the models has all the information needed to analyse the
+    % core reactions
     
+    
+    if all(structfun(@(x) isfield(x,"discretized_data"),modelsList))
+        % get the reaction mapping (sample and model level) as well as the discretization values for each reaction/gene in the model 
+        replacementValue = "mappedDiscRxnsSample"; % get the fba solution values
+        orderedMappingRxnMatrixSampleWise = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
+        replacementValue = "mappedDiscRxns"; % get the fba solution values
+        orderedMappingRxnMatrix = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
+        replacementValue = "discretized_data.values"; % get the fba solution values
+        orderedMappingExprDiscMatrix = int8(getOrderedFeatureMatrix(project,modelList,"genes",referenceModel,replacementValue));
+        
+        if all(structfun(@(x) isfield(x.settings,"script_parameters"),modelsList))
+            if all(structfun(@(x) isfield(x,"sample_metadata"),modelsList))
+                if all(structfun(@(x) isfield(x.settings.script_parameters,"columns_to_define_model_samples_on"),modelsList))
+                    % get the names of the single samples from the metadata slot - used in the following plots
+                    columnNames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
+                                                  string(x.sample_metadata.(x.settings.script_parameters.columns_to_define_model_samples_on)),...
+                                            modelsList,"UniformOutput",false));
+                    columnNames = vertcat(columnNames{:});
+                else
+                    columnNames = string(1:size(orderedMappingRxnMatrixSampleWise,2));
+                end
+            else
+                columnNames = string(1:size(orderedMappingRxnMatrixSampleWise,2));
+            end
+        else
+            columnNames = string(1:size(orderedMappingRxnMatrixSampleWise,2));
+        end
+        
+        % get the data into one object to loop over
+        datasets = { orderedMappingExprDiscMatrix,orderedMappingRxnMatrixSampleWise, orderedMappingRxnMatrix};   % replace with your actual dataset variables
+        datasetNames = ["ordered_mapping_rxn_matrix_sample_wise", "ordered_mapping_expr_disc_matrix", "ordered_mapping_rxn_matrix"];  % optional titles
+        xlabelsPlots = ["Samples", "Samples", "Models"]; 
+        xticksPlots = {columnNames, columnNames, string(fieldnames(modelsList))}; 
+        ylabelsPlots = ["# genes for genes which are in the context specific models", "# reactions for reactions which are in the context specific models", "# reactions for reactions which are in the context specific models"];  
+        titlePlots = ["after discretization: ", "after mapping the gpr rules: ", "after applying consensus proportion"];  
+    
+        
+    
+        % Determine all unique discretization values across datasets (excluding 13)
+        % the value 13 has been set to indicate that the rxn/gene is not in the
+        % model, so the discretization is not shown, in these figures only the
+        % discretization is shown of the genes/rxns in the model, the figures
+        % for all genes, rxns are done in the QC script when preparing the data
+        % for the model creation !!
+        plots.dataDiscretization = getDiscretizationHist(datasets);
+    end     
+    if all(structfun(@(x) isfield(x,"core_reactions"),modelsList))
 
-    % Determine all unique discretization values across datasets (excluding 13)
-    % the value 13 has been set to indicate that the rxn/gene is not in the
-    % model, so the discretization is not shown, in these figures only the
-    % discretization is shown of the genes/rxns in the model, the figures
-    % for all genes, rxns are done in the QC script when preparing the data
-    % for the model creation !!
-    plots.dataDiscretization = getDiscretizationHist(datasets);
+        %%% Visualize the core reaction per model
+        data = struct2cell(structfun(@(x) [ length(x.core_reactions) - sum(ismember(x.core_reactions, x.model.rxns)); ...
+                                                sum(ismember(x.core_reactions, x.model.rxns));...
+                                                length(x.model.rxns) - sum(ismember(x.core_reactions, x.model.rxns));...
+                                                length(x.model.rxns)], ...
+                                                modelsList, 'UniformOutput', false));
+        data = [data{:}];
+    
+        plots.coreReactions = plotCoreInModel(data,modelsList);
+    
+        % -- Visualization: Looking in deeper into the core reactions, the core
+        % is what is defined by the data, therefore portrays the underlying
+        % biological chnages, so the question is which reactions are part of
+        % the outer and intersections we saw in the previous venn/intersection
+        % diagramm ? are the differences in core reactions only due to
+        % exchange/import ? transporters ? This should be avoided!
+    
+        % create an upsetr plot for the all the inter and outersections
+        % filter out the main intersection -> the one with the longest name
+    
+        plots.coreReactionsIntersections = getUpsetPlotCore(project,modelsList,structureAnalysis);
+        % this function only works with a comparison of up to 4 models!!
+        % otherwise the plots get too complex!
 
-  
+    end
 
 
     % -- Visualization: Get the jaccard similarity on basis of the
@@ -819,8 +883,6 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     % to each other than others ? 
    
     
-    [rxnPresence,rxnMapping] = getOrderedFeatureMatrix(project,modelList,"rxns", referenceModel);
-    structureAnalysis.rxn_mapping_table = array2table(rxnMapping,"VariableNames",modelList,"RowNames",string(project.models.(referenceModel).model.rxns));
 
 
     for fieldToInvestigate = ["genes", "mets", "rxns"]
@@ -858,29 +920,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     plots.reactionPathwayPresence = pathwayPresenceHeat(project,referenceModel);
 
 
-    %%% Visualize the core reaction per model
-    data = struct2cell(structfun(@(x) [ length(x.core_reactions) - sum(ismember(x.core_reactions, x.model.rxns)); ...
-                                            sum(ismember(x.core_reactions, x.model.rxns));...
-                                            length(x.model.rxns) - sum(ismember(x.core_reactions, x.model.rxns));...
-                                            length(x.model.rxns)], ...
-                                            modelsList, 'UniformOutput', false));
-    data = [data{:}];
-
-    plots.coreReactions = plotCoreInModel(data,modelsList);
-
-    % -- Visualization: Looking in deeper into the core reactions, the core
-    % is what is defined by the data, therefore portrays the underlying
-    % biological chnages, so the question is which reactions are part of
-    % the outer and intersections we saw in the previous venn/intersection
-    % diagramm ? are the differences in core reactions only due to
-    % exchange/import ? transporters ? This should be avoided!
-
-    % create an upsetr plot for the all the inter and outersections
-    % filter out the main intersection -> the one with the longest name
-
-    plots.coreReactionsIntersections = getUpsetPlotCore(project,modelsList,structureAnalysis);
-    % this function only works with a comparison of up to 4 models!!
-    % otherwise the plots get too complex!
+    
 
     
 
@@ -1326,7 +1366,6 @@ function project = modelSamplingComparison(project,comparisonName)
 
     listModelNames = strsplit(comparisonName, "__"); 
     listModelNames = strsplit(listModelNames(1),"_vs_");
-    modelsList = rmfield(project.models, setdiff(fieldnames(project.models), listModelNames));
     % give the comparison the name of all models + a identifier choosen
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
@@ -1335,21 +1374,29 @@ function project = modelSamplingComparison(project,comparisonName)
     [project.comparisons.(comparisonName).orderedSamples,~,sampleLabels] = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
 
+    objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns,"biomass_reaction"));
+
+    % Normalize: divide each column (sample) by its biomass flux value
+    %project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
+
+
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
     project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
+
+    %project.comparisons.(comparisonName).ksResults = fluxKSvsControl(project.comparisons.(comparisonName).orderedSamples, sampleLabels, "WT");
     
     %project.comparisons.(comparisonName).plots.sampling = visualizeSamplingLandscape(project,comparisonName,'visiblePlot',"off");
 
 
     [idxPathways,namesPathways] = getDefaultSubsystems(project, referenceModel); 
-     
+
 
     [fluxsumSets,project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
                                                                           namesPathways,...
                                                                           "heatmap",true,true,"orderedSamples", "reactions",...
                                                                           referenceModel,"off");
-    
-    
+
+
 
     [fluxsumSets,project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
                                                                            namesPathways,...
@@ -1361,8 +1408,8 @@ function project = modelSamplingComparison(project,comparisonName)
                                                                      namesPathways,...
                                                                      "heatmapSample",true,true,"orderedSamples", "reactions",...
                                                                           referenceModel,"off");
-    
-    
+
+
 
     [fluxsumSets,...
      project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsumSamples] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
@@ -1383,8 +1430,8 @@ function project = modelSamplingComparison(project,comparisonName)
     %                                                                   names_pathways,...
     %                                                                   "heatmapSampleAllFeatures",true,true,"orderedSamples", "incoming",...
     %                                                                      referenceModel,"off");
-    
-    
+
+
     [fluxsumSets,fig1] = visualizeFluxsum(project,comparisonName,[],{idxPathways{1}},...
                                               namesPathways(1),"violin",true,false,"orderedSamples",...
                                               "incoming",referenceModel,"off");
@@ -1406,6 +1453,62 @@ function project = modelSamplingComparison(project,comparisonName)
         end
     end
 
+    function results = fluxKSvsControl(fluxMatrix, sampleLabels, controlLabel)
+        % FLUXKSVSCONTROL  KS test of each model vs control model, per reaction
+        %
+        % INPUTS:
+        %   fluxMatrix   - nRxns x nSamples matrix (CHRR samples in columns)
+        %   sampleLabels - 1 x nSamples cell array of model names per sample
+        %                  e.g. {'modelA','modelA','modelB','modelB','control',...}
+        %   controlLabel - string specifying which label is the control
+        %                  e.g. 'control'
+        %
+        % OUTPUT:
+        %   results - struct array, one entry per non-control model, each with:
+        %             .model      model name
+        %             .ksstat     nRxns x 1 KS statistic (effect size, 0-1)
+        %             .pval       nRxns x 1 raw p-values
+        %             .pval_adj   nRxns x 1 BH-adjusted p-values
+        %             .meanDiff   nRxns x 1 mean(model) - mean(control)
+        %             .signedKS   nRxns x 1 signed KS stat (direction + magnitude)
+        
+        
+        % --- Control samples ---
+        ctrlIdx     = strcmp(sampleLabels, controlLabel);
+        fluxControl = fluxMatrix(:, ctrlIdx);
+        
+        % --- Non-control models ---
+        modelNames = unique(sampleLabels(~ctrlIdx));
+        nRxns      = size(fluxMatrix, 1);
+        nModels    = numel(modelNames);
+        
+        % --- Preallocate output matrices ---
+        ksMatrix       = zeros(nRxns, nModels);
+        pvalMatrix     = zeros(nRxns, nModels);
+        signedKSMatrix = zeros(nRxns, nModels);
+        
+        for m = 1:nModels
+            fluxModel = fluxMatrix(:, strcmp(sampleLabels, modelNames{m}));
+        
+            ksstat = zeros(nRxns, 1);
+            pval   = zeros(nRxns, 1);
+        
+            for r = 1:nRxns
+                [~, pval(r), ksstat(r)] = kstest2(fluxControl(r,:), fluxModel(r,:));
+            end
+        
+            meanDiff = mean(fluxModel, 2) - mean(fluxControl, 2);
+        
+            ksMatrix(:, m)       = ksstat;
+            pvalMatrix(:, m)     = mafdr(pval, 'BHFDR', true);
+            signedKSMatrix(:, m) = ksstat .* sign(meanDiff);
+        end
+
+        results.ksMatrix       = ksMatrix;
+        results.pvalMatrix     = pvalMatrix;
+        results.signedKSMatrix = signedKSMatrix;
+        results.modelNames     = modelNames;
+    end
 end
 
 function prepareDataForIDAREVisualization(project, comparisonName,folderPath,options)
