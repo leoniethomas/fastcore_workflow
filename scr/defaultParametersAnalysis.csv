@@ -1,10 +1,10 @@
 Parameter,Analysis,Value
 objFunction,all,biomass_reaction
 osenseStr,FBA,max
-minNorm,FBA,one
+minNorm,FBA,zero
 optPercentage,FVA,90
 osenseStr,sampling,max
-minNorm,sampling,one
+minNorm,sampling,zero
 objThreshold,sampling,0.9
 sampleFile,sampling,sampleFile
 samplerName,sampling,CHRR
@@ -12,7 +12,7 @@ loopless,loopless,1
 samplingToUse,loopless,
 options.toRound,sampling,1
 options.countSampleProcesses,sampling,5
-options.nPointsReturned,sampling,20000
+options.nPointsReturned,sampling,5000
 options.nFiles,sampling,10
 Options.nWorkers,sampling,5
 options.numCores,sampling,10
@@ -23,6 +23,7 @@ modelSampling,sampling,model
 path,sampling,samplingResults/CHRR/
 nPointsReturned,kld,1000
 numberOfIndSamplings,kld,8
+objThreshold,kld,0.9
 method,singleGeneDeletion,FBA
 geneList,singleGeneDeletion,
 method,doubleGeneDeletion,FBA

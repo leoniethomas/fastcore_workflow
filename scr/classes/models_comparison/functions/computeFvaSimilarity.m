@@ -3,9 +3,9 @@ function [fva_similarity,fva_similarity_rxns,fva_similarity_pathways] = computeF
             modelList = project.comparisons.(comparison).modelNames;
             referenceModel = project.comparisons.(comparison).referenceModel;
 
-            replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
+            replacement_value = "analysis.active.FVA.maxFlux"; % get the fba solution values
             ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
-            replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
+            replacement_value = "analysis.active.FVA.minFlux"; % get the fba solution values
             [ordered_fva_min_matrix,rxn_mapping] = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             
             n = numel(modelList);

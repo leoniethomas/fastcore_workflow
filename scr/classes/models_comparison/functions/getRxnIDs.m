@@ -74,7 +74,7 @@ function [rxnID,producing,matched] = getRxnIDs(project,referenceModel, pattern)
         allRxns = vertcat(rxnsIDsAll{:});
         allProd = vertcat(producingMetAll{:});
         [resultRxns, ia] = unique(allRxns, 'stable');
-        resultProd = allProd(ia);
+        resultProd = allProd;
     else
         resultRxns = rxnsIDsAll{:,:};
         resultProd = producingMetAll{:,:};
@@ -101,14 +101,18 @@ function [rxnIDs, producingMet,matched] = findPatternsInStruct(pattern,slotsChec
         colname = getDicoColumnWithGeneIDsInModel(model, dico);
         if length(matches.rowIdx) ~= 0
             genesPattern = matches.rows.(colname);
+            model.genes = regexprep(model.genes, '\.\d+$', '');
+            rxnNames = findRxnsFromGenes(model,genesPattern);
+            matched = string(fieldnames(rxnNames));
+            rxnNames = struct2cell(structfun(@(x) x(:,1), rxnNames, 'UniformOutput', false));
+            allNames = string(unique(vertcat(rxnNames{:})));
+            [~,rxnIDs] = ismember(allNames,model.rxns);
+            producingMet = repmat(0, 1,length(rxnIDs));
+        else
+            matched = [];
+            rxnIDs = [];
+            producingMet = [];
         end
-        model.genes = regexprep(model.genes, '\.\d+$', '');
-        rxnNames = findRxnsFromGenes(model,genesPattern);
-        matched = string(fieldnames(rxnNames));
-        rxnNames = struct2cell(structfun(@(x) x(:,1), rxnNames, 'UniformOutput', false));
-        allNames = string(unique(vertcat(rxnNames{:})));
-        [~,rxnIDs] = ismember(allNames,model.rxns);
-        producingMet = repmat(0, 1,length(rxnIDs));
     
     else
         [~,mostMatchSlot] = max(structfun(@(x) size(x,1),posMatch));

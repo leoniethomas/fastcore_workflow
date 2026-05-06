@@ -44,7 +44,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     modelList = project.comparisons.(comparison_name).modelNames;
     referenceModel = project.comparisons.(comparison_name).referenceModel;
     
-    replacement_value = "analysis.FBA.v"; % get the fba solution values
+    replacement_value = "analysis.active.FBA.v"; % get the fba solution values
     ordered_fba_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
     replacement_value = "mappedDiscRxns"; % get the fba solution values
     ordered_mapping_rxn_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
@@ -75,9 +75,9 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     rxn_names = project.models.(referenceModel).model.rxns(get_exchange_rxns_idx);
 
     if options.FVA
-        replacement_value = "analysis.FVA.maxFlux"; % get the fba solution values
+        replacement_value = "analysis.active.FVA.maxFlux"; % get the fba solution values
         ordered_fva_max_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
-        replacement_value = "analysis.FVA.minFlux"; % get the fba solution values
+        replacement_value = "analysis.active.FVA.minFlux"; % get the fba solution values
         ordered_fva_min_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
         ordered_fva_max_matrix_ex = ordered_fva_max_matrix(get_exchange_rxns_idx,:);
         ordered_fva_min_matrix_ex = ordered_fva_min_matrix(get_exchange_rxns_idx,:);
@@ -93,7 +93,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
         end
         
         if options.reducedCost
-            replacement_value = "analysis.FBA.basis.reducedcost"; % get the fba solution values
+            replacement_value = "analysis.active.FBA.basis.reducedcost"; % get the fba solution values
             ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
             ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
             if options.thresholdFlux == "all"
@@ -124,6 +124,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
         medium_constrained = ismember(rxn_names, ref.medium_composition.ExRxns_Recon3D);% | ...
                          %ismember(rxn_names, ref.manual_set_boundaries.unwanted_export) | ...
                          %ismember(rxn_names, ref.manual_set_boundaries.unwanted_import);
+
         
 
         ordered_lb = getOrderedFeatureMatrix(project,referenceModel,...
@@ -139,8 +140,8 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
 
         % get rxn gene rules to add to the table
         symbol_gpr_rules = string(cellfun(@(rxnName)getRxnSymbolRule(project.models.(referenceModel),...
-                                                   rxnName),string(rxn_names),'UniformOutput', false));
-
+                                                       rxnName),string(rxn_names),'UniformOutput', false));
+       
         T = table(rxn_formulas, medium_constrained,...
             join(string(ordered_mapping_rxn_matrix_ex), "|", 2),symbol_gpr_rules,...
                   'VariableNames', ["Reaction Formula","medium constrained",...
@@ -157,7 +158,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     
     
     %if options.shadowPrice
-    %    replacement_value = "analysis.FBA.basis.dual"; % get the fba solution values
+    %    replacement_value = "analysis.active.FBA.basis.dual"; % get the fba solution values
     %    % shadow prices are measured for every metabolite therefore mapped according to the mets field
     %    ordered_shadowPrices_matrix = getOrderedFeatureMatrix(project,modelList,"mets",referenceModel,replacement_value);
     %end
@@ -536,23 +537,25 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
     if options.thresholdFlux=="upper"
         set([axTop axBottom],'XDir','reverse')
     end
+    
 
     %%% =========================
     % Table
     % =========================
     % resort the table according to the order in the plots
-    T = T([flip(string(rxn_names_high));flip(string(rxn_names_low))],:);
-    tbl = uitable(fig, ...
-                    'Data', T, ...
-                    'ColumnName', T.Properties.VariableNames, ...
-                    'Units','normalized', ...
-                    'Position',[plotWidth+0.05 0.10 0.40 0.85], ... % width increased from 0.30 → 0.40
-                    'FontSize',16, ...
-                    'ColumnWidth','auto');
-
+    if exist('T', 'var')
+        T = T([flip(string(rxn_names_high));flip(string(rxn_names_low))],:);
+        tbl = uitable(fig, ...
+                        'Data', T, ...
+                        'ColumnName', T.Properties.VariableNames, ...
+                        'Units','normalized', ...
+                        'Position',[plotWidth+0.05 0.10 0.40 0.85], ... % width increased from 0.30 → 0.40
+                        'FontSize',16, ...
+                        'ColumnWidth','auto');
     
-     tbl.FontSize = 16; 
-     
+        
+         tbl.FontSize = 16; 
+    end
 
 end
 

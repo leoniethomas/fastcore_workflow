@@ -9,7 +9,7 @@ delete clone*.log % delet old log file
 feature astheightlimit 2000 % enable long file names
 
 % define which discretization run you want to use for model building
-disc_data_id = "20260326_1114";
+disc_data_id = "20260501_1246";
 disc_data_folder = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/discretization" + filesep +  disc_data_id + filesep;
 disc_data_obj = disc_data_folder + disc_data_id + "_disc_data.mat";
 

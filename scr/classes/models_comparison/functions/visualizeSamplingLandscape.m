@@ -18,7 +18,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
         options.pcs_vis (1,2) =[1,2]
         options.sampling_feature (1,1) string {mustBeMember(options.sampling_feature,["flux", "fluxsum"])} ="flux"
         options.num_clusters =0
-        options.pcs_used_dim_red =2
+        options.pcs_used_dim_red =0
         options.perform_kmeans =0
         options.thinning =10
         options.n_neighbors =50
@@ -27,13 +27,13 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
     end
     fig_out = struct();
     if options.num_clusters == 0
-        options.num_clusters = length(unique(project.comparisons.(comparison_name).sample_model_labels));
+        options.num_clusters = length(unique(project.comparisons.(comparison_name).sampleModelLabels));
     end
-    reference_model = project.comparisons.(comparison_name).reference_model;
+    reference_model = project.comparisons.(comparison_name).referenceModel;
     
-    sample_model_labels = project.comparisons.(comparison_name).sample_model_labels;
+    sampleModelLabels = project.comparisons.(comparison_name).sampleModelLabels;
     if options.sampling_feature == "flux"
-        ordered_samples = project.comparisons.(comparison_name).ordered_samples;
+        ordered_samples = project.comparisons.(comparison_name).orderedSamples;
         dim_names = project.models.(reference_model).model.rxns;
     elseif options.sampling_feature == "fluxsum"
         ordered_samples = project.comparisons.(comparison_name).ordered_samples_fluxsum;
@@ -92,7 +92,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
         project.comparisons.(comparison_name).dimension_reduction.umap.reduction = reduction;
         project.comparisons.(comparison_name).dimension_reduction.umap.n_neighbors = options.n_neighbors;
         project.comparisons.(comparison_name).dimension_reduction.umap.thinning = thin;
-        project.comparisons.(comparison_name).dimension_reduction.umap.used_samples_idx = 1:thin:length(sample_model_labels);
+        project.comparisons.(comparison_name).dimension_reduction.umap.used_samples_idx = 1:thin:length(sampleModelLabels);
         project.comparisons.(comparison_name).dimension_reduction.umap.used_pcs = numPCs;
     end
     if options.perform_kmeans ==1
@@ -100,7 +100,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
         X = pca_samp.score(:,1:numPCs);
         thin = options.thinning;
         X = X(1:thin:end,:);
-        labels = sample_model_labels(1:thin:end);
+        labels = sampleModelLabels(1:thin:end);
         kmeans_results = struct();
         [kmeans_results.idx, kmeans_results.C,...
          kmeans_results.sumd,kmeans_results.D] = kmeans(X, options.num_clusters, ...
@@ -141,7 +141,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
          
          dim1 = pca_samp.score(:,pc_x);
          dim2 = pca_samp.score(:,pc_y);
-         labels = sample_model_labels;
+         labels = sampleModelLabels;
          
         
          fig = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
@@ -161,7 +161,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
          
         dim1 = umap_res.reduction(:,1);
         dim2 = umap_res.reduction(:,2);
-        labels = sample_model_labels(umap_res.used_samples_idx);
+        labels = sampleModelLabels(umap_res.used_samples_idx);
         dim_used = umap_res.used_pcs;
          
         
@@ -240,7 +240,7 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
          
             dim1 = pca_samp.score(:,pc_x);
             dim2 = pca_samp.score(:,pc_y);
-            labels = sample_model_labels;
+            labels = sampleModelLabels;
             
              fig3 = figure('Position',[20 20 700 300],'Visible',options.visible_plot);
          
