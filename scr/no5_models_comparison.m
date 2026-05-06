@@ -19,7 +19,7 @@ rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
-load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep +  "20260326_0311_project.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260501_1218" + filesep +  "20260501_1218_project.mat")
 %load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat")
 
 
@@ -31,14 +31,14 @@ opts.VariableTypes{3} = 'char'; % making sure that the last column with the valu
 opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
-modelList = ["PLV"];
-analysisList = [ "FBA", "FVA","sampling", "loopless"];
+modelList = ["A1", "A2", "A3", "C1", "C2","C3", "B1", "B2", "B3"];
+analysisList = ["sampling"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
 [project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
 
-save(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_1404_loopless.mat",'project','-v7.3')
+save(working_path + filesep + "context_specific_models" + filesep + "20260501_1218" + filesep + "20260501_1218_project_singleModelanalysi.mat",'project','-v7.3')
 
 %% Main analysis 
 

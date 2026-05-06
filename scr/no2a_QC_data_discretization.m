@@ -91,7 +91,7 @@ if ~exist(outdir, 'dir')
     mkdir(outdir)
 end
 
-save_struct_to_folder(struct(data),outdir)
+saveStructToFolder(struct(data),outdir)
 
 
 % %% QC - data exploration
