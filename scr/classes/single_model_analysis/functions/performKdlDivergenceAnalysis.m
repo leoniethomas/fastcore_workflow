@@ -1,4 +1,4 @@
-function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = perform_kdl_divergence_analysis(model,sampling_matrix,options)
+function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,options)
         % This function performs an evaluation of the variability and
         % convergence of the estimated sampling distribution. This
         % estimation is meant to give a measure of how trustworthy the
@@ -28,9 +28,9 @@ function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = perform_kdl_divergence_ana
         % convergence of this specific rxns sampling distribution. 
         % Input: 
         %   - model:            cobra model object 
-        %   - sampling_matrix:  a sampling matrix to use as test dataset 
+        %   - samplingMatrix:  a sampling matrix to use as test dataset 
         %   - options:  
-        %       - num_parallel_workers: workers you want to assign to this
+        %       - numParallelWorkers: workers you want to assign to this
         %                               part in the parfor loop (default is
         %                               10 if the computer has at least 12
         %                               workers), otherwise set to the
@@ -49,7 +49,7 @@ function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = perform_kdl_divergence_ana
         %                               hit-and-run, leads in theory to the
         %                               hit-and-run not to be trapped in the corners
         %                               and elongated forms of the flux polytope
-        %       - number_of_ind_samplings: number of independent samplings,
+        %       - numberOfIndSamplings: number of independent samplings,
         %       the more you have the better the estimation of your
         %       pairwise KLdivergence, the more trust you can put into the
         %       pvalue at the end of this function (default: 10, should be
@@ -70,91 +70,90 @@ function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = perform_kdl_divergence_ana
         
         arguments
             model
-            sampling_matrix =[]
-            options.num_parallel_workers =10
+            samplingMatrix =[]
+            options.numParallelWorkers =10
             options.nPointsReturned =1000
             options.nStepsPerPoint =2000
             options.toRound =1
-            options.number_of_ind_samplings =10
+            options.numberOfIndSamplings =10
         end
         maxWorkers = parcluster('local').NumWorkers;
         disp("How many workers do I have ?")
         disp(maxWorkers);
-        if maxWorkers-2 <= options.num_parallel_workers
-            options.num_parallel_workers = maxWorkers -2;
+        if maxWorkers-2 <= options.numParallelWorkers
+            options.numParallelWorkers = maxWorkers -2;
         end
         
-        sampling_sets = run_chrr_sampling(model,options,options.number_of_ind_samplings, options.num_parallel_workers);
+        sampling_sets = runChrrSampling(model,options,options.numberOfIndSamplings, options.numParallelWorkers);
         
         % distance between sets 
-        pairs = nchoosek(1:options.number_of_ind_samplings, 2); 
+        pairs = nchoosek(1:options.numberOfIndSamplings, 2); 
         pairCell = num2cell(pairs, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
-        pairwise_kdl = cell(length(pairs),1);
+        pairwiseKdl = cell(length(pairs),1);
 
         delete(gcp('nocreate'))
-        parpool(options.num_parallel_workers);
+        parpool(options.numParallelWorkers);
         parfor x=1:numel(pairCell)            
-            pairwise_kdl{x} = get_kld_value_pairs(sampling_sets{pairCell{x}(1),1},sampling_sets{pairCell{x}(2),1});                          
+            pairwiseKdl{x} = getKldValuePairs(sampling_sets{pairCell{x}(1),1},sampling_sets{pairCell{x}(2),1});                          
         end
-        pairwise_kdl = cell2mat(pairwise_kdl)'; 
+        pairwiseKdl = cell2mat(pairwiseKdl)'; 
         save('temp.mat'); % storing working env for debugging
         %load('temp.mat')
         
-        if ~isempty(sampling_matrix)
+        if ~isempty(samplingMatrix)
             % distance between sets and sampling 
-
-            pairCell_sampling_matrix = num2cell(options.number_of_ind_samplings, 2); % use as an input for arrayfun to run over all possible pairs between the n sets choosen
-            pairwise_kdl_sampling_matrix = cell(options.number_of_ind_samplings,1);
+            pairCell_samplingMatrix = num2cell((1:options.numberOfIndSamplings)');
+            pairwiseKdl_samplingMatrix = cell(options.numberOfIndSamplings,1);
 
             delete(gcp('nocreate'))
-            parpool(options.num_parallel_workers);
-            parfor x=1:numel(pairCell_sampling_matrix)            
-                pairwise_kdl_sampling_matrix{x} = get_kld_value_pairs(sampling_sets{pairCell_sampling_matrix{x}(1),1},sampling_matrix);                          
+            parpool(options.numParallelWorkers);
+            parfor x=1:numel(pairCell_samplingMatrix)            
+                pairwiseKdl_samplingMatrix{x} = getKldValuePairs(sampling_sets{pairCell_samplingMatrix{x}(1),1},samplingMatrix);                          
             end
-            pairwise_kdl_sampling_matrix = cell2mat(pairwise_kdl_sampling_matrix)'; 
-            % pairwise_kdl_sampling_matrix = cellfun(@(x) get_kld_value_pairs(sampling_sets{x(1),1}, ...
-            %                                                                 sampling_matrix),...
-            %                                        pairCell_sampling_matrix, 'UniformOutput', false);
-            % pairwise_kdl_sampling_matrix = cell2mat(pairwise_kdl_sampling_matrix)'; 
-            train_data = pairwise_kdl;
-            test_data = pairwise_kdl_sampling_matrix;
+            pairwiseKdl_samplingMatrix = cell2mat(pairwiseKdl_samplingMatrix)'; 
+            % pairwiseKdl_samplingMatrix = cellfun(@(x) getKldValuePairs(sampling_sets{x(1),1}, ...
+            %                                                                 samplingMatrix),...
+            %                                        pairCell_samplingMatrix, 'UniformOutput', false);
+            % pairwiseKdl_samplingMatrix = cell2mat(pairwiseKdl_samplingMatrix)'; 
+            train_data = pairwiseKdl;
+            test_data = pairwiseKdl_samplingMatrix;
         else
             % in case sampling was not performed the disance measures of
             % the sets itself are split into train and test to get a
             % measure of how much we can trust a given rxn sampling
             % distribution
 
-            N = size(pairwise_kdl, 2);        % total number of elements
-            numSamples = round(0.1 * N);      % number of 1s (20%)
+            N = size(pairwiseKdl, 2);        % total number of elements
+            numSamples = round(0.3 * N);      % number of 1s (20%)
             binaryVec = zeros(1, N);
             randIdx = randperm(N, numSamples); % Randomly choose positions to set to 1
             binaryVec(randIdx) = 1;
             if sum(binaryVec) == 0
                 binaryVec(1) = 1;
             end
-            train_data = pairwise_kdl(:, find(~binaryVec));
-            test_data = pairwise_kdl(:, find(binaryVec));
+            train_data = pairwiseKdl(:, find(~binaryVec));
+            test_data = pairwiseKdl(:, find(binaryVec));
         end
         
-        p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwise_kdl, 1))',"UniformOutput",false));
+        p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwiseKdl, 1))',"UniformOutput",false));
         %p_adj_kdl = mafdr(p_value_kdl,'BHFDR', true);
         
         
         figure
-        hist(p_value_kdl,100)
+        histogram(p_value_kdl, 100)
         sum( p_value_kdl < 0.05)
-        fdr = sum( p_value_kdl < 0.05)/size(pairwise_kdl,1)
+        fdr = sum( p_value_kdl < 0.05)/size(pairwiseKdl,1)
         if fdr > 0.05
-            error("The False Discovery rate is lower than 5 % for the testing of sampling results that are obtained on the same model! Cause to worry, check again your samples, maybe increase sample number of samples sets?")
+            error("FDR is %.1f%% — above the 5%% threshold. Sampling may not have converged.", fdr*100)
         end
 
-        kdl_matrix = pairwise_kdl;
+        kdl_matrix = pairwiseKdl;
 
 
 
 end
 
-function [kld_vector] = get_kld_value_pairs(X,Y)
+function [kld_vector] = getKldValuePairs(X,Y)
 
     if size(X,1) ~= size(Y,1)
         error("The two sampling results do not have the same dimensions, likely the rxns are then also not in the same order!!")
@@ -165,25 +164,25 @@ function [kld_vector] = get_kld_value_pairs(X,Y)
     
     for rxn_idx = 1:N
         
-        kld_vector(rxn_idx) = get_kld_value(X(rxn_idx,:), Y(rxn_idx,:));
+        kld_vector(rxn_idx) = getKLDValue(X(rxn_idx,:), Y(rxn_idx,:));
     end
     % figure
     % histogram(kld_vector)
 
 end
 
-function [samples] = run_chrr_sampling(model,options,number_of_ind_samplings,num_parallel_workers);
+function [samples] = runChrrSampling(model,options,numberOfIndSamplings,numParallelWorkers);
     arguments
     model
     options
-    number_of_ind_samplings
-    num_parallel_workers =3
+    numberOfIndSamplings
+    numParallelWorkers =3
     end
     
-    samples = cell(number_of_ind_samplings,1); 
+    samples = cell(numberOfIndSamplings,1); 
     delete(gcp('nocreate'))
-    parpool(num_parallel_workers); % 3 workers should be available on every laptop theoretically
-    parfor x = 1:number_of_ind_samplings 
+    parpool(numParallelWorkers); % 3 workers should be available on every laptop theoretically
+    parfor x = 1:numberOfIndSamplings 
         pause(30*x); % permits the different loops to go into the cobra directory at the same time and init, 
         % doing it at the exact parallel causes issues & the script to crash
         initCobraToolbox(false) 
@@ -199,27 +198,30 @@ end
 
 
 
-function kdl_value_rxn = get_kld_value(xdata,ydata)
-    xmin = min(xdata);
-    xmax = max(xdata);
-    ymin = min(ydata);
-    ymax = max(ydata);
+function kdlValueRxn = getKLDValue(xdata,ydata)
+    % Add at the top of getKLDValue:
+    if var(xdata) == 0 && var(ydata) == 0
+        kdlValueRxn = 0;  % identical constant distributions
+        return
+    end
+    if var(xdata) == 0 || var(ydata) == 0
+        kdlValueRxn = NaN;  % undefined — flag for downstream filtering
+        return
+    end
+    allData = [xdata, ydata];
+    xmin = min(allData);
+    xmax = max(allData);
+    epsilon = 1e-12;
+    delta   = 1e-6 * (xmax - xmin);
+    sharedSupport = [xmin - delta - epsilon, xmax + delta + epsilon];
+    sharedGrid    = linspace(sharedSupport(1), sharedSupport(2), 5000);
 
-    epsilon = 1e-12;  % tiny margin
-    delta = 1e-6 * (xmax - xmin);   % small buffer
-    Support = [xmin - delta - epsilon, xmax + delta + epsilon];
-    
-    [P.y, P.x] = ksdensity(xdata, ...
-        'NumPoints', 5000, ...
-        'Support', Support,...
-        'BoundaryCorrection','reflection'); 
-
-    delta = 1e-6 * (ymax - ymin);   % small buffer
-    Support = [ymin - delta - epsilon, ymax + delta + epsilon];
-    [Q.y, Q.x] = ksdensity(ydata, ...
-        'NumPoints', 5000, ...
-        'Support', Support,...
-        'BoundaryCorrection','reflection'); 
+    P.y = ksdensity(xdata, sharedGrid, 'Support', sharedSupport, ...
+                    'NumPoints', 5000, ...
+                    'BoundaryCorrection', 'reflection');
+    Q.y = ksdensity(ydata, sharedGrid, 'Support', sharedSupport, ...
+                    'NumPoints', 5000, ...
+                    'BoundaryCorrection', 'reflection');
    
     % figure;
     % 
@@ -244,39 +246,8 @@ function kdl_value_rxn = get_kld_value(xdata,ydata)
     % title('Histogram and KDE of ydata');
     % legend('Histogram', 'KDE');
     % grid on;
-    
-    kdl_value_rxn = My_KLD(P, Q);
 
-end
+    kdlValueRxn = KLDis(P.y, Q.y); 
 
- function KLD_value = My_KLD(P, Q)
-    % P and Q are structs with fields:
-    %   P.x, P.y
-    %   Q.x, Q.y
-    
-    p = P.y(:);
-    q = Q.y(:);
-    
-    
-    if all(q == 0)
-        eps_val = min(p(p ~= 0)) * 0.1;
-    else
-        eps_val = min( ...
-            min(p(p ~= 0)), ...
-            min(q(q ~= 0)) ) * 0.1;
-    end
-    
-    
-    p(p < eps_val) = eps_val;
-    q(q < eps_val) = eps_val;
-    
-    
-    f = p .* log(p ./ q);
-    
-   
-    dx = P.x(2) - P.x(1);
-   
-    KLD_value = dx * 0.5 * ...
-        (f(1) + 2*sum(f(2:end-1)) + f(end));
 end
 

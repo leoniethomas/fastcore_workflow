@@ -289,6 +289,18 @@ for i = 1:numel(modelList)
         else 
             samplingMatrix = [];
         end
+
+        changeCobraSolverParams('LP','feasTol',1e-5);
+        FBA = optimizeCbModel(model, "max");
+        boundSampling = FBA.f * params.objThreshold;
+        disp("Setting the rxn bounds for the biomassRxn to objThreshold percent of the optimum")
+        model = changeRxnBounds(model, objFunction, boundSampling, 'l'); % 0.9 usually
+
+        if any(strcmp(analyses, 'FVA'))
+            model.lb = FVA.minFlux; % constraining the sampling space by the FVA boundaries helps
+            model.ub = FVA.maxFlux; % but that means that the threshold for the FVA is autoomatically applied to the sampling
+        end
+        
         [kldMatrix,...
             pValueKld,samplingSets,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,...
                                                      'nPointsReturned',params.nPointsReturned,'numberOfIndSamplings',params.numberOfIndSamplings);
