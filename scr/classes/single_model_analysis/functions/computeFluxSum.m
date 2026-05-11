@@ -77,6 +77,7 @@ else
         % Expanding
         expandedSample = repmat(sample',size(filteredS,1),1);
         % Flux Sum
+        expandedSample = double(expandedSample);
         fluxesSample = filteredS.*expandedSample;
         % Positive/Negative
         fluxesSumPos = full(sum((fluxesSample>0).*fluxesSample, 2)); % each element is multiplied by 1 if positive, otherwise it becomes 0 : matrix with positive flux only
