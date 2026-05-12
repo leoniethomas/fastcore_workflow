@@ -277,8 +277,8 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
             hold off
             
         end
-
-    fig_out.(rxn_to_visualize) = fig3;
+    safe_name = matlab.lang.makeValidName(rxn_to_visualize);
+    fig_out.(safe_name) = fig3;
 end
 
 
