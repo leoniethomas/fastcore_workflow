@@ -19,7 +19,7 @@ rmpath('/Users/leonie.thomas/cobratoolbox/src/analysis/thermo/thermoFBA')
 
 % load your singleModel project object
 %load(working_path + filesep + "context_specific_models" + filesep + "20260119_1042" + filesep + "project_23012026_1453_28012026_1508_obj_vanille_sampling_20260306_sampling.mat")
-load(working_path + filesep + "context_specific_models" + filesep + "20260501_1218" + filesep +  "20260501_1218_project.mat")
+load(working_path + filesep + "context_specific_models" + filesep + "20260511_1200" + filesep +  "20260511_1200_project.mat")
 %load(working_path + filesep + "context_specific_models" + filesep + "20260326_0311" + filesep + "20260326_0311_project_sampling_0704.mat")
 
 
@@ -31,19 +31,28 @@ opts.VariableTypes{3} = 'char'; % making sure that the last column with the valu
 opts.DataLines = [1 Inf];
 parametersAnalysis = readtable('./scr/defaultParametersAnalysis.csv', opts);
 
-modelList = ["A1", "A2", "A3", "C1", "C2","C3", "B1", "B2", "B3"];
-analysisList = ["sampling"];
+modelList = ["WT","PLV", "KO"];
+analysisList = [ "FBA","FVA"];
 
 project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
 
-[project, analysisID] = chooseActiveAnalysisForComparison(project,modelList);
+[project, analysisID] = chooseActiveAnalysisForComparison(project,modelList,0,0);
 
-save(working_path + filesep + "context_specific_models" + filesep + "20260501_1218" + filesep + "20260501_1218_project_singleModelanalysi.mat",'project','-v7.3')
+parametersAnalysis.Value(parametersAnalysis.Parameter == "objFunction" & parametersAnalysis.Analysis == "all") = {'EX_hspg[e]'};
+
+modelList = ["WT","PLV", "KO"];
+analysisList = [ "FBA"];
+
+project = singleModelAnalysis(project,modelList,analysisList,parametersAnalysis);
+
+[project, analysisID] = chooseActiveAnalysisForComparison(project,modelList,0,0);
+
+%save(working_path + filesep + "context_specific_models" + filesep + "20260507_0919" + filesep + "20260507_0919_project_singleModelanalysis.mat",'project','-v7.3')
 
 %% Main analysis 
 
 referenceModel = "consistent_medium_constrained_model";
-comparisonAnalysisList = ["modelStructureComparison",...
+comparisonAnalysisList = [...%"modelStructureComparison",...
                           "modelFunctionalComparison"]%,...
                           %"modelsComparisonSampling"];%,...
                           %"IDAREoutput"];
@@ -51,6 +60,27 @@ identifier = "";
 
 [project,comparison_name] = modelsComparison(project,modelList, analysisID,...
                                             referenceModel,comparisonAnalysisList,identifier);
+
+%% 
+[rxnsMetId,producingMet,matched] = getRxnIDs(project,referenceModel, "Chondroitin synthesis");
+[fluxsumSets,plot1] = visualizeFlux(project,"KO_vs_PLV_vs_WT__",[],{rxnsMetId},...
+                                                                     ["lactate D metabolism"],"lower");
+plot22 = getFluxPlot(project,"KO_vs_PLV_vs_WT__", rxnsMetId,"FVA",true,"thresholdFlux","all","reducedCost",true);
+
+%% find which of the pathways/metabolites are limiting 
+
+metIdx =find(sum(project.models.consistent_medium_constrained_model.model.S(:,rxnsMetId) ~= 0,2));
+
+[shadowPrices,~,modelNames] = getOrderedFeatureMatrix(project, ["KO", "WT", "PLV"],"mets", referenceModel,"analysis.active.FBA.y");
+
+T = table( ...
+    project.models.consistent_medium_constrained_model.model.mets(metIdx), ...
+    shadowPrices(metIdx,:), ...
+    'VariableNames', {'Metabolite', 'ShadowPrice'} ...
+);
+shadowPrices(metIdx,:)
+project.models.consistent_medium_constrained_model.model.mets(metIdx)
+
 
 %%
 

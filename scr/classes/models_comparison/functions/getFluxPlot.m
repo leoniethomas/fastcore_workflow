@@ -93,11 +93,23 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
         end
         
         if options.reducedCost
-            replacement_value = "analysis.active.FBA.basis.reducedcost"; % get the fba solution values
-            ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
-            ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
-            if options.thresholdFlux == "all"
-                ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix_ex(idx_FVA_var,:);
+
+            models = rmfield(project.models,setdiff(fieldnames(project.models), modelList));
+            if all(structfun(@(x) isfield(x.analysis.active.FBA,"w"),models)) && all(structfun(@(x) ismember('one',x.analysis.active.parameters.Value(x.analysis.active.parameters.Analysis == "FBA")), models))
+                
+                for m = modelList'
+                    nRxns = length(project.models.(m).model.rxns);
+                    w     = project.models.(m).analysis.active.FBA.w;  % 7350×1
+                    project.models.(m).analysis.active.FBA.reducedcost = w(2*nRxns+1 : 3*nRxns);    % net flux variables ← use this one
+                end
+                replacement_value = "analysis.active.FBA.reducedcost"; % get the fba solution values
+                ordered_reducedCost_matrix = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacement_value);
+                ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix(get_exchange_rxns_idx,:);
+                if options.thresholdFlux == "all"
+                    ordered_reducedCost_matrix_ex = ordered_reducedCost_matrix_ex(idx_FVA_var,:);
+                end
+            else
+                error("The reduced costs could not be found in the .w slot of the FBA analysis. In case you did not use the 'one' minNorm for the FBA the shadowprices might be stored elsewere!")
             end
         end
 
@@ -339,19 +351,29 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
             reducedCost_high = ordered_reducedCost_matrix_ex(isHigh, :);
         
             % Helper function to scale matrix to colormap indices
-            scaleToCmap = @(mat) round( (mat - min(mat(:))) / (max(mat(:)) - min(mat(:))) * (N-1) ) + 1;
-        
-            if length(unique(ordered_reducedCost_matrix_ex(:))) == 1
-                % Only one value, all same color
+            scaleToCmap = @(mat, valMin, valMax) round( (mat - valMin) / (valMax - valMin) * (N-1) ) + 1;
+            
+            % Get global min/max from full matrix
+            valMin = min(ordered_reducedCost_matrix_ex(:));
+            valMax = max(ordered_reducedCost_matrix_ex(:));
+            
+            if valMin == valMax
+                % Entire matrix has one unique value — all same color
                 scaledIdx_low  = ones(size(reducedCost_low));
                 scaledIdx_high = ones(size(reducedCost_high));
-                valMin = unique(ordered_reducedCost_matrix_ex);
-                valMax = valMin;
             else
-                scaledIdx_low  = scaleToCmap(reducedCost_low);
-                scaledIdx_high = scaleToCmap(reducedCost_high);
-                valMin = min(ordered_reducedCost_matrix_ex(:));
-                valMax = max(ordered_reducedCost_matrix_ex(:));
+                % Check each subset individually
+                if length(unique(reducedCost_low(:))) == 1
+                    scaledIdx_low = ones(size(reducedCost_low));
+                else
+                    scaledIdx_low = scaleToCmap(reducedCost_low, valMin, valMax);
+                end
+            
+                if length(unique(reducedCost_high(:))) == 1
+                    scaledIdx_high = ones(size(reducedCost_high));
+                else
+                    scaledIdx_high = scaleToCmap(reducedCost_high, valMin, valMax);
+                end
             end
         else
             add_color_legend = 0;

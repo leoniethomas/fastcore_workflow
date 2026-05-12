@@ -58,7 +58,7 @@ function [fluxsumSets,fig] = visualizeFluxsum(project,comparisonName,metIdx,rxnI
     arguments
         project struct
         comparisonName (1,1) string
-        metIdx (1,:) cell {mustBeColumnVector} =[]
+        metIdx %(1,:) cell {mustBeColumnVector} =[]
         rxnIdx (1,:) cell {mustBeColumnVector} =[]
         rxnSetLabels (1,:) string = []
         plotType  {mustBeMember(plotType, ["violin","heatmap", "heatmapSample", "heatmapSampleAllFeatures"])} =["violin"] 
@@ -276,7 +276,7 @@ function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,
                 % (or multiply relative_counts by referenceModel if needed)
                 value =  heatmap_data(i,j); % +1 because first column is referenceModel
                 % Place text at the center of the tile
-                text(j, i, num2str(round(value,1)), ...
+                text(j, i, num2str(adaptiveFormat(value)), ...
                     'HorizontalAlignment','center', ...
                     'VerticalAlignment','middle', ...
                     'Color','k', ...          % black text
@@ -622,6 +622,23 @@ function mustBeColumnVector(c)
         if ~isvector(c{k}) || size(c{k},2) ~= 1
             error('Each cell element must be an n×1 column vector.')
         end
+    end
+end
+
+function str = adaptiveFormat(val)
+% Format numbers adaptively:
+% small values (|x| < 0.01) → scientific notation with 1 decimal places
+% large values              → fixed 1 decimal places
+
+    if val == 0
+        str = '0';
+    elseif abs(val) < 0.01
+        % Format as X.XX × 10^N
+        exp = floor(log10(abs(val)));
+        mantissa = val / 10^exp;
+        str = sprintf('%.1f×10^{%d}', mantissa, exp);
+    else
+        str = sprintf('%.1f', val);
     end
 end
 
