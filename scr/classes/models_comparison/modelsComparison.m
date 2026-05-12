@@ -71,7 +71,14 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     % analysis performed ? The structural analysis is needed to do the two
     % other analysis, therefore we check if it was already run, to not run
     % it again if it was already created
-    if ismember(comparisonName,string(fieldnames(project.comparisons)))
+    if isstruct(project.comparisons)
+        fields = fieldnames(project.comparisons);
+    else
+        disp('project.comparisons is empty or not a struct');
+        fields = {};
+    end
+
+    if ismember(comparisonName,fields)
         structureAnalysisAlreadyRun = project.comparisons.(comparisonName).structure_analysis_status;
     else
         structureAnalysisAlreadyRun = 0;
@@ -103,13 +110,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     if any(matches(analyses, "modelSamplingComparison"))
         project = modelSamplingComparison(project,comparisonName);
     end
-    
-    % -- generate output to visualize in IDARE
-    if any(matches(analyses, "IDAREoutput"))
-        folderPath = "./idare/";
-        mkdir(folderPath);
-        prepareDataForIDAREVisualization(project, comparisonName,folderPath);
-    end
+   
 
 
     function validateInput(project, modelList, analysisID, referenceModel)
@@ -204,7 +205,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
         % The discretized data is given back as a matrix. 
         if any(contains(fieldnames(modelStruct),"discretized_data"))
             if isfield(modelStruct,"settings")
-                if isfield(modelStruct,"dico")
+                if isfield(modelStruct.settings,"dico")
                     if size(modelStruct.discretized_data,1) ~= length(string(modelStruct.settings.dico.SYMBOL))% in case this is the second time you run a modelComparison, the disc slot is already ordered so we skip this function in that case
                         geneSymbol = string(modelStruct.settings.dico.SYMBOL);
                         geneIdInModel = string(modelStruct.settings.dico.gene_id_in_model);
@@ -483,12 +484,12 @@ function plots = modelFunctionalComparison(project, comparisonName)
             % filter for the rxn similarities that are in both models 
             rxnsInBothModels = rxns(rxnIdsInBothModels);
             
-            Results.(string(y)) = pathway_enrichment(subStruct , x(rxnIdsInBothModels),rxnsInBothModels);
+            Results.(string(y)) = pathwayEnrichment(subStruct , x(rxnIdsInBothModels),rxnsInBothModels);
     
         end
     
     
-        function results = pathway_enrichment(sets, metricMatrix,featureNames)
+        function results = pathwayEnrichment(sets, metricMatrix,featureNames)
         % This function performs pathway enrichment on the fva similarity
         % values. In the context of metabolic modelling the enrichment in this
         % function is defined as the enrichment of low fva similarity values
@@ -1024,9 +1025,10 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         % get the presence per subsystem in the context specific models 
         % by mulitplying the rxns presence for each subsystem (matrix ordered features) 
         % with the matrices defining the subsystem for every rxns
+        
         pathwayCounts = array2table(G * orderedFeature, ...
                                      'VariableNames', structureAnalysis.modelNames,...
-                                     'RowNames',cellstr(uniquePathways));
+                                     'RowNames',string(cellstr(uniquePathways)));
         % add reference model count to be able to make a relative abundance
         pathwayCounts.referenceModel = groupcounts(pathways);
     
@@ -1511,167 +1513,7 @@ function project = modelSamplingComparison(project,comparisonName)
     end
 end
 
-function prepareDataForIDAREVisualization(project, comparisonName,folderPath,options)
-    arguments
-        project 
-        comparisonName (1,1) string
-        folderPath (1,1) string 
-        options =[]
-    end
-    referenceModel = project.comparisons.(comparisonName).referenceModel;
-    modelList = project.comparisons.(comparisonName).modelNames;
-    
-    % get unique identifier + create folder to store idare output in
-    folderToStore = folderPath + filesep + datestr(now, 'yyyymmdd_HHMMSS');
-    mkdir(folderToStore)
-    storeModels = folderToStore + filesep + "models";
-    storeData = folderToStore + filesep + "data";
-    mkdir(storeModels)
-    mkdir(storeData)
-    
 
-    % save all three models as xml files into the folder
-    modelNames = project.comparisons.(comparisonName).modelNames;
-    for modelIdx=1:length(modelNames)
-        model = project.models.(modelNames(modelIdx)).model;
-        modelFileName = storeModels + filesep + modelNames(modelIdx);
-        modelFileNameOrig = storeModels + filesep + "orig_" +  modelNames(modelIdx);
-        save(modelFileName + ".mat",'model');
-        exportToXML(modelFileName + ".mat",modelFileName + ".xml",modelFileNameOrig + ".xml");
-    end
-
-    % save reference model
-    model = project.models.(referenceModel).model;
-    modelFileName = storeModels + filesep + referenceModel + "_reference";
-    save(modelFileName + ".mat",'model');
-    exportToXML(modelFileName + ".mat",modelFileName + ".xml",modelFileNameOrig + ".xml");
-
-    % save the data that belongs to the models in the data folder, ready to
-    % be load 
-
-    % rxns data
-    %------------------
-
-    orderedMappingRxnMatrix = project.comparisons.(comparisonName).rxn_mapping_table;
-    % fba + fbafluxsum 
-    orderedFba = project.comparisons.(comparisonName).orderedFba;
-    % fva + fvaSim
-    replacementValue = "analysis.active.FVA.minFlux"; % get the fba solution values
-    orderedFVAmin = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
-    replacementValue = "analysis.active.FVA.maxFlux"; % get the fba solution values
-    orderedFVAmax = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
-    [fvaSim,orderedFvasim, ~] = computeFvaSimilarity(project,comparisonName);
-    % sampling + sampling fluxsum 
-    orderedSamples = project.comparisons.(comparisonName).orderedSamples;
-    
-    % build reaction dataset to load into cytoscape and use in IDARE
-    prefix = 'rxn_idx_ind_model_';
-    orderedMappingRxnMatrix.Properties.VariableNames = ...
-        strcat(prefix, orderedMappingRxnMatrix.Properties.VariableNames);
-    orderedPresenceRxns = orderedMappingRxnMatrix{:,:} >0;
-    orderedOverallPresenceRxns = sum(orderedPresenceRxns,2);
-    labels = project.comparisons.(comparisonName).sample_model_labels;
-    data   = orderedSamples;
-    orderedMeanSampling =cell2mat(arrayfun(@(l) mean(data(:,labels==l),2), unique(labels), 'UniformOutput', false));
-    
-    activeInFba = sum(orderedFba ~= 0,2);
-    activeInSampling = sum(orderedSamples ~=0, 2);
-
-    % combine into one dataframe 
-
-    rxnData = [orderedFba,orderedPresenceRxns,orderedOverallPresenceRxns,activeInFba,activeInSampling,orderedFVAmin, orderedFVAmax,...
-                orderedMeanSampling];
-    rxnDataColNames = ["fba_" + modelList',"rxn_presence_" + modelList', "overall_rxns_presence","active_in_fba", "active_in_sampling", "FVA_min_" + modelList', "FVA_max_" + modelList',...
-                          "mean_sampling_value_" + modelList'];
-    rxnDataTable = array2table(rxnData, 'VariableNames',rxnDataColNames);
-
-    rxnDataTable = [ rxnDataTable,orderedMappingRxnMatrix];
-    rxnDataTable.rxnNameMatModel = rxnDataTable.Properties.RowNames;
-    rxnDataTable.Properties.RowNames = strcat('R_', rxnDataTable.Properties.RowNames);
-    rxnDataTable.Properties.RowNames = regexprep(rxnDataTable.Properties.RowNames, {'\[', '\]', '-'}, {'__91__','__93__','__45__'});
-    
-    rxnDataTable.isExchange = findExcRxns(project.models.(referenceModel).model);
-    rxnDataTable.subsystem = string(project.models.(referenceModel).model.subSystems);
-    rxnDataTable.symbolGprRules = string(cellfun(@(rxnName)getRxnSymbolRule(project.models.(referenceModel),...
-                                                   rxnName),string(project.models.(referenceModel).model.rxns),'UniformOutput', false));
-    
-    
-    rxnDataTable.RxnFormula = string(printRxnFormula(project.models.(referenceModel).model));
-
-    rxnDataTable = addvars(rxnDataTable, string(rxnDataTable.Properties.RowNames), 'Before', 1, 'NewVariableNames', 'rxn_names');
-    rxnDataTable.Properties.RowNames = {};  % remove old row names
-
-
-    writetable(rxnDataTable,storeData + filesep + "reaction_data.xlsx");
-
-    % metabolite data
-    %------------------
-    rxnCountPerMetConnectivity = sum(project.models.(referenceModel).model.S ~= 0, 2);
-    orderedFbaFluxsum = get_fluxsum(project,comparisonName,[],[],"orderedFba");
-    orderedFbaFluxsum = orderedFbaFluxsum{:,:};
-    orderedSamplesFluxsum = get_fluxsum(project,comparisonName,[],[],"orderedSamples");
-    orderedSamplesFluxsum = orderedSamplesFluxsum{:,:};
-    orderedMeanSamples_fluxsum =cell2mat(arrayfun(@(l) mean(orderedSamplesFluxsum(:,labels==l),2), unique(labels), 'UniformOutput', false));
-    
-    orderedFbaFluxsum_presence = sum(orderedFbaFluxsum > 0,2);
-    orderedSamplesFluxsumPresence = sum(orderedSamplesFluxsum >0,2);
-
-    metNamesModel = project.models.(referenceModel).model.mets;
-    metNamesCytoscape = strcat('M_', metNamesModel);
-    metNamesCytoscape = regexprep(metNamesCytoscape, {'\[', '\]'}, {'__91__','__93__'});
-
-
-    metTableColnames = ["met_names","met_names_matfile", "fba_fluxsum_presence", ...
-                          "samples_fluxsum_presence", "orderedFba_fluxsum_" + modelList', ...
-                          "mean_sample_fluxsum_" + modelList', "rxn_count_per_met_connectivity"];
-    
-    metDataTable = array2table([string(metNamesCytoscape) , string(metNamesModel), orderedFbaFluxsum_presence, ...
-                                  orderedSamples_fluxsum_presence,orderedFbaFluxsum, ...
-                                  orderedMeanSamples_fluxsum ,full(rxnCountPerMetConnectivity)],...
-                                  "VariableNames",metTableColnames);
-
-    writetable(metDataTable,storeData + filesep + "metabolite_data.xlsx");
-
-
-    function exportToXML(matFile, xmlFile,xmlFile_orig)
-
-        pyenv('Version','/Users/leonie.thomas/miniconda3/envs/cobra_py/bin/python');
-        py.importlib.import_module('cobra.io');
-        
-        model = py.cobra.io.load_matlab_model(matFile);
-        py.cobra.io.write_sbml_model(model, xmlFile_orig);
-    
-    
-        % Remove GPR rules from reactions
-        rxns_iter = py.iter(model.reactions);
-        while true
-            try
-                rxn = py.next(rxns_iter);
-                rxn.gene_reaction_rule = '';  % remove GPR
-            catch
-                break;
-            end
-        end
-    
-        %% Remove compartment info from metabolites
-        mets_iter = py.iter(model.metabolites);
-        while true
-            try
-                met = py.next(mets_iter);
-                met.compartment = '';             % remove compartment
-            catch
-                break;
-            end
-        end
-    
-        
-        py.cobra.io.write_sbml_model(model, xmlFile);
-        
-        fprintf('Exported %s to %s\n', matFile, xmlFile);
-    end
-
-
-end
 
 function assertValidProjectStruct(project, requiredFields, singleModelAnalysisFields)
 % This is a test function checking that the input project object is in the

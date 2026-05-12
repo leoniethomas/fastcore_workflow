@@ -77,7 +77,7 @@ clear med
 
 % forcing the medium in by setting it into fun option
 biomass_rxn = exp.script_parameters.objective_function;
-optional_settings.func = {'DM_atp_c_', biomass_rxn{:}, exp.medium.medium_composition.ExRxns_Recon3D{:}}; % depends if you want to foce in the medium, even though the model does not need it 
+optional_settings.func = {'DM_atp_c_','NOS2','DM_hspg[l]', biomass_rxn{:}, exp.medium.medium_composition.ExRxns_Recon3D{:}}; % depends if you want to foce in the medium, even though the model does not need it 
 % depends on what you want how confident you are in your uptakes -> are
 % they actually forced in ? not ? 
 optional_settings.medium = exp.medium.medium_composition.Mets_Recon3D;
