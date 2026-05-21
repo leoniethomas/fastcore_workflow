@@ -59,7 +59,7 @@ function prepareDataForIDAREVisualization(project, comparisonName,folderPath,opt
     orderedOverallPresenceRxns = sum(orderedPresenceRxns,2);
     labels = project.comparisons.(comparisonName).sampleModelLabels;
     data   = orderedSamples;
-    orderedMeanSampling =cell2mat(arrayfun(@(l) mean(data(:,labels==l),2), unique(labels), 'UniformOutput', false));
+    orderedMeanSampling =cell2mat(arrayfun(@(l) mean(data(:,labels==l),2), unique(labels, 'stable'), 'UniformOutput', false)); % unique uses alphabetic order for the output --> need to switch to unique(A, "stable") to preserve the order
     
     activeInFba = sum(orderedFba ~= 0,2);
     activeInSampling = sum(orderedSamples ~=0, 2);
@@ -122,7 +122,8 @@ function prepareDataForIDAREVisualization(project, comparisonName,folderPath,opt
 
     function exportToXML(matFile, xmlFile,xmlFile_orig)
 
-        pyenv('Version','/Users/leonie.thomas/miniconda3/envs/cobra_py/bin/python');
+        %pyenv('Version','/Users/leonie.thomas/miniconda3/envs/cobra_py/bin/python');
+        pyenv('Version', '/Users/vanille.lejal/.conda/envs/python_v3.12/python.exe');
         py.importlib.import_module('cobra.io');
         
         model = py.cobra.io.load_matlab_model(matFile);
