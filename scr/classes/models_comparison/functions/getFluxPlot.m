@@ -303,7 +303,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
             if heightHigh == 0
                 title(axBottom, title_word)
             end
-            xlabel(axBottom, 'Flux value [mMol/(gDW*h)]')
+            xlabel(axBottom, 'Flux value [µMol/(gDW*h)]')
             if dataLowOneBar
                 ylim(axBottom, [0.5, size(dataLow, 1) - 0.4 ])
             end
@@ -468,7 +468,7 @@ function fig = getFluxPlot(project,comparison_name, idxToVis,options)
         
             yticks(axBottom, 1:nGroups*groupSep)
             yticklabels(axBottom, strrep(rxn_names_low,"_","\_"))
-            xlabel(axBottom,'Flux value [mMol/(gDW*h)]')
+            xlabel(axBottom,'Flux value [µMol/(gDW*h)]')
         end
 
         %%% =========================

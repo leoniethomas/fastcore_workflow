@@ -261,7 +261,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
  
     bar(fbaObjectiveValues)
     title('Model comparison: flux of optimized reaction')
-    ylabel('Reaction flux value for objective function [mMol/(gDW*h)]')
+    ylabel('Reaction flux value for objective function [µMol/(gDW*h)]')
     xlabel('Model')
     xticklabels(modelList)
     set(gca, 'FontSize', 18)
