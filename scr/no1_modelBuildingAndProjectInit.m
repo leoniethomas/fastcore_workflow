@@ -198,5 +198,7 @@ paramsConsistentMediumConstrainedModel.modelName = "ConsistentMediumConstrainedM
 paramsConsistentMediumConstrainedModel.contextSpecificModel = consistentMediumConstrainedModel;
 paramsConsistentMediumConstrainedModel.dico = dico;
 paramsConsistentMediumConstrainedModel.mediumComposition = medium;
-BRCAProjectBis = addModelsToProject(BRCAProject, {paramsConsistentMediumConstrainedModel});
+BRCAProject = addModelsToProject(BRCAProject, {paramsConsistentMediumConstrainedModel});
+
+save('BRCAProject.mat', 'BRCAProject')
 
