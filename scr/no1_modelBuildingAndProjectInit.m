@@ -1,0 +1,202 @@
+%% Main script n°1: Model Building & Project Initialization
+% This script is showing how to build context-specific models using rFastcormics and how to integrate them in a project format suitable 
+% for the rest of the analysis pipeline (singleModelAnalysis + modelsComparison).
+% rFastcormics scripts are available from the CobraToolbox or from the
+% following github repository: https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2
+% BRCA dataset used in this example was retrieved from TCGA using loadTCGAdata.R
+% RPMI medium has been downloaded from https://github.com/sysbiolux/MetabolicMediaLibrary/tree/main/media
+
+%% Initializing the environment
+initCobraToolbox();
+changeCobraSolver('gurobi');
+feature astheightlimit 2000;
+
+%% Loading workspace example
+load('dataForTesting/data_no1.mat');
+% brca_matrix = readtable("dataForTesting/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% samples_metadata = readtable("dataForTesting/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% gene_metadata = readtable("dataForTesting/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% origModel = load('Recon3D.mat', 'model').model;
+% dico = load('dico.mat').dico;
+% medium = readtable('RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
+
+%% Discretization
+brcaMatrixArray = table2array(brca_matrix); % transform table to array
+sampleNames = samples_metadata.barcode'; % sample names
+discretized = discretizeFPKM(brcaMatrixArray, sampleNames);
+
+%% Get discretized matrices per condition
+% Separate control vs tumor
+isNormal = strcmp(samples_metadata.sample_type, 'Solid Tissue Normal');
+isTumor  = strcmp(samples_metadata.sample_type, 'Primary Tumor');
+
+fprintf('Normal Tissue : %d\n', sum(isNormal));
+fprintf('Tumors : %d\n', sum(isTumor));
+
+% Get discretized table for the normal condition
+discretizedNormal = discretized(:, isNormal);
+
+%groupcounts(samples_metadata, "ajcc_pathologic_stage")
+
+% Get discretized table per cancer stage
+isStageI  = (strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage I') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IA') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IB'));
+isStageII = (strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage II') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IIA') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IIB'));
+isStageIII = (strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IIIA') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IIIB') | strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IIIC'));
+isStageIV = (strcmpi(samples_metadata.ajcc_pathologic_stage, 'Stage IV'));
+
+idxTumorStageI = find(isTumor & isStageI);
+idxTumorStageII = find(isTumor & isStageII);
+idxTumorStageIII = find(isTumor & isStageIII);
+idxTumorStageIV = find(isTumor & isStageIV);
+
+fprintf('Stage I   : %d samples\n', numel(idxTumorStageI));
+fprintf('Stage II  : %d samples\n', numel(idxTumorStageII));
+fprintf('Stage III : %d samples\n', numel(idxTumorStageIII));
+fprintf('Stage IV  : %d samples\n', numel(idxTumorStageIV));
+
+% Get discretized tables per condition
+discretizedStageI = discretized(:, idxTumorStageI);
+discretizedStageII = discretized(:, idxTumorStageII);
+discretizedStageIII = discretized(:, idxTumorStageIII);
+discretizedStageIV = discretized(:, idxTumorStageIV);
+
+% Get expression data per condition
+expDataControl = brcaMatrixArray(:, isNormal);
+expDataStageI = brcaMatrixArray(:, idxTumorStageI);
+expDataStageII = brcaMatrixArray(:, idxTumorStageII);
+expDataStageIII = brcaMatrixArray(:, idxTumorStageIII);
+expDataStageIV = brcaMatrixArray(:, idxTumorStageIV);
+
+% Get sample metadata per condition
+samplesMetadataControl = samples_metadata(isNormal, :);
+samplesMetadataStageI = samples_metadata(idxTumorStageI, :);
+samplesMetadataStageII = samples_metadata(idxTumorStageII, :);
+samplesMetadataStageIII = samples_metadata(idxTumorStageIII, :);
+samplesMetadataStageIV = samples_metadata(idxTumorStageIV, :);
+
+% Add a column for labeling (necessary for labeling wanted for this exercize)
+samplesMetadataControl.sample_labeling = repmat('control', height(samplesMetadataControl), 1);
+samplesMetadataStageI.sample_labeling = repmat('stageI', height(samplesMetadataStageI), 1);
+samplesMetadataStageII.sample_labeling = repmat('stageII', height(samplesMetadataStageII), 1);
+samplesMetadataStageIII.sample_labeling = repmat('stageIII', height(samplesMetadataStageIII), 1);
+samplesMetadataStageIV.sample_labeling = repmat('stageIV', height(samplesMetadataStageIV), 1);
+
+%%  Checking consistency of the original model
+consistentRxnsBool = fastcc(origModel, 1e-4, 1);
+
+consistentModel = removeRxns(origModel, origModel.rxns(setdiff(1:numel(origModel.rxns), consistentRxnsBool))); % create a consistent model based on the vector A
+fastcc(consistentModel, 1e-4, 1);
+
+%% Constraining model bounds using medium concentrations
+medium.Concentration_uM = medium.Concentration_M*10e6;
+mediumConstrainedModel = changeRxnBounds(consistentModel, medium.ExRxns_Recon3D, -medium.Concentration_uM, 'l');
+% Adding specific constraints
+mediumConstrainedModel = changeRxnBounds(mediumConstrainedModel, {'EX_h2o2[e]', 'EX_o2s[e]', 'EX_oh1[e]', 'EX_ppi[e]'}, 0, 'l'); % closing uptakes
+mediumConstrainedModel = changeRxnBounds(mediumConstrainedModel, {'sink_band[c]', 'EX_o2s[e]', 'EX_oh1[e]'}, 0, 'u'); % closing exports
+% Checking model consistency
+consistentRxnsBoolAfterMedium = fastcc(mediumConstrainedModel, 1e-4, 1);
+consistentMediumConstrainedModel = removeRxns(mediumConstrainedModel, mediumConstrainedModel.rxns(setdiff(1:numel(mediumConstrainedModel.rxns),...
+    consistentRxnsBoolAfterMedium)));
+
+consistentMediumConstrainedModel = changeObjective(consistentMediumConstrainedModel, "biomass_reaction");
+%% Settings
+rownames = gene_metadata.gene_name; % gene_names, needed for rFastcormics
+biomassRxn = 'biomass_reaction';
+consensusProportion = 0.75;
+epsilon = 1e-4;
+optionalSettings = {};
+optionalSettings.medium = medium.Mets_Recon3D; % the rest will be closed
+optionalSettings.notMediumConstrained = {'EX_o2[e]', 'EX_h2o[e]', 'EX_co2[e]', 'EX_h[e]'}; % stay opened
+optionalSettings.func = {'biomass_reaction', 'biomass_maintenance', 'DM_atp_c_'}; % force the inclusion in the model
+adaptiveScalingFlag = 0;
+fillingMediumFlag = 1;
+
+%% Running rFASTCORMICS_v2
+
+[modelControl, retainedRxnsControl, idxCoreReactionsControl, paramsForPipelineControl] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedNormal, rownames, dico, biomassRxn, ...
+    consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Normal Tissue
+
+[modelStageI, retainedRxnsStageI, idxCoreReactionsStageI, paramsForPipelineStageI] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedStageI, rownames, dico, biomassRxn, ...
+    consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Stage I
+
+[modelStageII, retainedRxnsStageII, idxCoreReactionsStageII, paramsForPipelineStageII] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedStageII, rownames, dico, biomassRxn, ...
+    consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Stage II
+
+[modelStageIII, retainedRxnsStageIII, idxCoreReactionsStageIII, paramsForPipelineStageIII] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedStageIII, rownames, dico, biomassRxn, ...
+    consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Stage III
+
+[modelStageIV, retainedRxnsStageIV, idxCoreReactionsStageIV, paramsForPipelineStageIV] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedStageIV, rownames, dico, biomassRxn, ...
+    consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Stage IV
+
+save('contextSpecificModelsBRCA.mat', 'modelControl', 'retainedRxnsControl', 'idxCoreReactionsControl', 'paramsForPipelineControl', ...
+    'modelStageI', 'retainedRxnsStageI', 'idxCoreReactionsStageI', 'paramsForPipelineStageI', ...
+    'modelStageII', 'retainedRxnsStageII', 'idxCoreReactionsStageII', 'paramsForPipelineStageII', ...
+    'modelStageIII', 'retainedRxnsStageIII', 'idxCoreReactionsStageIII', 'paramsForPipelineStageIII', ...
+    'modelStageIV', 'retainedRxnsStageIV', 'idxCoreReactionsStageIV', 'paramsForPipelineStageIV');
+
+load('contextSpecificModelsBRCA.mat');
+
+%% Create a structure for project creation
+% Model Name
+paramsForPipelineControl.modelName = 'Control';
+paramsForPipelineStageI.modelName = 'StageI';
+paramsForPipelineStageII.modelName = 'StageII';
+paramsForPipelineStageIII.modelName = 'StageIII';
+paramsForPipelineStageIV.modelName = 'StageIV';
+% Expression Data
+paramsForPipelineControl.expressionData = expDataControl;
+paramsForPipelineStageI.expressionData = expDataStageI;
+paramsForPipelineStageII.expressionData = expDataStageII;
+paramsForPipelineStageIII.expressionData = expDataStageIII;
+paramsForPipelineStageIV.expressionData = expDataStageIV;
+% Medium Composition
+[paramsForPipelineControl.mediumComposition, ...
+    paramsForPipelineStageI.mediumComposition, ...
+    paramsForPipelineStageII.mediumComposition, ...
+    paramsForPipelineStageIII.mediumComposition, ...
+    paramsForPipelineStageIV.mediumComposition] = deal(medium);
+% Manually Set Boundaries
+manuallySetBoundaries = struct();
+manuallySetBoundaries.closedImports = {'EX_h2o2[e]', 'EX_o2s[e]', 'EX_oh1[e]', 'EX_ppi[e]'};
+manuallySetBoundaries.closedExports = {'sink_band[c]', 'EX_o2s[e]', 'EX_oh1[e]'};
+manuallySetBoundaries.unconstrainedImports = {'EX_h2o[e]', 'EX_h[e]'};
+manuallySetBoundaries.unconstrainedExports = {}; 
+[paramsForPipelineControl.manuallySetBoundaries, ...
+    paramsForPipelineStageI.manuallySetBoundaries, ...
+    paramsForPipelineStageII.manuallySetBoundaries, ...
+    paramsForPipelineStageIII.manuallySetBoundaries, ...
+    paramsForPipelineStageIV.manuallySetBoundaries] = deal(manuallySetBoundaries);
+% Sample Metadata
+paramsForPipelineControl.sampleMetadata = samplesMetadataControl;
+paramsForPipelineStageI.sampleMetadata = samplesMetadataStageI;
+paramsForPipelineStageII.sampleMetadata = samplesMetadataStageII;
+paramsForPipelineStageIII.sampleMetadata = samplesMetadataStageIII;
+paramsForPipelineStageIV.sampleMetadata = samplesMetadataStageIV;
+% Sample Labeling (needs to be a column of sampleMetadata)
+[paramsForPipelineControl.sampleLabeling, ...
+    paramsForPipelineStageI.sampleLabeling, ...
+    paramsForPipelineStageII.sampleLabeling, ...
+    paramsForPipelineStageIII.sampleLabeling, ...
+    paramsForPipelineStageIV.sampleLabeling] = deal('sample_labeling');
+% Reference Model
+[paramsForPipelineControl.referenceModel, ...
+    paramsForPipelineStageI.referenceModel, ...
+    paramsForPipelineStageII.referenceModel, ...
+    paramsForPipelineStageIII.referenceModel, ...
+    paramsForPipelineStageIV.referenceModel] = deal('consistentMediumConstrainedModel');
+% Create a cell with all the params structures
+paramsForPipeline = {paramsForPipelineControl, ...
+    paramsForPipelineStageI, ...
+    paramsForPipelineStageII, ...
+    paramsForPipelineStageIII, ...
+    paramsForPipelineStageIV};
+%% CreateProject
+BRCAProject = createProject(paramsForPipeline);
+%% AddModelsToProject
+paramsConsistentMediumConstrainedModel = struct();
+paramsConsistentMediumConstrainedModel.modelName = "ConsistentMediumConstrainedModel";
+paramsConsistentMediumConstrainedModel.contextSpecificModel = consistentMediumConstrainedModel;
+paramsConsistentMediumConstrainedModel.dico = dico;
+paramsConsistentMediumConstrainedModel.mediumComposition = medium;
+BRCAProjectBis = addModelsToProject(BRCAProject, {paramsConsistentMediumConstrainedModel});
+
