@@ -1,8 +1,7 @@
-function [fluxSets,figs] = visualizeFlux(project,comparisonName,metIdx,rxnIdx,rxnSetLabels,threshold,plotVisible)
+function [fluxSets,figs] = visualizeFlux(project,comparisonName,rxnIdx,rxnSetLabels,threshold,plotVisible)
     arguments
         project
         comparisonName
-        metIdx =[]
         rxnIdx =[]
         rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["all"] 
@@ -17,19 +16,14 @@ function [fluxSets,figs] = visualizeFlux(project,comparisonName,metIdx,rxnIdx,rx
         rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
     
-    if isempty(metIdx)
-        metIdx = find(ones(length(project.models.(reference).model.mets),1));
-    end
-
-    [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx, rxnIdx,rxnSetLabels,threshold,plotVisible);
+    [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName, rxnIdx,rxnSetLabels,threshold,plotVisible);
 
 end
 
-function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx,rxnsIdx,rxnSetLabels, threshold,plotVisible)
+function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,rxnsIdx,rxnSetLabels, threshold,plotVisible)
     arguments
         project
         comparisonName
-        metIdx =[]
         rxnsIdx =[]
         rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all","positive","negative"])} =["positive"] 
@@ -44,13 +38,8 @@ function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx,rxns
     if isempty(rxnsIdx)
         rxnsIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
-    
-    if isempty(metIdx)
-        metIdx = find(ones(length(project.models.(reference).model.mets),1));
-    end
-    
 
-    fluxSets = getFlux(project,comparisonName,metIdx,rxnsIdx);
+    fluxSets = getFlux(project,comparisonName,rxnsIdx);
     
     % when met_idx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
@@ -231,22 +220,16 @@ function [fluxSets,figs] = getViolinPlotsFlux(project,comparisonName,metIdx,rxns
 
 end
 
-function fluxCell = getFlux(project,comparisonName,metIdx,rxnIdx)
+function fluxCell = getFlux(project,comparisonName,rxnIdx)
     arguments
         project
         comparisonName
-        metIdx =[]
         rxnIdx =[]
     end
     reference = project.comparisons.(comparisonName).referenceModel;
     if isempty(rxnIdx)
         rxnIdx = find(ones(length(project.models.(reference).model.rxns),1));
     end
-    
-    if isempty(metIdx)
-        metIdx = find(ones(length(project.models.(reference).model.mets),1));
-    end
-    
 
     samples = project.comparisons.(comparisonName).orderedSamples;
     
