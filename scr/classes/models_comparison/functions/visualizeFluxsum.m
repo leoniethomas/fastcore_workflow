@@ -58,11 +58,11 @@ function [fluxsumSets,fig] = visualizeFluxsum(project,comparisonName,metIdx,rxnI
     arguments
         project struct
         comparisonName (1,1) string
-        metIdx %(1,:) cell {mustBeColumnVector} =[]
-        rxnIdx (1,:) cell {mustBeColumnVector} =[]
-        rxnSetLabels (1,:) string = []
+        metIdx %(1,:) cell {mustBeColumnVector} ={}
+        rxnIdx (1,:) cell {mustBeColumnVector} ={}
+        rxnSetLabels (1,:) string =""
         plotType  {mustBeMember(plotType, ["violin","heatmap", "heatmapSample", "heatmapSampleAllFeatures"])} =["violin"] 
-        excludeCoenzymes (1,1) logical = true
+        excludeCoenzymes (1,1) logical = false
         ignoreCompartment (1,1) logical = true
         slot  (1,1) string {mustBeMember(slot,["orderedFba", "orderedSamples"])} ="orderedSamples" 
         fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming","outgoing","reactions"])} ="incoming" 
@@ -173,7 +173,7 @@ function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,
         metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
     
-    if slot == "orderedFba" & type == "heatmapSampleAllFeatures"
+    if slot == "orderedFba" & type == "reactions" | type == "heatmapSampleAllFeatures"
         % this case is an exeption
         % in this case we just visualize the flux values - no fluxsum
         % calculation needed 
@@ -259,7 +259,7 @@ function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,
     
         title(figure_title + "avg overall solutions")    % grayscale
         % Set x-axis and y-axis labels
-        set(gca, 'XTick', 1:length(unique(samples_cat)), 'XTickLabel', unique(samples_cat), ...
+        set(gca, 'XTick', 1:length(unique(samples_cat)), 'XTickLabel', unique(samples_cat,'stable'), ...
              'YTick', 1:length(rxnSetLabels), 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;
@@ -306,7 +306,7 @@ function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,
         edges = [0 cumsum(sample_count)];
         xtickposition = edges(1:end-1) + sample_count/2;
     
-        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
+        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat,'stable'), ...
              'YTick', 1:length(rxnSetLabels), 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;
@@ -341,7 +341,7 @@ function [fluxsumSets,fig] = getComparisonHeatmap(project,comparisonName,metIdx,
         count_mets_per_set = cell2mat(arrayfun(@(x)size(x{:},1),heatmap_data_all_samples_all_features,'UniformOutput',false))';
         ytickposition = cumsum(count_mets_per_set) - round(count_mets_per_set/2);
     
-        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat), ...
+        set(gca, 'XTick', xtickposition, 'XTickLabel', unique(samples_cat,'stable'), ...
              'YTick', ytickposition, 'YTickLabel', rxnSetLabels)
         xtickangle(45)
         ax = gca;

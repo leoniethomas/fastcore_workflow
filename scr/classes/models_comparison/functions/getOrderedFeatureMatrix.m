@@ -53,7 +53,7 @@ function [orderedFeatureMatrix,orderedRxnMatrixIdx,columnLabels] = getOrderedFea
     orderedFeatureMatrix = struct2array(orderedFeatureMatrix);
     columnLabels = repelem(modelList, size_feature_matrix');
     
-    orderedRxnMatrixIdx = struct2array(structfun(@(x) getOrderedFeature(x,referenceModel,"rxns","idx"), ...
+    orderedRxnMatrixIdx = struct2array(structfun(@(x) getOrderedFeature(x,referenceModel,fieldToInvestigate,"idx"), ...
                                              models,'UniformOutput',false));
 end
 
