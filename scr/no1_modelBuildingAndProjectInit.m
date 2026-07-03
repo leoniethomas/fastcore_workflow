@@ -6,12 +6,12 @@
 % BRCA dataset used in this example was retrieved from TCGA using loadTCGAdata.R
 % RPMI medium has been downloaded from https://github.com/sysbiolux/MetabolicMediaLibrary/tree/main/media
 
-%% Initializing the environment
+%% INITIALIZING THE ENVIRONNEMENT
 initCobraToolbox();
 changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
-%% Loading workspace example
+%% LOADING EXAMPLE WORKSPACE
 load('dataForTesting/data_no1.mat');
 % brca_matrix = readtable("dataForTesting/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 % samples_metadata = readtable("dataForTesting/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
@@ -20,12 +20,12 @@ load('dataForTesting/data_no1.mat');
 % dico = load('dico.mat').dico;
 % medium = readtable('RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
 
-%% Discretization
+%% DISCRETIZATION
 brcaMatrixArray = table2array(brca_matrix); % transform table to array
 sampleNames = samples_metadata.barcode'; % sample names
 discretized = discretizeFPKM(brcaMatrixArray, sampleNames);
 
-%% Get discretized matrices per condition
+%% GET DISCRETIZED MATRICES PER CONDITION
 % Separate control vs tumor
 isNormal = strcmp(samples_metadata.sample_type, 'Solid Tissue Normal');
 isTumor  = strcmp(samples_metadata.sample_type, 'Primary Tumor');
@@ -74,20 +74,20 @@ samplesMetadataStageII = samples_metadata(idxTumorStageII, :);
 samplesMetadataStageIII = samples_metadata(idxTumorStageIII, :);
 samplesMetadataStageIV = samples_metadata(idxTumorStageIV, :);
 
-% Add a column for labeling (necessary for labeling wanted for this exercize)
+% Add a column for labeling (necessary for labeling wanted later in this exercize)
 samplesMetadataControl.sample_labeling = repmat('control', height(samplesMetadataControl), 1);
 samplesMetadataStageI.sample_labeling = repmat('stageI', height(samplesMetadataStageI), 1);
 samplesMetadataStageII.sample_labeling = repmat('stageII', height(samplesMetadataStageII), 1);
 samplesMetadataStageIII.sample_labeling = repmat('stageIII', height(samplesMetadataStageIII), 1);
 samplesMetadataStageIV.sample_labeling = repmat('stageIV', height(samplesMetadataStageIV), 1);
 
-%%  Checking consistency of the original model
+%%  CHECKING CONSISTENCY OF THE ORIGINAL MODEL
 consistentRxnsBool = fastcc(origModel, 1e-4, 1);
 
 consistentModel = removeRxns(origModel, origModel.rxns(setdiff(1:numel(origModel.rxns), consistentRxnsBool))); % create a consistent model based on the vector A
 fastcc(consistentModel, 1e-4, 1);
 
-%% Constraining model bounds using medium concentrations
+%% CONSTRAINING MODEL BOUNDS USING MEDIUM CONCENTRATIONS
 medium.Concentration_uM = medium.Concentration_M*10e6;
 mediumConstrainedModel = changeRxnBounds(consistentModel, medium.ExRxns_Recon3D, -medium.Concentration_uM, 'l');
 % Adding specific constraints
@@ -99,7 +99,7 @@ consistentMediumConstrainedModel = removeRxns(mediumConstrainedModel, mediumCons
     consistentRxnsBoolAfterMedium)));
 
 consistentMediumConstrainedModel = changeObjective(consistentMediumConstrainedModel, "biomass_reaction");
-%% Settings
+%% SETTINGS
 rownames = gene_metadata.gene_name; % gene_names, needed for rFastcormics
 biomassRxn = 'biomass_reaction';
 consensusProportion = 0.75;
@@ -111,7 +111,8 @@ optionalSettings.func = {'biomass_reaction', 'biomass_maintenance', 'DM_atp_c_'}
 adaptiveScalingFlag = 0;
 fillingMediumFlag = 1;
 
-%% Running rFASTCORMICS_v2
+%% RUNNING rFASTCORMICS
+% Extra documentation for rFASTCORMICS can be found here: https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2
 
 [modelControl, retainedRxnsControl, idxCoreReactionsControl, paramsForPipelineControl] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedNormal, rownames, dico, biomassRxn, ...
     consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Normal Tissue
@@ -136,7 +137,7 @@ save('contextSpecificModelsBRCA.mat', 'modelControl', 'retainedRxnsControl', 'id
 
 load('contextSpecificModelsBRCA.mat');
 
-%% Create a structure for project creation
+%% CREATE A STRUCTURE FOR PROJECT CREATION
 % Model Name
 paramsForPipelineControl.modelName = 'Control';
 paramsForPipelineStageI.modelName = 'StageI';
@@ -190,9 +191,9 @@ paramsForPipeline = {paramsForPipelineControl, ...
     paramsForPipelineStageII, ...
     paramsForPipelineStageIII, ...
     paramsForPipelineStageIV};
-%% CreateProject
+%% CREATE A PROJECT
 BRCAProject = createProject(paramsForPipeline);
-%% AddModelsToProject
+%% ADD A MODEL TO AN EXISTING PROJECT
 paramsConsistentMediumConstrainedModel = struct();
 paramsConsistentMediumConstrainedModel.modelName = "ConsistentMediumConstrainedModel";
 paramsConsistentMediumConstrainedModel.contextSpecificModel = consistentMediumConstrainedModel;

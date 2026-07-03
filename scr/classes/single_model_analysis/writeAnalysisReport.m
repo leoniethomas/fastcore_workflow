@@ -31,9 +31,10 @@ if ~exist(path, 'dir')
     mkdir(path) % create folder if it doesn't exist
 end
 
-%% Shortcut variables
+%% Checking existence of the required fields? --> FBA and FVA = minimal
 
-% Checking existence of the required fields? --> FBA and FVA = minimal
+
+%% Shortcut variables
 % requirements
 model = project.models.(modelName).model;
 analysis = project.models.(modelName).analysis.(analysisId);
@@ -210,17 +211,17 @@ add(rpt, PageBreak);
 
 %% Medium
 if isfield(project.models.(modelName).settings, 'medium')
-    medium = project.models.(modelName).settings.medium.medium_composition;
+    medium = project.models.(modelName).settings.medium.mediumComposition;
     idx = strcmp(parameters.Parameter, "modelReference");
     if any(idx)
-        modelRef = parameters.Value(idx);
-        if isequal(modelRef, "Recon3D") && all(ismember(["Mets_Recon3D","ExRxns_Recon3D","Concentration_mM"], medium.Properties.VariableNames))
-            mediumShort = medium(:, ["Mets_Recon3D","ExRxns_Recon3D","Concentration_mM"]);
+        modelRef = parameters.Value{idx};
+        if isequal(modelRef, "Recon3D") && all(ismember(["Mets_Recon3D", "ExRxns_Recon3D", "Concentration_uM"], medium.Properties.VariableNames))
+            mediumShort = medium(:, ["Mets_Recon3D","ExRxns_Recon3D","Concentration_uM"]);
             if ismember("Flux_mmol_gDW_h", medium.Properties.VariableNames)
                 mediumShort.Flux_mmol_gDW_h = medium.Flux_mmol_gDW_h;
             end
-        elseif isequal(modelRef, "HumanGEM") && all(ismember(["Mets_HumanGEM","ExRxns_HumanGEM","Concentration_mM"], medium.Properties.VariableNames))
-            mediumShort = medium(:, ["Mets_HumanGEM","ExRxns_HumanGEM","Concentration_mM"]);
+        elseif isequal(modelRef, "HumanGEM") && all(ismember(["Mets_HumanGEM", "ExRxns_HumanGEM", "Concentration_uM"], medium.Properties.VariableNames))
+            mediumShort = medium(:, ["Mets_HumanGEM","ExRxns_HumanGEM","Concentration_uM"]);
             if ismember("Flux_mmol_gDW_h", medium.Properties.VariableNames)
                 mediumShort.Flux_mmol_gDW_h = medium.Flux_mmol_gDW_h;
             end

@@ -188,3 +188,15 @@ end
 % project.models.Name1.settings.optionalSettings.medium
 % project.models.Name1.settings.optionalSettings.notMediumConstrained
 % project.models.Name1.settings.optionalSettings.func
+
+% project.models.Name1.analysis
+% project.models.Name1.analysis.analysis_id
+% project.models.Name1.analysis.analysis_id.parameters
+% project.models.Name1.analysis.analysis_id.FBA
+% project.models.Name1.analysis.analysis_id.FVA
+% project.models.Name1.analysis.analysis_id.loopStatus
+% project.models.Name1.analysis.analysis_id.singleGeneDeletion
+% project.models.Name1.analysis.analysis_id.doubleGeneDeletion
+% project.models.Name1.analysis.analysis_id.sampling
+% project.models.Name1.analysis.analysis_id.loopless
+% project.models.Name1.analysis.analysis_id.kld
