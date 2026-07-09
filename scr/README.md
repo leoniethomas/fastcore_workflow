@@ -11,7 +11,7 @@ Our analysis pipeline has been divided in three main steps:
 The pipeline has been designed for models built with rFastcormics. However, fields specifically associated with rFastcormics being optional, the pipeline can be used for any kind of COBRA-model. 
 The pipeline relies on a unique object that we called `project`, following the below format:
 
-#### Project format
+#### Model field organization inside project
 ```text
 project
 └── models
