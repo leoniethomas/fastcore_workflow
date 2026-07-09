@@ -45,6 +45,8 @@ project
 Project initialization should be done using the `createProject` function. A manual initialization can also be done as long as the above format is respected. 
 New models can be added to an already existing project using the `addModelsToProject.m` function. Any new model field will follow the architecture presented above for model `Name1`.
 
+A complete tutorial on how to build models using rFastcormics and initialize a project is available through the `no1_modelBuildingAndProjectInit.m` script. 
+
 ### 2. Single Model Analysis
 
 ### 3. Model Comparison
