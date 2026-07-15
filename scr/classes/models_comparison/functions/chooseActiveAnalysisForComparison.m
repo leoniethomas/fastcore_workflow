@@ -1,4 +1,4 @@
-function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelList,loopless,emptyDefault, analysisID)
+function [project,analysisID] = chooseActiveAnalysisForComparison(project, modelList, loopless, emptyDefault, analysisID)
     % This function needs to be run in preparation for the modelsComparison
     % function. For the loaded project object, multiple analysis with a
     % different set of parameters can be performed. Before going into the
@@ -10,7 +10,7 @@ function [project,analysisID] = chooseActiveAnalysisForComparison(project,modelL
     % the exact analysis name for every single model in the comparison. 
     % Input: 
     %   - project:      the fastcore project
-    %   - modelList:    list of models for which a active analysis should
+    %   - modelList:    list of models for which an active analysis should
     %                   be defined
     %   - loopless:     indicate whether the loopless sampling should be
     %                   used for the analysis or not (default = 1)

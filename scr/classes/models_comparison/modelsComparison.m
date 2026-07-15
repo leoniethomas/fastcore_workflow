@@ -1,4 +1,4 @@
-function [project, comparisonName] = modelsComparison(project, modelList,analysisID,referenceModel,analyses,identifier)
+function [project, comparisonName] = modelsComparison(project, modelList, analysisID, referenceModel, analyses, identifier)
     % This function runs a set of analysis for the comparison of the
     % specified models.
     % A number of analysis are run: 
@@ -23,7 +23,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     %                         on a structural level, is a gene,metabolite,or rxns present or not ? 
     %                       + modelFunctionalComparison: investigates the differences between models on a functional
     %                         level, how much flux do reactions carry in FVA, FBA solutions? 
-    %                       + aamplingComparison: investigates the differences between models sampling solutions,
+    %                       + samplingComparison: investigates the differences between models sampling solutions,
     %                         investigates samples solution space 
     %                         
     %   - identifier:       a string, will be added as a postfix to the analysis name, can be choosen freely
@@ -34,11 +34,11 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     %                       all the output, modelcomparison information
     %   - comparisonName:   gives back the name of the comparison name added
     arguments
-        project (1,1) struct %{assertValidProjectStruct(project)}
+        project (1,1) struct % {assertValidProjectStruct(project)}
         modelList (1,:) string
         analysisID (1,:) string
         referenceModel (1,1) string = "orig_model"
-        analyses  (1,:) string  {mustBeMember(analyses, ["modelStructureComparison","modelFunctionalComparison","modelSamplingComparison","IDAREoutput"])} =["modelStructureComparison"]
+        analyses  (1,:) string  {mustBeMember(analyses, ["modelStructureComparison","modelFunctionalComparison","modelSamplingComparison","IDAREoutput"])} = ["modelStructureComparison"]
         identifier (1,1) string = string(datetime('now','Format','_yyyyMMdd_HHmmss'))
     end
     
@@ -89,7 +89,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     % yet (no comparison object in the comparisons slot, or a comparison
     % object that is not complete -> structure_analysis_already_ran  not
     % defined
-    if any(matches(analyses, "modelStructureComparison")) | ~structureAnalysisAlreadyRun | ~ismember(comparisonName,string(fieldnames(project.comparisons)))
+    if any(matches(analyses, "modelStructureComparison")) || ~structureAnalysisAlreadyRun || ~ismember(comparisonName,string(fieldnames(project.comparisons)))
         project.comparisons.(comparisonName).modelList = modelListOrdered;
         project.comparisons.(comparisonName).referenceModel = referenceModel;
         project.comparisons.(comparisonName).analysisID = analysisID;
@@ -113,13 +113,13 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
    
 
 
-    function validateInput(project, modelList, analysisID, referenceModel)
+    function validateInput(project, modelList, analysisID, referenceModel) % replace by the same one as in no1/no2
 
         % This function checks that the input is valid and the comparison
         % can run through!
         % check that all the specified model names(modelList & referenceModel)
         validModels = string(fieldnames(project.models));
-        modelsToTest = [modelList,referenceModel]
+        modelsToTest = [modelList,referenceModel];
         if ~all(ismember(modelsToTest, validModels))
             invalid = modelsToTest(~ismember(modelsToTest, validModels));
             error("Either for the modelList or the referenceModel invalid model(s) have been choosen.Invalid model name(s): %s. Valid models are: %s", ...
@@ -127,7 +127,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
                    strjoin(validModels,", "));
         end
         % check that every model has a analysisID assigned
-        assert(length(modelList)== length(analysisID), 'The number of models given to analyse does not match the number of analysisIDs given as input, every model needs to have one analysisID on basis of which the comparative analysis is performed!')
+        assert(length(modelList) == length(analysisID), 'The number of models given to analyse does not match the number of analysisIDs given as input, every model needs to have one analysisID on basis of which the comparative analysis is performed!')
         
         % check that the assigned analysisID is also present in the
         % models.analysis slot 
@@ -135,9 +135,9 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
 
         analysisDone = structfun(@(m)fieldnames(m.analysis), modelsCheckAnalysisID, 'UniformOutput', false);
         for m=1:numel(modelList)
-           assert(ismember(analysisID(m),analysisDone.(modelList(m))),...
+           assert(ismember(analysisID(m), analysisDone.(modelList(m))),...
                   'Model %s does not have an analysis object with the id %s',...
-                  modelList(m),analysisID(m));
+                  modelList(m), analysisID(m));
         end
 
     end
@@ -156,7 +156,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
     
         % - only perform the mapping for the models having associated
         % expression data 
-        if any(contains(fieldnames(modelStruct),"discretized_data"))
+        if any(contains(fieldnames(modelStruct), "discretized_data"))
             if isfield(modelStruct, "settings")
                 if isfield(modelStruct.settings, "dico")
                     % using rfastcormics function to map discretized data to the rxns
@@ -175,8 +175,8 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
                     % parameters used in the model construction can be accessed in the 
                     % settings. slot of each individual model
                     
-                    if isfield(modelStruct.settings,"script_parameters")
-                        if isfield(modelStruct.settings.script_parameters,"consensus_proportion")
+                    if isfield(modelStruct.settings, "script_parameters")
+                        if isfield(modelStruct.settings.script_parameters, "consensus_proportion")
                             % definition of initialCore reactions
                             modelStruct.mappedDiscRxns = sum(mapping == 1, 2) >= (modelStruct.settings.script_parameters.consensus_proportion * numberOfSamples);
                             % definition of the notExpressed genes
@@ -203,13 +203,13 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
         % have the rows/genes in the same order as in the associated
         % model.genes slot. In addition it adds the gene symbol to the discretized data slot.
         % The discretized data is given back as a matrix. 
-        if any(contains(fieldnames(modelStruct),"discretized_data"))
-            if isfield(modelStruct,"settings")
-                if isfield(modelStruct.settings,"dico")
+        if any(contains(fieldnames(modelStruct), "discretized_data"))
+            if isfield(modelStruct, "settings")
+                if isfield(modelStruct.settings, "dico")
                     if size(modelStruct.discretized_data,1) ~= length(string(modelStruct.settings.dico.SYMBOL))% in case this is the second time you run a modelComparison, the disc slot is already ordered so we skip this function in that case
                         geneSymbol = string(modelStruct.settings.dico.SYMBOL);
                         geneIdInModel = string(modelStruct.settings.dico.gene_id_in_model);
-                        discTbl     = modelStruct.discretized_data;   % table with gene_names + data
+                        discTbl = modelStruct.discretized_data;   % table with gene_names + data
                         % Map discretized genes into full gene list
                         [isPresent, idx] = ismember(geneSymbol, string(discTbl.gene_names));
                         % Preallocate output table with NaNs
@@ -218,7 +218,7 @@ function [project, comparisonName] = modelsComparison(project, modelList,analysi
                         outTbl(isPresent,:) = discTbl{idx(isPresent), "values"};
                         % Add gene names as first column
                         modelStruct.discretized_data = table(geneIdInModel,geneSymbol,outTbl, 'VariableNames',...
-                                                             ["gene_id_in_model",string(modelStruct.discretized_data.Properties.VariableNames)]);
+                                                             ["gene_id_in_model", string(modelStruct.discretized_data.Properties.VariableNames)]);
                     end
                 end
             end
@@ -254,10 +254,10 @@ function plots = modelFunctionalComparison(project, comparisonName)
     
     
     %%% ---------- Visualization: objective values per model
-    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1,1) ,modelList,"UniformOutput",false));
+    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1,1), modelList, "UniformOutput", false));
     getExchangeRxnsIdx = find(findExcRxns(project.models.(referenceModel).model));    
 
-    plots.objValue = figure('Color','w','Position',[20 20 700 300],'Visible','off');
+    plots.objValue = figure('Color', 'w', 'Position', [20 20 700 300], 'Visible', 'off');
  
     bar(fbaObjectiveValues)
     title('Model comparison: flux of optimized reaction')
@@ -270,15 +270,15 @@ function plots = modelFunctionalComparison(project, comparisonName)
     %%%             for the different models - filtered for exchange rxns
     
     % Import
-    plots.import = getFluxPlot(project, comparisonName,getExchangeRxnsIdx, ...
-                                    'thresholdFlux','upper','FVA',false,'reducedCost',false,'visiblePlots',"off");
+    plots.import = getFluxPlot(project, comparisonName, getExchangeRxnsIdx, ...
+                                    'thresholdFlux', 'upper', 'FVA', false, 'reducedCost', false, 'visiblePlots', "off");
     % Export
     plots.export = getFluxPlot(project, comparisonName,getExchangeRxnsIdx,...
                   'thresholdFlux','lower','FVA',false,'reducedCost',false,'visiblePlots',"off");
     
     %%% ---------- Visualization: FVA Similarity between Models
 
-    [fvaSim,fvaSimRxns, fvaSimPathways] = computeFvaSimilarity(project,comparisonName);
+    [fvaSim, fvaSimRxns, fvaSimPathways] = computeFvaSimilarity(project, comparisonName);
 
     plots.fvaSim.overall = plotClustergram(fvaSim,...
                              modelList,...
@@ -296,7 +296,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
 
 
 
-    resEnrichment = getEnrichmentTable(project,modelList,fvaSimRxns,referenceModel,[]);
+    resEnrichment = getEnrichmentTable(project,modelList, fvaSimRxns, referenceModel,[]);
     % put the results of FDR and NES in one matrix each
 
     comparisons = fieldnames(resEnrichment);
@@ -308,9 +308,9 @@ function plots = modelFunctionalComparison(project, comparisonName)
     end
 
     % Preallocate tables
-    NESTbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
+    NESTbl = array2table(nan(numel(allPathways), numel(comparisons)), ...
         'RowNames', allPathways, 'VariableNames', comparisons);
-    FDRTbl = array2table(nan(numel(allPathways),numel(comparisons)), ...
+    FDRTbl = array2table(nan(numel(allPathways), numel(comparisons)), ...
         'RowNames', allPathways, 'VariableNames', comparisons);
 
     % Fill tables
@@ -332,25 +332,25 @@ function plots = modelFunctionalComparison(project, comparisonName)
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
 
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
-    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue);
+    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel, replacementValue);
     
     % compute Fluxsum 
 
-    [idxPathways,names_pathways] = getDefaultSubsystems(project, referenceModel);                                 
+    [idxPathways, names_pathways] = getDefaultSubsystems(project, referenceModel);                                 
 
-    [fluxsumSets,plots.fba.heatmapRxnFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets,plots.fba.heatmapRxnFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                      names_pathways,...
-                                                                     "heatmap",true,true,"orderedFba", "reactions",...
-                                                                      referenceModel,"off");
+                                                                     "heatmap", true, true, "orderedFba", "reactions",...
+                                                                      referenceModel, "off");
     
     
-    plots.fba.heatmapRxnActivityFba = getNetworkActivity(project,comparisonName,idxPathways,names_pathways);
+    plots.fba.heatmapRxnActivityFba = getNetworkActivity(project, comparisonName, idxPathways, names_pathways);
 
 
-    [fluxsumSets,plots.fba.heatmapMetsFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets,plots.fba.heatmapMetsFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                       names_pathways,...
-                                                                      "heatmap",true,true,"orderedFba", "incoming",...
-                                                                      referenceModel,"off");
+                                                                      "heatmap", true, true, "orderedFba", "incoming",...
+                                                                      referenceModel, "off");
 
     %%% -> show the top 20 most variant metabolites excluding known cofactors 
     % cofactorNames = ["atp", "adp", "amp", "nad", "nadh", "nadp", "nadph", ...
@@ -423,11 +423,11 @@ function plots = modelFunctionalComparison(project, comparisonName)
         sgt.FontSize = 20;   % set desired font size
     end
 
-    function Results = getEnrichmentTable(project,modelList,fvaSimRxns,referenceModel, subSystems)
+    function Results = getEnrichmentTable(project, modelList, fvaSimRxns, referenceModel, subSystems)
         % This function visualizes the enrichment results in a dotplot!!
         % #TODO: better documentation of the function1!!!
     
-        [~,rxnMapping] = getOrderedFeatureMatrix(project,modelList,"rxns", referenceModel);
+        [~,rxnMapping] = getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel);
     
     
         if isempty(subSystems)
@@ -480,16 +480,16 @@ function plots = modelFunctionalComparison(project, comparisonName)
                 continue
             end
     
-            rxnIdsInBothModels = find(sum(rxnMapping(:,[model1idx,model2idx]) ~= 0,2) ==2);
+            rxnIdsInBothModels = find(sum(rxnMapping(:, [model1idx,model2idx]) ~= 0, 2) == 2);
             % filter for the rxn similarities that are in both models 
             rxnsInBothModels = rxns(rxnIdsInBothModels);
             
-            Results.(string(y)) = pathwayEnrichment(subStruct , x(rxnIdsInBothModels),rxnsInBothModels);
+            Results.(string(y)) = pathwayEnrichment(subStruct, x(rxnIdsInBothModels), rxnsInBothModels);
     
         end
     
     
-        function results = pathwayEnrichment(sets, metricMatrix,featureNames)
+        function results = pathwayEnrichment(sets, metricMatrix, featureNames)
         % This function performs pathway enrichment on the fva similarity
         % values. In the context of metabolic modelling the enrichment in this
         % function is defined as the enrichment of low fva similarity values
@@ -506,7 +506,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
         % arbitraty !!!! 
     
     
-        [metricSorted, sortIdx] = sort(metricMatrix,'descend');
+        [metricSorted, sortIdx] = sort(metricMatrix, 'descend');
         rxnsSorted = featureNames(sortIdx);
         N = numel(featureNames);
         nPerm = 1000;   % permutations
@@ -517,10 +517,10 @@ function plots = modelFunctionalComparison(project, comparisonName)
         subNames = fieldnames(sets);
         nSets = numel(subNames);
         
-        ES   = nan(nSets,1);
-        NES  = nan(nSets,1);
-        pval = nan(nSets,1);
-        setSize = nan(nSets,1);
+        ES   = nan(nSets, 1);
+        NES  = nan(nSets, 1);
+        pval = nan(nSets, 1);
+        setSize = nan(nSets, 1);
         
         for s = 1:nSets
         
@@ -548,7 +548,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
             ES(s) = runningSum(imax);
         
             % ----- permutation test -----
-            ESnull = zeros(nPerm,1);
+            ESnull = zeros(nPerm, 1);
         
             for k = 1:nPerm
                 permHits = hits(randperm(N));
@@ -571,7 +571,7 @@ function plots = modelFunctionalComparison(project, comparisonName)
         qval = mafdr(pval, 'BHFDR', true);
         results = table( ...
         subNames, setSize, ES, NES, pval, qval, ...
-        'VariableNames', {'Subsystem','Size','ES','NES','pValue','FDR'} );
+        'VariableNames', {'Subsystem', 'Size', 'ES', 'NES', 'pValue', 'FDR'} );
     
         results = sortrows(results, 'NES', 'descend');
     
@@ -615,13 +615,13 @@ function plots = modelFunctionalComparison(project, comparisonName)
     
     end
  end   
-function fig = dotplot(NESTbl,FDRTbl)
+function fig = dotplot(NESTbl, FDRTbl)
     % #TODO better documentation of the function!!
     
     % --- Sort pathways by overall NES magnitude ---
-    [~, sortedIdx] = sort(sum(abs(NESTbl{:,:}),2), 'descend');
-    NESTbl = NESTbl(sortedIdx,:);
-    FDRTbl = FDRTbl(sortedIdx,:);
+    [~, sortedIdx] = sort(sum(abs(NESTbl{:,:}), 2), 'descend');
+    NESTbl = NESTbl(sortedIdx, :);
+    FDRTbl = FDRTbl(sortedIdx, :);
     
     % --- Handle zeros in FDR and transform ---
     lowValues = 1e-10;
@@ -662,7 +662,7 @@ function fig = dotplot(NESTbl,FDRTbl)
     
     
     % --- Create figure ---
-    fig = figure('Color','w','Position',[100 100 1000 1000],"Visible","off");
+    fig = figure('Color', 'w', 'Position', [100 100 1000 1000], "Visible","off");
     hold on
     
     % Scatter plot for significant FDR (≤ 0.05)
@@ -684,7 +684,7 @@ function fig = dotplot(NESTbl,FDRTbl)
    
     % Custom "legend" inside axes
     legendSizes = sizeScaled;      % sizeData
-    legendLabels = string(round(sizeVals,2));
+    legendLabels = string(round(sizeVals, 2));
     legendX = max(x) + 1;  % x position outside plot
     legendY = y(1:length(legendSizes)) ;        % y positions
     
@@ -694,7 +694,7 @@ function fig = dotplot(NESTbl,FDRTbl)
     end
     % --- Axes formatting ---
     xticks(1:nC)
-    xticklabels(regexprep(comparisons,"_", " vs "))
+    xticklabels(regexprep(comparisons, "_", " vs "))
     yticks(1:nP)
     yticklabels(pathways)
     
@@ -703,14 +703,14 @@ function fig = dotplot(NESTbl,FDRTbl)
     
     xlim([0.5, nC + 1.5])
     ylim([0.5, nP + 0.5])
-    set(gca,'YDir','reverse','FontSize',18)
+    set(gca, 'YDir', 'reverse', 'FontSize', 18)
     title("Pathway enrichment (dot size = |NES|, color = FDR)")
     
     % --- Colorbar ---
     nColors = 256;
-    cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0,1,nColors)']; 
+    cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0, 1 , nColors)']; 
     colormap(cmap)        % red (low) -> blue (high)
-    clim([-log10(0.05) -log10(lowValues)])       
+    clim([-log10(0.05) - log10(lowValues)])       
     cb = colorbar;
     cb.Label.String = '-log10(FDR)';
     cb.FontSize = 14;
@@ -731,8 +731,8 @@ function fvaFower = getLowerTriangleBlock(fvaSimRxns)
         % fvaSimRxns: n x n cell array of comparisons
         % Returns a compact lower-triangle block cell array
     
-        n = size(fvaSimRxns,1);
-        if n ~= size(fvaSimRxns,2)
+        n = size(fvaSimRxns, 1);
+        if n ~= size(fvaSimRxns, 2)
             error('Input must be a square cell array');
         end
     
@@ -748,7 +748,7 @@ end
 
 end
 
-function structureAnalysis = modelStructuralComparison(project, modelList,referenceModel)
+function structureAnalysis = modelStructuralComparison(project, modelList, referenceModel)
     % The structure comparison is a function that compares the models
     % listed on structural differences. Structural differences in the
     % context of Fastcore can be defined as the set of reactions that are
@@ -782,7 +782,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     end
 
     modelsList = rmfield(project.models, setdiff(fieldnames(project.models), modelList));
-    models = structfun(@(x) x.model, modelsList, 'UniformOutput',false);
+    models = structfun(@(x) x.model, modelsList, 'UniformOutput', false);
     structureAnalysis.modelNames = string(fieldnames(models));
 
 
@@ -793,8 +793,8 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
                     'VariableNames', {'count_reactions','count_metabolites','count_genes'}, ...
                     'RowNames', string(fieldnames(models))')
 
-    [rxnPresence,rxnMapping] = getOrderedFeatureMatrix(project,modelList,"rxns", referenceModel);
-    structureAnalysis.rxn_mapping_table = array2table(rxnMapping,"VariableNames",modelList,"RowNames",string(project.models.(referenceModel).model.rxns));
+    [rxnPresence, rxnMapping] = getOrderedFeatureMatrix(project,modelList, "rxns", referenceModel);
+    structureAnalysis.rxn_mapping_table = array2table(rxnMapping, "VariableNames", modelList, "RowNames", string(project.models.(referenceModel).model.rxns));
 
     
     % -- Visualization: Discretization status for expression of genes in model on sample level, on model level as well as the mapping/discretization on rxn level
@@ -804,22 +804,22 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     % core reactions
     
     
-    if all(structfun(@(x) isfield(x,"discretized_data"),modelsList))
+    if all(structfun(@(x) isfield(x, "discretized_data"), modelsList))
         % get the reaction mapping (sample and model level) as well as the discretization values for each reaction/gene in the model 
         replacementValue = "mappedDiscRxnsSample"; % get the fba solution values
-        orderedMappingRxnMatrixSampleWise = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
+        orderedMappingRxnMatrixSampleWise = int8(getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel, replacementValue));
         replacementValue = "mappedDiscRxns"; % get the fba solution values
-        orderedMappingRxnMatrix = int8(getOrderedFeatureMatrix(project,modelList,"rxns",referenceModel,replacementValue));
+        orderedMappingRxnMatrix = int8(getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel, replacementValue));
         replacementValue = "discretized_data.values"; % get the fba solution values
-        orderedMappingExprDiscMatrix = int8(getOrderedFeatureMatrix(project,modelList,"genes",referenceModel,replacementValue));
+        orderedMappingExprDiscMatrix = int8(getOrderedFeatureMatrix(project, modelList, "genes", referenceModel, replacementValue));
         
-        if all(structfun(@(x) isfield(x.settings,"script_parameters"),modelsList))
-            if all(structfun(@(x) isfield(x,"sample_metadata"),modelsList))
-                if all(structfun(@(x) isfield(x.settings.script_parameters,"columns_to_define_model_samples_on"),modelsList))
+        if all(structfun(@(x) isfield(x.settings, "script_parameters"), modelsList))
+            if all(structfun(@(x) isfield(x, "sample_metadata"), modelsList))
+                if all(structfun(@(x) isfield(x.settings.script_parameters, "columns_to_define_model_samples_on"), modelsList))
                     % get the names of the single samples from the metadata slot - used in the following plots
                     columnNames = struct2cell(structfun(@(x)  string(x.sample_metadata{:,1}) + "_" + ...
                                                   string(x.sample_metadata.(x.settings.script_parameters.columns_to_define_model_samples_on)),...
-                                            modelsList,"UniformOutput",false));
+                                            modelsList, "UniformOutput", false));
                     columnNames = vertcat(columnNames{:});
                 else
                     columnNames = string(1:size(orderedMappingRxnMatrixSampleWise,2));
@@ -832,7 +832,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         end
         
         % get the data into one object to loop over
-        datasets = { orderedMappingExprDiscMatrix,orderedMappingRxnMatrixSampleWise, orderedMappingRxnMatrix};   % replace with your actual dataset variables
+        datasets = {orderedMappingExprDiscMatrix, orderedMappingRxnMatrixSampleWise, orderedMappingRxnMatrix};   % replace with your actual dataset variables
         datasetNames = ["ordered_mapping_rxn_matrix_sample_wise", "ordered_mapping_expr_disc_matrix", "ordered_mapping_rxn_matrix"];  % optional titles
         xlabelsPlots = ["Samples", "Samples", "Models"]; 
         xticksPlots = {columnNames, columnNames, string(fieldnames(modelsList))}; 
@@ -849,17 +849,17 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         % for the model creation !!
         plots.dataDiscretization = getDiscretizationHist(datasets);
     end     
-    if all(structfun(@(x) isfield(x,"core_reactions"),modelsList))
+    if all(structfun(@(x) isfield(x, "core_reactions"), modelsList))
 
         %%% Visualize the core reaction per model
-        data = struct2cell(structfun(@(x) [ length(x.core_reactions) - sum(ismember(x.core_reactions, x.model.rxns)); ...
+        data = struct2cell(structfun(@(x) [length(x.core_reactions) - sum(ismember(x.core_reactions, x.model.rxns)); ...
                                                 sum(ismember(x.core_reactions, x.model.rxns));...
                                                 length(x.model.rxns) - sum(ismember(x.core_reactions, x.model.rxns));...
                                                 length(x.model.rxns)], ...
                                                 modelsList, 'UniformOutput', false));
         data = [data{:}];
     
-        plots.coreReactions = plotCoreInModel(data,modelsList);
+        plots.coreReactions = plotCoreInModel(data, modelsList);
     
         % -- Visualization: Looking in deeper into the core reactions, the core
         % is what is defined by the data, therefore portrays the underlying
@@ -871,7 +871,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         % create an upsetr plot for the all the inter and outersections
         % filter out the main intersection -> the one with the longest name
     
-        plots.coreReactionsIntersections = getUpsetPlotCore(project,modelsList,structureAnalysis);
+        plots.coreReactionsIntersections = getUpsetPlotCore(project, modelsList, structureAnalysis);
         % this function only works with a comparison of up to 4 models!!
         % otherwise the plots get too complex!
 
@@ -895,7 +895,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
                                                                     orderedFeature, ...
                                                                     structureAnalysis.modelNames, ...
                                                                     "Structural model comparison: " + fieldToInvestigate + " presence",...
-                                                                    "visiblePlot","off");
+                                                                    "visiblePlot", "off");
 
         % get the jaccard distances - based on reaction presence
         % Compute Jaccard distances
@@ -904,7 +904,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
                                                                  orderedFeature, ...
                                                                  structureAnalysis.modelNames, ...
                                                                  "Jaccard similarity of " + fieldToInvestigate + " presence (0 or 1) between models",...
-                                                                 "visiblePlot","off");
+                                                                 "visiblePlot", "off");
 
 
 
@@ -918,7 +918,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     % which subsystem, which subsystem is most different in pairwise
     % comparison ? 
 
-    plots.reactionPathwayPresence = pathwayPresenceHeat(project,referenceModel);
+    plots.reactionPathwayPresence = pathwayPresenceHeat(project, referenceModel);
 
 
     
@@ -943,8 +943,8 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         cmap = lines(length(allValues));
         
         % Create figure
-        fig = figure('Color','w','Position',[100 100 2000*numDatasets 2000],...
-                                           'Visible','off');
+        fig = figure('Color','w','Position', [100 100 2000*numDatasets 2000],...
+                                           'Visible', 'off');
         
         for k = 1:numDatasets
             dataset = datasets{k};
@@ -965,45 +965,45 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         
             % Assign consistent colors
             for i = 1:length(allValues)
-                b(i).FaceColor = cmap(i,:);
+                b(i).FaceColor = cmap(i, :);
             end
         
             % percentages
-            tot = sum(counts,1);
+            tot = sum(counts, 1);
             pct = 100 * counts ./ tot;
             pct = round(pct);
         
             % write percentages inside bars
-            for i = 1:size(counts,2)
+            for i = 1:size(counts, 2)
                 y0 = 0;
-                for j = 1:size(counts,1)
-                    if counts(j,i) > 0
-                        text(i, y0 + counts(j,i)/2, ...
-                            sprintf('%g%%', pct(j,i)), ...
-                            'HorizontalAlignment','center', ...
-                            'VerticalAlignment','middle', ...
-                            'FontSize',13,'Color','w','FontWeight','bold');
+                for j = 1:size(counts, 1)
+                    if counts(j, i) > 0
+                        text(i, y0 + counts(j, i)/2, ...
+                            sprintf('%g%%', pct(j, i)), ...
+                            'HorizontalAlignment', 'center', ...
+                            'VerticalAlignment', 'middle', ...
+                            'FontSize', 13, 'Color', 'w', 'FontWeight', 'bold');
                     end
-                    y0 = y0 + counts(j,i);
+                    y0 = y0 + counts(j, i);
                 end
             end
         
             % axes labels and formatting
             ax.FontSize = 14;
-            xlabel(xlabelPlot,'FontSize',16)
-            ylabel(ylabelPlot,'FontSize',16)
-            title(titlePlot,'FontSize',18)
+            xlabel(xlabelPlot, 'FontSize', 16)
+            ylabel(ylabelPlot, 'FontSize', 16)
+            title(titlePlot, 'FontSize', 18)
         
             xticks(1:length(xtickPlot))
             xticklabels(regexprep(xtickPlot, "_", "-"))
         end
         
         % Single legend for the whole figure
-        lgd = legend(string(allValues), 'Location','northeastoutside');
+        lgd = legend(string(allValues), 'Location', 'northeastoutside');
         lgd.FontSize = 14;
         lgd.Title.String = "Discretization status";
     end
-    function plt = pathwayPresenceHeat(project,referenceModel)
+    function plt = pathwayPresenceHeat(project, referenceModel)
         % This function produces a heatmap showing the rxns presence in
         % comparison to a reference model in the color scale (0-1) and the
         % absolute number of rxns per pathway in every model as text in the
@@ -1028,17 +1028,17 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         
         pathwayCounts = array2table(G * orderedFeature, ...
                                      'VariableNames', structureAnalysis.modelNames,...
-                                     'RowNames',string(cellstr(uniquePathways)));
+                                     'RowNames', string(cellstr(uniquePathways)));
         % add reference model count to be able to make a relative abundance
         pathwayCounts.referenceModel = groupcounts(pathways);
     
-        relativeCounts = array2table(pathwayCounts{:,1:end-1} ./ pathwayCounts.referenceModel, ...
+        relativeCounts = array2table(pathwayCounts{:, 1:end-1} ./ pathwayCounts.referenceModel, ...
                                      'VariableNames', structureAnalysis.modelNames,...
-                                     'RowNames',cellstr(uniquePathways));
+                                     'RowNames', cellstr(uniquePathways));
     
         % get the idx of the most variant pathways in terms of rxns presence
         relativeCounts.row_var = var(relativeCounts{:,:}, 0, 2);
-        pathwayCounts.row_var = var(pathwayCounts{:,1:end-1},0,2);
+        pathwayCounts.row_var = var(pathwayCounts{:, 1:end-1}, 0, 2);
         pathwayCounts = pathwayCounts(pathwayCounts.referenceModel < 1000,:);
         % Get indices of top n highest variance rows
     
@@ -1047,16 +1047,16 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         pathwayCounts = pathwayCounts(find(pathwayCounts.row_var ~= 0),:);
         relativeCounts = relativeCounts(pathwayCounts.Properties.RowNames,:);
         % plot top 20 most variant pathways between the choosen models
-        data = relativeCounts{:,1:end-1};
+        data = relativeCounts{:, 1:end-1};
         rowNames = string(relativeCounts.Properties.RowNames);
         colNames = structureAnalysis.modelNames;
     
         %%%%%%%%%%
     
-        plt = figure('Color','w','Position',[20 20 700 300],'Visible','off');
-        tiledlayout(1,4, ...
-            'TileSpacing','compact', ...
-            'Padding','compact')
+        plt = figure('Color', 'w', 'Position', [20 20 700 300], 'Visible', 'off');
+        tiledlayout(1, 4, ...
+            'TileSpacing', 'compact', ...
+            'Padding', 'compact')
     
         % ---- Bar plot (LEFT) ----
         ax1 = nexttile(1);
@@ -1082,12 +1082,12 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
         % ---- Heatmap (RIGHT, spanning 2 tiles) ----
         % z-scaling of the data -> so that the colorod
-        ax2 = nexttile(2,[1 3]);
+        ax2 = nexttile(2, [1 3]);
     
         imagesc(data)
         cmap = getColorPallette();
         colorbar
-        title("relative counts of subsystem rxn occurence/reference model" )    % grayscale
+        title("Relative counts of subsystem rxn occurence/reference model")    % grayscale
         ax2.XTick = 1:numel(colNames);
         ax2.XTickLabel = colNames;
     
@@ -1108,7 +1108,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             for j = 1:nCols
                 % You want absolute numbers, not relative counts, so use pathway_counts
                 % (or multiply relative_counts by referenceModel if needed)
-                value = pathwayCounts{i,j}; % +1 because first column is referenceModel
+                value = pathwayCounts{i, j}; % +1 because first column is referenceModel
                 % Place text at the center of the tile
                 text(ax2, j, i, num2str(value), ...
                     'HorizontalAlignment','center', ...
@@ -1118,14 +1118,14 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             end
         end
         % ---- Align rows ----
-        linkaxes([ax1 ax2],'y')
+        linkaxes([ax1 ax2], 'y')
 
     end
-    function fig = plotCoreInModel(data,modelsList)
+    function fig = plotCoreInModel(data, modelsList)
         % This function visualizes how many of the core rxns defined by
         % rFastcormics make it in and how many of the core rxns are
         % overlapping between the models.=
-        upperData = data([3,2],:);
+        upperData = data([3, 2], :);
         categories = fieldnames(modelsList)'; 
     
         % -- Visualization: get a sense of how many of the core reactions made
@@ -1137,8 +1137,8 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
     
     
-        fig = figure('Color','w','Visible','off','Position', [100 100 1500 1500]);
-        tiledlayout(2,2,'TileSpacing','compact','Padding','compact')
+        fig = figure('Color', 'w', 'Visible', 'off', 'Position', [100 100 1500 1500]);
+        tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact')
     
         % --- first barplot
         ax1 = nexttile(1);
@@ -1151,20 +1151,20 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         ylabel('# rxns', 'FontSize', 14)
     
         % Legend
-        legend({"non-core reactions","core reactions"}, 'Location','northwest', 'FontSize', 14)
+        legend({"Non-core reactions","Core reactions"}, 'Location', 'northwest', 'FontSize', 14)
     
         % Title
         title('Core and non-core reactions per model', 'FontSize', 14)
     
         % ---- Compute percentages of upper stack ----
-        total = sum(upperData,1);                   % total per model
-        percentUpper = 100 * upperData(2,:) ./ total;  % percentage of upper bar
+        total = sum(upperData, 1);                   % total per model
+        percentUpper = 100 * upperData(2, :) ./ total;  % percentage of upper bar
     
         % ---- Add text labels on top of upper bars ----
-        for i = 1:size(upperData,2)  % loop over models
+        for i = 1:size(upperData, 2)  % loop over models
             % x-position is the bar center, y-position is height of lower + upper
             x = i;
-            y = upperData(1,i) + upperData(2,i)/2;  % middle of upper stack
+            y = upperData(1, i) + upperData(2, i)/2;  % middle of upper stack
             text(x, y, sprintf('%.1f%%', percentUpper(i)), ...
                  'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
                  'FontSize', 12, 'Color', 'w', 'FontWeight', 'bold');
@@ -1174,7 +1174,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
     
          % --- second barplot
-         data = data(1:2,:);  % only core vs non-core counts
+         data = data(1:2, :);  % only core vs non-core counts
         ax2 = nexttile(2);
         hb = bar(data', 'stacked');
     
@@ -1184,29 +1184,29 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         ylabel('# rxns', 'FontSize', 14)
     
         % Legend
-        legend({ "not included","included"}, 'Location','northwest', 'FontSize', 14)
+        legend({ "Not included","Included"}, 'Location', 'northwest', 'FontSize', 14)
     
         % Title
-        title('Core reactions used to construct the models.', 'FontSize', 14)
+        title('Core reactions used into model building.', 'FontSize', 14)
     
         % ---- Compute percentages of upper stack ----
-        total = sum(data,1);                   % total per model
+        total = sum(data, 1);                   % total per model
         percentUpper = 100 * data(2,:) ./ total;  % percentage of upper bar
     
         % ---- Add text labels on top of upper bars ----
-        for i = 1:size(data,2)  % loop over models
+        for i = 1:size(data, 2)  % loop over models
             % x-position is the bar center, y-position is height of lower + upper
             x = i;
-            y = data(1,i) + data(2,i)/2;  % middle of upper stack
+            y = data(1, i) + data(2, i)/2;  % middle of upper stack
             text(x, y, sprintf('%.1f%%', percentUpper(i)), ...
                  'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
                  'FontSize', 12, 'Color', 'w', 'FontWeight', 'bold');
         end
     
         % Tile 3 (THIS IS THE KEY)
-        ax3 = nexttile(3,[1 2]);   % column 2, span both rows
-        axis(ax3,'off')
-        hold(ax3,'on')
+        ax3 = nexttile(3, [1 2]);   % column 2, span both rows
+        axis(ax3, 'off')
+        hold(ax3, 'on')
     
     
         core_reactionsIncluded = struct2cell(structfun(@(x) x.core_reactions(find(ismember(x.core_reactions, x.model.rxns)))', ...
@@ -1215,7 +1215,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
         corePresence = structureAnalysis.rxn_mapping_table{core_reactionsIncluded,:} ~= 0;
         [figV,idxInterOutersections,~] = plotFlexibleVenn(corePresence, structureAnalysis.modelNames, ... 
-                                                            "Structural model comparison: core rxns presence","visiblePlot","off");
+                                                            "Structural model comparison: core rxns presence", "visiblePlot", "off");
     
     
         if string(class(figV)) == 'matlab.ui.Figure'
@@ -1230,8 +1230,8 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
     
             % Fix geometry
-            axis(ax3,'tight')
-            axis(ax3,'equal')
+            axis(ax3, 'tight')
+            axis(ax3, 'equal')
             ax3.Clipping = 'off';
             close(figV)
         else 
@@ -1239,7 +1239,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             mainFig = gcf;
     
             % create Venn/heatmap figure
-            [figV,idxInterOutersections,~] = plotFlexibleVenn( ...
+            [figV, idxInterOutersections,~] = plotFlexibleVenn( ...
                 corePresence, structureAnalysis.modelNames, ...
                 "Structural model comparison: core rxns presence");
     
@@ -1249,23 +1249,23 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             C = figV.ColorData;
     
             % close the temporary figure
-            close(ancestor(figV,'figure'))
+            close(ancestor(figV, 'figure'))
     
             % activate main figure again
             figure(mainFig)
     
             % place heatmap in tile
-            nexttile(3,[1 2])
-            heatmap(X,Y,C)
+            nexttile(3, [1 2])
+            heatmap(X, Y, C)
     
-            title('Structural model comparison: core rxns presence')
+            title('Structural model comparison: core reactions presence')
     
     
         end
 
 
     end
-    function plt = getUpsetPlotCore(project,modelsList,structureAnalysis)
+    function plt = getUpsetPlotCore(project, modelsList, structureAnalysis)
         % This figure shows the pathway of the inter and outersections
         % between the core reactions in the model. This is a quality figure
         % to controll in which subsystems we see a difference based on the
@@ -1280,25 +1280,25 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
         core_reactionsIncluded = struct2cell(structfun(@(x) x.core_reactions(find(ismember(x.core_reactions, x.model.rxns)))', ...
                                                 modelsList, 'UniformOutput', false));
         core_reactionsIncluded = unique([core_reactionsIncluded{:}]);
-        corePresence = structureAnalysis.rxn_mapping_table{core_reactionsIncluded,:} ~= 0;
+        corePresence = structureAnalysis.rxn_mapping_table{core_reactionsIncluded, :} ~= 0;
         [figV,idxInterOutersections,~] = plotFlexibleVenn(corePresence, structureAnalysis.modelNames, ... 
-                                                            "Structural model comparison: core rxns presence","visiblePlot","off");
+                                                            "Structural model comparison: core reactions presence", "visiblePlot", "off");
 
         if string(class(figV)) == 'matlab.ui.Figure'
 
             namesIntersections = fieldnames(idxInterOutersections);
-            [~,allIntersection] = max(cellfun(@(x) length(x), namesIntersections));
+            [~, allIntersection] = max(cellfun(@(x) length(x), namesIntersections));
             idxInterOutersections = rmfield(idxInterOutersections, namesIntersections(allIntersection));
             % now get the pathway of every entry
             interOutersectionsPathways = structfun(@(x) string(project.models.(referenceModel).model.subSystems(x)),...
-                                                     idxInterOutersections,'UniformOutput',false);
+                                                     idxInterOutersections, 'UniformOutput', false);
             C = struct2cell(interOutersectionsPathways);
             uniquePathways = unique(vertcat(C{:}));
     
     
             % Preprocess pathways: collapse transport
-            S = structfun(@(x) regexprep(x,"^Transport.*","Transport"), interOutersectionsPathways, 'UniformOutput', false);
-            pathwaysUnique = unique(regexprep(uniquePathways,"^Transport.*","Transport"));
+            S = structfun(@(x) regexprep(x, "^Transport.*", "Transport"), interOutersectionsPathways, 'UniformOutput', false);
+            pathwaysUnique = unique(regexprep(uniquePathways, "^Transport.*", "Transport"));
     
             barNames = string(fieldnames(S));
             nBars = numel(barNames);
@@ -1308,16 +1308,16 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             Y = cat(1, Y{:});
     
             % Sort bars by total counts (descending)
-            [~, sortIdx] = sort(sum(Y,2), 'descend');
-            Y = Y(sortIdx,:);
+            [~, sortIdx] = sort(sum(Y, 2), 'descend');
+            Y = Y(sortIdx, :);
             barNamesSorted = barNames(sortIdx);
     
             % Plot
-            plt = figure('Color','w','Position',[100 100 6000 2000], 'Visible','off');
+            plt = figure('Color', 'w', 'Position', [100 100 6000 2000], 'Visible', 'off');
             b = bar(Y, 'stacked');
     
             % Generate a qualitative colormap with enough colors
-            numColors = size(Y,2);
+            numColors = size(Y, 2);
             % Example 20-color qualitative palette (from ColorBrewer / Tableau)
             cmap = [ ...
                 166 206 227;
@@ -1343,7 +1343,7 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     
             % Apply colors to each category
             for k = 1:numColors
-                b(k).FaceColor = cmap(mod(k-1,size(cmap,1))+1,:);
+                b(k).FaceColor = cmap(mod(k-1, size(cmap, 1)) + 1, :);
             end
     
     
@@ -1351,11 +1351,11 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
             ax = gca;
             ax.XTickLabel = regexprep(barNamesSorted, "_", " ");
             ax.FontSize = 20;
-            xlabel('Model intersections/outersections','FontSize',20)
-            ylabel('# Core Reactions','FontSize',20)
-            title('Count of Core reactions per pathway and intersection/outersection','FontSize',20)
+            xlabel('Model intersections/outersections', 'FontSize', 20)
+            ylabel('# Core Reactions', 'FontSize', 20)
+            title('Count of Core reactions per pathway and intersection/outersection', 'FontSize', 20)
     
-            lgd = legend(pathwaysUnique, 'Location','northeast');
+            lgd = legend(pathwaysUnique, 'Location', 'northeast');
             lgd.FontSize = 20;
         else
             plt = [];
@@ -1363,61 +1363,61 @@ function structureAnalysis = modelStructuralComparison(project, modelList,refere
     end
 end
 
-function project = modelSamplingComparison(project,comparisonName)
+function project = modelSamplingComparison(project, comparisonName)
 
 
     listModelNames = strsplit(comparisonName, "__"); 
-    listModelNames = strsplit(listModelNames(1),"_vs_");
+    listModelNames = strsplit(listModelNames(1), "_vs_");
     % give the comparison the name of all models + a identifier choosen
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
     % run structural model comparison
     replacementValue = "analysis.active.sampling.samples"; % get the fba solution values
-    [project.comparisons.(comparisonName).orderedSamples,~,sampleLabels] = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
+    [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, "rxns", referenceModel, replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
 
-    objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns,"biomass_reaction"));
+    objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns, "biomass_reaction"));
 
     % Normalize: divide each column (sample) by its biomass flux value
     %project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
 
 
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
-    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project,listModelNames,"rxns",referenceModel,replacementValue);
+    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project, listModelNames, "rxns", referenceModel, replacementValue);
 
     %project.comparisons.(comparisonName).ksResults = fluxKSvsControl(project.comparisons.(comparisonName).orderedSamples, sampleLabels, "WT");
     
     %project.comparisons.(comparisonName).plots.sampling = visualizeSamplingLandscape(project,comparisonName,'visiblePlot',"off");
 
 
-    [idxPathways,namesPathways] = getDefaultSubsystems(project, referenceModel); 
+    [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel); 
 
 
-    [fluxsumSets,project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets, project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                           namesPathways,...
-                                                                          "heatmap",true,true,"orderedSamples", "reactions",...
-                                                                          referenceModel,"off");
+                                                                          "heatmap", true, true, "orderedSamples", "reactions",...
+                                                                          referenceModel, "off");
 
 
 
-    [fluxsumSets,project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsum] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets, project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsum] = visualizeFluxsum(project,comparisonName, [], idxPathways,...
                                                                            namesPathways,...
-                                                                           "heatmap",true,true,"orderedSamples", "incoming",...
-                                                                          referenceModel,"off");
+                                                                           "heatmap", true, true, "orderedSamples", "incoming",...
+                                                                           referenceModel, "off");
 
-    [fluxsumSets,...
-     project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsumSamples] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets, ...
+     project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsumSamples] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                      namesPathways,...
-                                                                     "heatmapSample",true,true,"orderedSamples", "reactions",...
-                                                                          referenceModel,"off");
+                                                                     "heatmapSample", true, true, "orderedSamples", "reactions",...
+                                                                     referenceModel, "off");
 
 
 
-    [fluxsumSets,...
-     project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsumSamples] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
+    [fluxsumSets, ...
+     project.comparisons.(comparisonName).plots.sampling.heatmapMetsFluxsumSamples] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                       namesPathways,...
-                                                                      "heatmapSample",true,true,"orderedSamples", "incoming",...
-                                                                          referenceModel,"off");
+                                                                      "heatmapSample", true, true, "orderedSamples", "incoming",...
+                                                                      referenceModel, "off");
 
     % [fluxsumSets,...
     %  project.comparisons.(comparisonName).plots.sampling.heatmapRxnFluxsumSamplesAllFeatures] = visualizeFluxsum(project,comparisonName,[],idxPathways,...
@@ -1434,14 +1434,13 @@ function project = modelSamplingComparison(project,comparisonName)
     %                                                                      referenceModel,"off");
 
 
-    [fluxsumSets,fig1] = visualizeFluxsum(project,comparisonName,[],{idxPathways{1}},...
-                                              namesPathways(1),"violin",true,false,"orderedSamples",...
-                                              "incoming",referenceModel,"off");
-    [fluxsumSets,fig2] = visualizeFlux(project,comparisonName,[],{idxPathways{1}},...
+    [fluxsumSets, fig1] = visualizeFluxsum(project, comparisonName, [], {idxPathways{1}},...
+                                              namesPathways(1), "violin", true, false, "orderedSamples",...
+                                              "incoming", referenceModel, "off");
+    [fluxsumSets, fig2] = visualizeFlux(project,comparisonName, [], {idxPathways{1}},...
                                          namesPathways(1), "all", "off");
 
-    project.comparisons.(comparisonName).plots.sampling = mergeStructs( ...
-                                                                        project.comparisons.(comparisonName).plots.sampling, ...
+    project.comparisons.(comparisonName).plots.sampling = mergeStructs(project.comparisons.(comparisonName).plots.sampling, ...
                                                                         fig1, fig2);
 
     
@@ -1496,7 +1495,7 @@ function project = modelSamplingComparison(project,comparisonName)
             pval   = zeros(nRxns, 1);
         
             for r = 1:nRxns
-                [~, pval(r), ksstat(r)] = kstest2(fluxControl(r,:), fluxModel(r,:));
+                [~, pval(r), ksstat(r)] = kstest2(fluxControl(r, :), fluxModel(r, :));
             end
         
             meanDiff = mean(fluxModel, 2) - mean(fluxControl, 2);
@@ -1515,30 +1514,30 @@ end
 
 
 
-function assertValidProjectStruct(project, requiredFields, singleModelAnalysisFields)
+function assertValidProjectStruct(project, requiredFields, singleModelAnalysisFields) % difference with validateInputs? replace with chekProjectFormat as well?
 % This is a test function checking that the input project object is in the
 % right format to be used in the comparative analysis
 arguments
     project
-    requiredFields ={'model', 'settings'}
-    singleModelAnalysisFields ={'expression_data', 'discretized_data', 'sample_metadata', 'core_reactions'}
+    requiredFields = {'model', 'settings'}
+    singleModelAnalysisFields = {'expressionData', 'discretizedData', 'sampleMetadata', 'coreReactions'}
 end
     models = project.models;
 
     assert(isstruct(project), 'Input must be a struct.');
     assert(isstruct(models), 'models inside the project struct must also be a struct.');
 
-    names  = fieldnames(models);
+    names = fieldnames(models);
     
-    referenceModelStatus = structfun(@(mod) checkModelFields(mod, requiredFields,singleModelAnalysisFields), ...
-              models,'UniformOutput',true);
+    referenceModelStatus = structfun(@(mod) checkModelFields(mod, requiredFields, singleModelAnalysisFields), ...
+              models, 'UniformOutput', true);
 
     assert(sum(~referenceModelStatus) > 2,...
            'You have %s models that are entailing all the fields to be able to analyse them with the workflow, check your object again and make sure that it applies with the structure of a singleModelAnalysis',...
             string(sum(~referenceModelStatus)));
 
 
-    function referenceModelStatus = checkModelFields(mod, requiredFields,singleModelAnalysisFields)
+    function referenceModelStatus = checkModelFields(mod, requiredFields, singleModelAnalysisFields)
 
         f = fieldnames(mod);
         missing = requiredFields(~ismember(requiredFields, f));
@@ -1548,8 +1547,8 @@ end
              strjoin(missing, ', '));
 
         
-        assert(ismember("dico",fieldnames(mod.settings)), ...
-               'Dico is missing from the model.settings struct, the dico is needed to map the gene IDs from the gpr rules to symbols!')
+        assert(ismember("dico", fieldnames(mod.settings)), ...
+               'Dico is missing from the model.settings struct, the dico is needed to map the gene IDs from the GPR rules to symbols.')
 
         missing = singleModelAnalysisFields(~ismember(singleModelAnalysisFields, fieldnames(mod)));
 

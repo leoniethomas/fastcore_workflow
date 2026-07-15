@@ -144,7 +144,7 @@ if any(strcmp(toPerform, 'sampling'))
         % need to increase it, to allow faster mixing
         changeCobraSolverParams('LP','feasTol',1e-5);
         options.optPercentage = params.objThreshold*100;
-        if any(strcmp(analyses, 'FVA'))
+        if any(strcmp(toPerform, 'FVA'))
             model.lb = FVA.minFlux; % constraining the sampling space by the FVA boundaries helps
             model.ub = FVA.maxFlux; % but that means that the threshold for the FVA is autoomatically applied to the sampling
         end
@@ -257,7 +257,7 @@ if any(strcmp(toPerform, 'kld'))
     % Loading parameters
     params = tableToParamsStruct(parameterTable, 'kld', model);
     
-    if any(strcmp(analyses, 'sampling'))
+    if any(strcmp(toPerform, 'sampling'))
         % add the sampling to be one of the sets 
         samplingMatrix = project.models.(modelName).analysis.(id).sampling.samples;
     else 
@@ -270,7 +270,7 @@ if any(strcmp(toPerform, 'kld'))
     disp("Setting the rxn bounds for the biomassRxn to objThreshold percent of the optimum")
     model = changeRxnBounds(model, objFunction, boundSampling, 'l'); % 0.9 usually
 
-    if any(strcmp(analyses, 'FVA'))
+    if any(strcmp(toPerform, 'FVA'))
         model.lb = FVA.minFlux; % constraining the sampling space by the FVA boundaries helps
         model.ub = FVA.maxFlux; % but that means that the threshold for the FVA is autoomatically applied to the sampling
     end
