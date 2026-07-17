@@ -42,6 +42,7 @@ end
 % FVA
 if any(strcmp(toPerform, 'FVA'))
     disp('Running FVA.');
+    project.models.(modelName).analysis.(id).FVA = struct();
     
     % Loading parameters
     params = tableToParamsStruct(parameterTable, 'FVA', model);
@@ -51,12 +52,12 @@ if any(strcmp(toPerform, 'FVA'))
     FVA = table(FVAmin, FVAmax, 'VariableNames', {'minFlux', 'maxFlux'});
     
     % Storing the results
-    project.models.(modelName).analysis.(id).FVA = FVA;
+    project.models.(modelName).analysis.(id).FVA.minMaxFluxes = FVA;
 
     % check which rxns can loop without an input - tag the loops in the model
     modelTestLoops = changeRxnBounds(model, model.rxns(findExcRxns(model)), 0, 'b');
     [Vmin,Vmax] = fluxVariability(modelTestLoops);
-    project.models.(modelName).analysis.(id).loopStatus = Vmin ~= 0 | Vmax ~= 0; % -> loops in the model
+    project.models.(modelName).analysis.(id).FVA.loopStatus = Vmin ~= 0 | Vmax ~= 0; % -> loops in the model
     
 end
 
@@ -70,7 +71,7 @@ if any(strcmp(toPerform, 'sampling'))
     mkdir(params.path);
     
     if ~isfield(params, 'osenseStr') && ~isfield(params, 'minNorm')
-        if isfield(analysis, 'FBA')
+        if isfield(project.models.(modelName).analysis.(id), 'FBA')
             FBA = project.models.(modelName).analysis.(id).FBA;
         else
             FBA = optimizeCbModel(model, 'max', 'zero');
@@ -212,7 +213,7 @@ if any(strcmp(toPerform, 'loopless'))
         thermoFeas = zeros(size(samples));
         thermoStatusMatrix   = zeros(size(samples));  % default 0 = corrected
         neededAttempts   = zeros(size(samples,1),1);  % default 0 = corrected
-        looplessStatus   = zeros(size(samples)); %  loopless reaction =1, still looping = 0
+        looplessStatus   = zeros(size(samples)); %  loopless reaction = 1, still looping = 0
         h = waitbar(0, 'Processing samples to get rid of thermodynamic infeasible loops...');counter = 0;N = numel(1:step:n);
         
         for idx = 1:step:n
