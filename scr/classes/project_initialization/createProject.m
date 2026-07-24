@@ -7,6 +7,7 @@ function project = createProject(params)
 % - contextSpecificModel (rFastcormics)
 % - expressionData
 % - discretized (rFastcormics)
+% - geneNames (rFastcormics)
 % - dico (rFastcormics)
 % - objFunction (rFastcormics)
 % - consensusProportion (rFastcormics)

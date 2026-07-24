@@ -195,7 +195,7 @@ paramsForPipeline = {paramsForPipelineControl, ...
 BRCAProject = createProject(paramsForPipeline);
 %% ADD A MODEL TO AN EXISTING PROJECT
 paramsConsistentMediumConstrainedModel = struct();
-paramsConsistentMediumConstrainedModel.modelName = "ConsistentMediumConstrainedModel";
+paramsConsistentMediumConstrainedModel.modelName = "consistentMediumConstrainedModel";
 paramsConsistentMediumConstrainedModel.contextSpecificModel = consistentMediumConstrainedModel;
 paramsConsistentMediumConstrainedModel.dico = dico;
 paramsConsistentMediumConstrainedModel.mediumComposition = medium;

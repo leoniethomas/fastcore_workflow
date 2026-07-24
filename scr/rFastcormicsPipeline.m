@@ -124,6 +124,7 @@ consistentModel = removeRxns(model, model.rxns(setdiff(1:numel(model.rxns), cons
 %% Initialize params saving for pipeline with arguments
 paramsForPipeline = struct();
 paramsForPipeline.discretizedData = discretized;
+paramsForPipeline.geneIds = rownames;
 paramsForPipeline.dico = dico;
 paramsForPipeline.objFunction = biomassReactionName;
 paramsForPipeline.consensusProportion = consensusProportion;
@@ -341,14 +342,14 @@ function mustBeCobraModel(model)
 end
 
 function validateInputs(model, biomassReactionName, discretized, rownames, dico, minMatches)
-arguments
-    model 
-    biomassReactionName 
-    discretized 
-    rownames 
-    dico 
-    minMatches = 3
-end
+    arguments
+        model 
+        biomassReactionName 
+        discretized 
+        rownames 
+        dico 
+        minMatches = 3
+    end
 
     % 1. size check - check that the number of genes is the same in the
     % rownames and discretized

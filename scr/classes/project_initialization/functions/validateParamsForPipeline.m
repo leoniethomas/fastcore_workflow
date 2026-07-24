@@ -14,6 +14,7 @@ function params = validateParamsForPipeline(params)
         params.objFunction {mustBeText} = ''
         params.discretizedData (:,:) double = []
         params.expressionData table = table()
+        params.geneIds string = ''
         params.consensusProportion = []
         params.referenceModel {mustBeText} = ''
         params.optionalSettings (1,1) struct {validateOptionalSettings} = struct()
@@ -21,7 +22,7 @@ function params = validateParamsForPipeline(params)
         params.coreReactions cell {mustBeVectorOrEmpty} = {}
         params.manuallySetBoundaries (1,1) struct {validateManuallySetBoundaries} = struct()
     end
-
+    
     % Cross-field validation
     % Either both empty or both provided
     if isempty(params.sampleMetadata) ~= (strlength(params.sampleLabeling) == 0)
@@ -37,6 +38,78 @@ function params = validateParamsForPipeline(params)
 
     if ~isempty(params.consensusProportion)
         mustBeNonnegative(params.consensusProportion);
+    end
+    
+    % geneIds: required when expressionData or discretizedData is provided
+    hasData = ~isempty(params.discretizedData) || ~isempty(params.expressionData);
+    hasGeneIds = isfield(params, 'geneIds') && ~isempty(params.geneIds);
+    hasDico = isfield(params, 'dico') && ~isempty(params.dico);
+    
+    if hasData && ~hasGeneIds
+        error("geneIds is required when expressionData or discretizedData is provided.");
+    end
+    
+    if hasData && ~hasDico
+        error("dico is required when expressionData or discretizedData is provided.");
+    end
+    
+    if hasGeneIds && hasData
+        if ~isempty(params.discretizedData) && size(params.geneIds, 1) ~= size(params.discretizedData, 1)
+            error("geneIds must have the same number of rows as discretizedData (%d rows), got %d rows.", ...
+                size(params.discretizedData, 1), size(params.geneIds, 1));
+        end
+        if ~isempty(params.expressionData) && size(params.geneIds, 1) ~= size(params.expressionData, 1)
+            error("geneIds must have the same number of rows as expressionData (%d rows), got %d rows.", ...
+                size(params.expressionData, 1), size(params.geneIds, 1));
+        end
+    end
+    
+    % expressionData and discretizedData must have identical dimensions when both provided
+    if ~isempty(params.discretizedData) && ~isempty(params.expressionData)
+        if ~isequal(size(params.discretizedData), size(params.expressionData))
+            error("discretizedData (%s) and expressionData (%s) must have the same dimensions (rows = genes, columns = samples).", ...
+                mat2str(size(params.discretizedData)), mat2str(size(params.expressionData)));
+        end
+    end
+    
+    if isfield(params, 'dico')
+        requiredDicoCols = {'geneIdsInModel', 'geneIdsInData'};
+        missingCols = setdiff(requiredDicoCols, string(params.dico.Properties.VariableNames));
+        
+        if ~isempty(missingCols)
+            error("dico must contain columns: %s. Missing: %s.", ...
+                strjoin(requiredDicoCols, ", "), strjoin(missingCols, ", "));
+        end
+        
+        % geneIdsInModel must cover >= 5% of contextSpecificModel genes
+        modelGenes = string(params.contextSpecificModel.genes);
+        dicoModelGenes = string(params.dico.geneIdsInModel);
+        nModelGenes = numel(modelGenes);
+        nOverlapModel = sum(ismember(dicoModelGenes, modelGenes));
+        pctModel = (nOverlapModel / nModelGenes) * 100;
+        
+        if pctModel < 5
+            error("dico.geneIdsInModel covers only %.1f%% (%d/%d) of contextSpecificModel genes. Minimum 5%% required.", ...
+                pctModel, nOverlapModel, nModelGenes);
+        end
+        warning("dico.geneIdsInModel covers %.1f%% (%d/%d) of contextSpecificModel genes.", ...
+            pctModel, nOverlapModel, nModelGenes);
+        
+        % geneIdsInData must cover >= 5% of geneIds when data is provided
+        if hasData
+            dataGeneIds = string(params.geneIds);
+            dicoDataGenes = string(params.dico.geneIdsInData);
+            nDataGenes = numel(dataGeneIds);
+            nOverlapData = sum(ismember(dicoDataGenes, dataGeneIds));
+            pctData = (nOverlapData / nDataGenes) * 100;
+            
+            if pctData < 5
+                error("dico.geneIdsInData covers only %.1f%% (%d/%d) of geneIds. Minimum 5%% required.", ...
+                    pctData, nOverlapData, nDataGenes);
+            end
+            warning("dico.geneIdsInData covers %.1f%% (%d/%d) of geneIds.", ...
+                pctData, nOverlapData, nDataGenes);
+        end
     end
 
 end

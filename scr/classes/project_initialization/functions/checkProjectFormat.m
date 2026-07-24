@@ -80,7 +80,7 @@ function validateModelInProject(m, path, analysisName)
 % is validated. Otherwise, all analyses are validated.
 
     allowed = {'model', 'sampleMetadata', 'discretizedData', 'expressionData', ...
-        'coreReactions', 'settings', 'analysis'};
+        'coreReactions', 'mappedDiscretizedRxns', 'settings', 'analysis'};
 
     actual = fieldnames(m);
     extra = setdiff(actual, allowed);
@@ -100,20 +100,94 @@ function validateModelInProject(m, path, analysisName)
     if isfield(m, 'sampleMetadata') && ~istable(m.sampleMetadata)
         error("%s.sampleMetadata must be a table.", path);
     end
-    if isfield(m, 'discretizedData') && ~isa(m.discretizedData, 'double')
-        error("%s.discretizedData must be a double array.", path);
+    
+    if isfield(m, 'discretizedData')
+        if ~istable(m.discretizedData)
+            error("%s.discretizedData must be a table.", path);
+        end
+        requiredCols = {'geneIds', 'value'};
+        missingCols = setdiff(requiredCols, string(m.discretizedData.Properties.VariableNames));
+        if ~isempty(missingCols)
+            error("%s.discretizedData must contain columns: %s. Missing: %s.", ...
+                path, strjoin(requiredCols, ", "), strjoin(missingCols, ", "));
+        end
     end
-    if isfield(m, 'expressionData') && ~istable(m.expressionData)
-        error("%s.expressionData must be a table.", path);
+    
+    if isfield(m, 'expressionData')
+        if ~istable(m.expressionData)
+            error("%s.expressionData must be a table.", path);
+        end
+        requiredCols = {'geneIds', 'expression'};
+        missingCols = setdiff(requiredCols, string(m.expressionData.Properties.VariableNames));
+        if ~isempty(missingCols)
+            error("%s.expressionData must contain columns: type: %s. Missing: %s.", ...
+                path, strjoin(requiredCols, ", "), strjoin(missingCols, ", "));
+        end
     end
+    
     if isfield(m, 'coreReactions')
         mustBeVectorOrEmpty(m.coreReactions);
+    end
+    
+    if isfield(m, 'mappedDiscretizedRxns')
+        if ~isa(m.mappedDiscretizedRxns, 'int8')
+            error("m.mappedDiscretizedRxns must be an int8 array.");
+        end
     end
 
     % Validate settings
     if isfield(m, 'settings')
         validateSettingsInProject(m.settings, path + ".settings", m);
     end
+
+     % === Cross-field validation: dico, discretizedData, expressionData, model.genes ===
+     hasDiscretized = isfield(m, 'discretizedData');
+     hasExpression = isfield(m, 'expressionData');
+     hasSettings = isfield(m, 'settings');
+     hasDico = hasSettings && isfield(m.settings, 'dico');
+     nbModelGenes = numel(m.model.genes);
+     modelGenes = regexprep(string(m.model.genes), "\.[0-9]+$", "");
+    
+     % If discretizedData or expressionData -> dico required with geneIdsInData column
+     if (hasDiscretized || hasExpression) && ~hasDico
+        error("%s: dico is required in settings when discretizedData or expressionData is present.", path);
+     end
+    
+     if hasDico
+     % dico must have geneIdsInData if discretizedData or expressionData
+        if (hasDiscretized || hasExpression)
+            if ~ismember('geneIdsInData', string(m.settings.dico.Properties.VariableNames))
+                error("%s.settings.dico must contain column 'geneIdsInData' when discretizedData or expressionData is present.", path);
+            end
+        end
+    
+        % dico must have same number of rows as model.genes
+        if height(m.settings.dico) ~= nbModelGenes
+            error("%s.settings.dico must have %d rows (same as model.genes), got %d.", ...
+                path, nbModelGenes, height(m.settings.dico));
+        end
+    
+        % dico.geneIdsInModel must be in same order as model.genes
+        dicoModelGenes = regexprep(string(m.settings.dico.geneIdsInModel), "\.[0-9]+$", "");
+        if ~isequal(dicoModelGenes, modelGenes)
+            error("%s.settings.dico.geneIdsInModel must be in the same order as model.genes.", path);
+        end
+     end
+    
+     % discretizedData: same number of rows as dico and model.genes, same gene order as dico.geneIdsInData
+     if hasDiscretized
+        if height(m.discretizedData) ~= nbModelGenes
+            error("%s.discretizedData must have %d rows (same as model.genes and dico), got %d.", ...
+                path, nbModelGenes, height(m.discretizedData));
+        end
+    
+        % geneIds in discretizedData must be in same order as dico.geneIdsInData
+        discGenes = regexprep(string(m.discretizedData.geneIds), "\.[0-9]+$", "");
+        dicoDataGenes = regexprep(string(m.settings.dico.geneIdsInData), "\.[0-9]+$", "");
+         if ~isequal(discGenes, dicoDataGenes)
+            error("%s.discretizedData.geneIds must be in the same order as dico.geneIdsInData.", path);
+         end
+     end
 
     % Validate analysis
     if nargin >= 3 && strlength(analysisName) > 0
@@ -144,15 +218,32 @@ function validateSettingsInProject(s, path, m)
             path, strjoin(extra, ", "));
     end
 
-    if isfield(s, 'dico') && ~istable(s.dico)
-        error("%s.dico must be a table.", path);
+    if isfield(s, 'dico')
+        if ~istable(s.dico)
+            error("%s.dico must be a table.", path);
+        end
+        requiredDicoCols = {'geneIdsInModel'};
+        missingCols = setdiff(requiredDicoCols, string(s.dico.Properties.VariableNames));
+        if ~isempty(missingCols)
+            error("%s.dico must contain at least column: %s. Missing: %s.", ...
+                path, strjoin(requiredDicoCols, ", "), strjoin(missingCols, ", "));
+        end
     end
+
     if isfield(s, 'objFunction') && ~(ischar(s.objFunction) || isstring(s.objFunction))
         error("%s.objFunction must be text.", path);
     end
+
     if isfield(s, 'referenceModel') && ~(ischar(s.referenceModel) || isstring(s.referenceModel))
         error("%s.referenceModel must be text.", path);
     end
+
+    if isfield(s, 'mapping')
+        if ~(issparse(s.mapping) && isa(s.mapping, 'double'))
+            error("s.mapping must be a sparse double matrix.");
+        end
+    end
+
     if isfield(s, 'optionalSettings')
         validateOptionalSettings(s.optionalSettings);
     end
@@ -286,7 +377,7 @@ function validateAnalysisEntry(entry, path, nbRxns, entryName)
             error("%s.FBA must be a struct.", path);
         end
         if isActive
-            allowedFba = {'analysisId'};
+            allowedFba = {'analysisId', 'basis', 'f', 'f0', 'f1', 'f2', 'lpmethod', 'obj', 'origStat', 'origStatText', 'solver', 'stat', 'time', 'v', 'vars_v', 'x'};
             actualFba = fieldnames(entry.FBA);
             extraFba = setdiff(actualFba, allowedFba);
             if ~isempty(extraFba)
@@ -596,6 +687,8 @@ end
 % project.models.Name1.sampleMetadata
 % project.models.Name1.discretizedData
 % project.models.Name1.expressionData
+% project.models.Name1.geneIds
+% project.models.Name1.mappedDiscretizedRxns
 % project.models.Name1.coreReactions
 % project.models.Name1.settings
 % project.models.Name1.settings.medium
