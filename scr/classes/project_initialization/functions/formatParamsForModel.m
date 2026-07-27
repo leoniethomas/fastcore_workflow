@@ -47,7 +47,7 @@ if length(fieldnames(paramsForModel)) > 2
     if isfield(paramsForModel, 'discretizedData')
         discretizedDataTable = table(string(paramsForModel.geneIds), ...
             paramsForModel.discretizedData, ...
-            'VariableNames', ['geneIds', 'value']);
+            'VariableNames', {'geneIds', 'value'});
 
         discretizedDataAligned = reorderDataToDico(discretizedDataTable, ...
             modelShortcut.settings.dico, 'filter');
@@ -59,7 +59,7 @@ if length(fieldnames(paramsForModel)) > 2
     if isfield(paramsForModel, 'expressionData')
         expressionDataTable = table(string(paramsForModel.geneIds), ...
             paramsForModel.expressionData, ...
-            'VariableNames', ['geneIds', 'expression']);
+            'VariableNames', {'geneIds', 'expression'});
 
         expressionDataAligned = reorderDataToDico(expressionDataTable, ...
             modelShortcut.settings.dico, 'keep');
@@ -115,6 +115,7 @@ if length(fieldnames(paramsForModel)) > 2
     if isfield(paramsForModel, 'mapping')
         mapping = paramsForModel.mapping;
         modelShortcut.settings.mapping = mapping; % previously mappedDiscRxnsSample
+        mapping = full(mapping);
         if isfield(modelShortcut.settings.scriptParameters, "consensusProportion")
             numberOfSamples = size(mapping, 2);
             % definition of initialCore reactions
@@ -185,6 +186,6 @@ function dataAligned = reorderDataToDico(dataTable, dico, mode)
         geneNamesCol(found) = string(dico.geneNames(idxDico(found)));
 
         dataAligned = addvars(dataAligned, geneNamesCol, ...
-            'Before', 1, 'VariableNames', 'geneNames');
+            'Before', 1, 'NewVariableNames', 'geneNames');
     end
 end

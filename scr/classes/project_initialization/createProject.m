@@ -40,17 +40,10 @@ for i = 1:numel(params)
     paramsForModel = params{i};
     
     % Validate each struct's fields
-    nv = struct2nv(paramsForModel); % converts in name-value pairs
-    paramsForModel = validateParamsForPipeline(nv{:});
+    paramsForModel = validateParamsForPipeline(paramsForModel);
     
     % Initiate a struct per model
     project.models.(paramsForModel.modelName) = formatParamsForModel(paramsForModel);
 end
 
-end
-
-function args = struct2nv(s)
-    fn = fieldnames(s);
-    vals = struct2cell(s);
-    args = reshape([fn, vals]', 1, []);
 end

@@ -169,7 +169,8 @@ function validateModelInProject(m, path, analysisName)
     
         % dico.geneIdsInModel must be in same order as model.genes
         dicoModelGenes = regexprep(string(m.settings.dico.geneIdsInModel), "\.[0-9]+$", "");
-        if ~isequal(dicoModelGenes, modelGenes)
+        validMask = ~isempty(dicoModelGenes);
+        if ~isequal(dicoModelGenes(validMask), modelGenes(validMask))
             error("%s.settings.dico.geneIdsInModel must be in the same order as model.genes.", path);
         end
      end
