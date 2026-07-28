@@ -40,8 +40,8 @@ model = project.models.(modelName).model;
 analysis = project.models.(modelName).analysis.(analysisId);
 FBAflux = analysis.FBA.x;
 GR = analysis.FBA.f;
-minFlux = analysis.FVA.minFlux;
-maxFlux = analysis.FVA.maxFlux;
+minFlux = analysis.FVA.minMaxFluxes.minFlux;
+maxFlux = analysis.FVA.minMaxFluxes.maxFlux;
 
 %% Required folders for saving 
 import mlreportgen.report.*
@@ -181,10 +181,10 @@ characteristics.nbUptakeRxns = sum(upt);
 characteristics.nbGPRrules = length(~cellfun(@isempty, model.grRules));
 
 % Nb of core retained in the model
-if isfield(project.models.(modelName), 'core_reactions')
-    characteristics.nbCoreRxnsAfterDiscretization = length(project.models.(modelName).core_reactions);
+if isfield(project.models.(modelName), 'coreReactions')
+    characteristics.nbCoreRxnsAfterDiscretization = length(project.models.(modelName).coreReactions);
     retainedRxns = model.rxns;
-    coreRetained = intersect(retainedRxns, project.models.(modelName).core_reactions);
+    coreRetained = intersect(retainedRxns, project.models.(modelName).coreReactions);
     characteristics.nbCoreRetained = length(coreRetained);
 end
 

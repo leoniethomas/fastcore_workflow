@@ -20,6 +20,13 @@ load('dataForTesting/data_no1.mat');
 % dico = load('dico.mat').dico;
 % medium = readtable('RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
 
+%% RENAMING DICO COLUMNS 
+dico.Properties.VariableNames{1} = 'geneIdsInModel';
+dico.Properties.VariableNames{2} = 'geneIdsInData';
+
+% Bonus: extra column with geneNames (for pipeline figures)
+dico.geneNames = dico.geneIdsInData;
+
 %% DISCRETIZATION
 brcaMatrixArray = table2array(brca_matrix); % transform table to array
 sampleNames = samples_metadata.barcode'; % sample names
@@ -88,7 +95,7 @@ consistentModel = removeRxns(origModel, origModel.rxns(setdiff(1:numel(origModel
 fastcc(consistentModel, 1e-4, 1);
 
 %% CONSTRAINING MODEL BOUNDS USING MEDIUM CONCENTRATIONS
-medium.Concentration_uM = medium.Concentration_M*10e6;
+medium.Concentration_uM = medium.Concentration_M*1e6;
 mediumConstrainedModel = changeRxnBounds(consistentModel, medium.ExRxns_Recon3D, -medium.Concentration_uM, 'l');
 % Adding specific constraints
 mediumConstrainedModel = changeRxnBounds(mediumConstrainedModel, {'EX_h2o2[e]', 'EX_o2s[e]', 'EX_oh1[e]', 'EX_ppi[e]'}, 0, 'l'); % closing uptakes
@@ -191,8 +198,10 @@ paramsForPipeline = {paramsForPipelineControl, ...
     paramsForPipelineStageII, ...
     paramsForPipelineStageIII, ...
     paramsForPipelineStageIV};
+
 %% CREATE A PROJECT
 BRCAProject = createProject(paramsForPipeline);
+
 %% ADD A MODEL TO AN EXISTING PROJECT
 paramsConsistentMediumConstrainedModel = struct();
 paramsConsistentMediumConstrainedModel.modelName = "consistentMediumConstrainedModel";

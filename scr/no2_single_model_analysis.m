@@ -38,11 +38,11 @@ pathwaysOfInterest = {'Citric acid cycle', 'Pyruvate metabolism', 'Glutamate met
 % List of metabolites
 metsOfInterest = {'glc_D', 'pyr', 'lac_L', 'lac_D', 'gln_L', 'glu_L', 'ala_L'};
 
-writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260624_1625', ...
+writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260727_1852', ...
     'pathwaysOfInterest', pathwaysOfInterest, 'metsOfInterest', metsOfInterest);
 
 %% ADDING AN ANALYSIS TO AN EXISTING ONE
-BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'StageIV', 'singleGeneDeletion', 'analysis_20260624_1625');
+BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'StageIV', 'singleGeneDeletion', 'analysis_20260727_1852');
 
 
 
