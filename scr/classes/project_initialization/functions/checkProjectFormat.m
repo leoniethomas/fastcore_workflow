@@ -80,13 +80,14 @@ function validateModelInProject(m, path, analysisName)
 % is validated. Otherwise, all analyses are validated.
 
     allowed = {'model', 'sampleMetadata', 'discretizedData', 'expressionData', ...
-        'coreReactions', 'mappedDiscretizedRxns', 'settings', 'analysis'};
+        'coreReactions', 'mappedDiscretizedRxnsAllSamples', 'mappedDiscretizedRxns', ...
+        'settings', 'analysis'};
 
     actual = fieldnames(m);
     extra = setdiff(actual, allowed);
     if ~isempty(extra)
         error("Unexpected field(s) in %s: %s. Allowed ones are: 'model', 'sampleMetadata', " + ...
-            "'discretizedData', 'expressionData', 'coreReactions', 'settings', 'analysis'", ...
+            "'discretizedData', 'expressionData', 'coreReactions', 'mappedDiscretizedRxnsAllSamples', 'mappedDiscretizedRxns', 'settings', 'analysis'", ...
             path, strjoin(extra, ", "));
     end
 
@@ -111,6 +112,33 @@ function validateModelInProject(m, path, analysisName)
             error("%s.discretizedData must contain columns: %s. Missing: %s.", ...
                 path, strjoin(requiredCols, ", "), strjoin(missingCols, ", "));
         end
+
+        % Checking of m.mappingDiscretizedRxnsAllSamples (int8) and
+        % m.mappedDiscretizedRxns (int8)
+        % Same nb of rows as discretizedData
+        nRows = size(m.model.rxns, 1);
+    
+        % --- mappingDiscretizedRxnsAllSamples : int8 ---
+        if ~isa(m.mappedDiscretizedRxnsAllSamples, 'int8')
+            error("%s.mappedDiscretizedRxnsAllSamples must be int8 (current: %s).", ...
+                  path, class(m.mappedDiscretizedRxnsAllSamples));
+        end
+        if size(m.mappedDiscretizedRxnsAllSamples, 1) ~= nRows
+            name = string(regexp(path, '[^.]+$', 'match', 'once'));
+            error("%s.mappedDiscretizedRxnsAllSamples must have %d rows (same as number of reactions in %s model), has %d.", ...
+                  path, nRows, name, size(m.model.rxns, 1));
+        end
+    
+        % --- mappedDiscretizedRxns : int8 ---
+        if ~isa(m.mappedDiscretizedRxns, 'int8')
+            error("%s.mappedDiscretizedRxns must be int8 (current: %s).", ...
+                  path, class(m.mappedDiscretizedRxns));
+        end
+        if size(m.mappedDiscretizedRxns, 1) ~= nRows
+            name = string(regexp(path, '[^.]+$', 'match', 'once'));
+            error("%s.mappedDiscretizedRxns must have %d rows (same as number of reactions in %s model), has %d.", ...
+                  path, nRows, name, size(m.model.rxns, 1));
+        end
     end
     
     if isfield(m, 'expressionData')
@@ -127,12 +155,6 @@ function validateModelInProject(m, path, analysisName)
     
     if isfield(m, 'coreReactions')
         mustBeVectorOrEmpty(m.coreReactions);
-    end
-    
-    if isfield(m, 'mappedDiscretizedRxns')
-        if ~isa(m.mappedDiscretizedRxns, 'int8')
-            error("m.mappedDiscretizedRxns must be an int8 array.");
-        end
     end
 
     % Validate settings
@@ -690,6 +712,7 @@ end
 % project.models.Name1.expressionData
 % project.models.Name1.geneIds
 % project.models.Name1.mappedDiscretizedRxns
+% project.models.Name1.mappingDiscretizedRxnsAllSamples
 % project.models.Name1.coreReactions
 % project.models.Name1.settings
 % project.models.Name1.settings.medium
@@ -781,3 +804,15 @@ end
 % project.models.Name1.analysis.active.kld.kldMatrix
 % project.models.Name1.analysis.active.kld.pValueKld
 % project.models.Name1.analysis.active.kld.fdr
+
+% project.comparisons (struct)
+% project.comparisons.Name1_vs_Name2__date (struct)
+% project.comparisons.Name1_vs_Name2_date.structuralAnalysisStatus (maybe not needed anymore if we use checkProjectFormat instead ?)
+% project.comparisons.Name1_vs_Name2_date.modelNames (nb of models compared * 1, string)
+% project.comparisons.Name1_vs_Name2_date.rxnMappingTable (table, nb of rxns in ref model * nb of models compared)
+% project.comparisons.Name1_vs_Name2_date.referenceModel (name of ref model, string) (needs to be in project.models)
+% project.comparisons.Name1_vs_Name2_date.orderedFBA. (double, nb of rxns in ref model * nb of models compared)
+% project.comparisons.Name1_vs_Name2_date.orderedSamples (double, nb of rxn in ref model * cumulative nb of sampels over compared models)
+% project.comparisons.Name1_vs_Name2_date.sampleModelLabels (string, dim 1*cumulative nb of sampels over compared models)
+% project.comparisons.Name1_vs_Name2_date.plots (struct)
+
