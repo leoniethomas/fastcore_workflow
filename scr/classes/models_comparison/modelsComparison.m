@@ -1,4 +1,4 @@
-function [project, comparisonName] = modelsComparison(project, modelList, referenceModel, analyses, identifier)
+function [project, comparisonName] = modelsComparison(project, modelList, referenceModel, identifier, analyses)
 % MODELSCOMPARISON Runs a set of analyses for the comparison of the specified models.
 %
 % A number of analyses are run:
@@ -32,8 +32,8 @@ arguments
     project        (1,1) struct
     modelList      (1,:) string
     referenceModel (1,1) string
-    analyses       (1,:) string {mustBeMember(analyses, {'structuralComparison', 'functionalComparison', 'samplingComparison', 'IDAREoutput'})} = "structuralComparison"
     identifier     (1,1) string = string(datetime('now', 'Format', '_yyyyMMdd_HHmmss'))
+    analyses       (1,:) string {mustBeMember(analyses, {'structuralComparison', 'functionalComparison', 'samplingComparison', 'IDAREoutput'})} = "structuralComparison"
 end
 
 %% Check project and models format for comparison
@@ -141,7 +141,7 @@ function project = runAllComparisons(project, modelListOrdered, referenceModel, 
     
     % Initialisation
     project.comparisons.(comparisonName) = struct();
-    project.comparisons.(comparisonName).modelList = modelListOrdered;
+    project.comparisons.(comparisonName).modelNames = modelListOrdered;
     project.comparisons.(comparisonName).referenceModel = referenceModel;
     
     % Running structural comparison
