@@ -11,10 +11,9 @@ function project = samplingComparison(project, comparisonName)
     [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, "rxns", referenceModel, replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
 
-    objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns, "biomass_reaction"));
-
     % Normalize: divide each column (sample) by its biomass flux value
-    %project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
+    % objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns, "biomass_reaction"));
+    % project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
 
 
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
