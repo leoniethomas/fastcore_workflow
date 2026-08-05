@@ -809,10 +809,39 @@ end
 % project.comparisons.Name1_vs_Name2__date (struct)
 % project.comparisons.Name1_vs_Name2_date.structuralAnalysisStatus (maybe not needed anymore if we use checkProjectFormat instead ?)
 % project.comparisons.Name1_vs_Name2_date.modelNames (nb of models compared * 1, string)
-% project.comparisons.Name1_vs_Name2_date.rxnMappingTable (table, nb of rxns in ref model * nb of models compared)
 % project.comparisons.Name1_vs_Name2_date.referenceModel (name of ref model, string) (needs to be in project.models)
-% project.comparisons.Name1_vs_Name2_date.orderedFBA. (double, nb of rxns in ref model * nb of models compared)
-% project.comparisons.Name1_vs_Name2_date.orderedSamples (double, nb of rxn in ref model * cumulative nb of sampels over compared models)
-% project.comparisons.Name1_vs_Name2_date.sampleModelLabels (string, dim 1*cumulative nb of sampels over compared models)
-% project.comparisons.Name1_vs_Name2_date.plots (struct)
+% project.comparisons.Name1_vs_Name2_date.analysisIds (table, as many rows as performed analysis, as many columns as models to compare) (needs to be added)
+% project.comparisons.Name1_vs_Name2_date.structuralComparison (struct) (needed for functionalComparison and samplingComparison)
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.rxnMappingTable (table, nb of rxns in ref model * nb of models compared)
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots (struct)
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.dataDiscretization
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.coreReactions
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.coreReactionsIntersections
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.intersections
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.jaccardDist
+% project.comparisons.Name1_vs_Name2_date.structuralComparison.plots.reactionPathwayPresence
+% project.comparisons.Name1_vs_Name2_date.functionalComparison (struct)
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots (struct)
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.objValue
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.import
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.export
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fvaSim (struct)
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fvaSim.overall
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fvaSim.hist
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fvaSim.enrich
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fba (struct)
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fba.heatmapRxnFluxsum
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fba.heatmapRxnActivity
+% project.comparisons.Name1_vs_Name2_date.functionalComparison.plots.fba.heatmapMetsFluxsum
+% project.comparisons.Name1_vs_Name2_date.samplingComparison (struct)
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.orderedSamples (double, nb of rxn in ref model * cumulative nb of sampels over compared models)
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.sampleModelLabels (string, dim 1*cumulative nb of sampels over compared models)
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.orderedFba (double, nb of rxns in ref model * nb of models compared)
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.plots (struct)
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.plots.heatmapRxnFluxSum
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.plots.heatmapMetsFluxSum
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.plots.heatmapRxnFluxSumSamples
+% project.comparisons.Name1_vs_Name2_date.samplingComparison.plots.heatmapMetsFluxSumSamples
+
+
 
