@@ -88,7 +88,7 @@ if isfield(project.comparisons, comparisonName)
     if isequal(referenceModel, project.comparisons.(comparisonName).referenceModel)
         if isfield(project.comparisons.(comparisonName), 'structuralAnalysisStatus') && (project.comparisons.(comparisonName).structuralAnalysisStatus == 1)
             % Structural analysis already run
-            disp("Structural analysis already run.");
+            disp("Structural comparison already run.");
             % Perform the other analyses if specified in analyses
 
             % Functional comparison
