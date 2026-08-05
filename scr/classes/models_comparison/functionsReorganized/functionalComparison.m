@@ -22,9 +22,8 @@ function plots = functionalComparison(project, comparisonName)
     modelList = project.comparisons.(comparisonName).modelNames;
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
-    
     %%% ---------- Visualization: objective values per model
-    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1,1), modelList, "UniformOutput", false));
+    fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1, 1), modelList, "UniformOutput", false));
     getExchangeRxnsIdx = find(findExcRxns(project.models.(referenceModel).model));    
 
     plots.objValue = figure('Color', 'w', 'Position', [20 20 700 300], 'Visible', 'off');
@@ -43,28 +42,28 @@ function plots = functionalComparison(project, comparisonName)
     plots.import = getFluxPlot(project, comparisonName, getExchangeRxnsIdx, ...
                                     'thresholdFlux', 'upper', 'FVA', false, 'reducedCost', false, 'visiblePlots', "off");
     % Export
-    plots.export = getFluxPlot(project, comparisonName,getExchangeRxnsIdx,...
-                  'thresholdFlux','lower','FVA',false,'reducedCost',false,'visiblePlots',"off");
+    plots.export = getFluxPlot(project, comparisonName, getExchangeRxnsIdx,...
+                  'thresholdFlux', 'lower', 'FVA', false, 'reducedCost', false, 'visiblePlots', "off");
     
     %%% ---------- Visualization: FVA Similarity between Models
 
-    [fvaSim, fvaSimRxns, fvaSimPathways] = computeFvaSimilarity(project, comparisonName);
+    [fvaSim, fvaSimRxns, ~] = computeFvaSimilarity(project, comparisonName);
 
-    plots.fvaSim.overall = plotClustergram(fvaSim,...
-                             modelList,...
-                             modelList,...
-                             {'Similarity of FVA boundaries'},...
-                             "FVA similarity",...
-                             [255 255 255;255 204 204; 255 153 153; 255 102 102; 255 51 51;255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255);
+    plots.fvaSim.overall = plotClustergram(fvaSim, ...
+                             modelList, ...
+                             modelList, ...
+                             {'Similarity of FVA boundaries'}, ...
+                             "FVA similarity", ...
+                             [255 255 255; 255 204 204; 255 153 153; 255 102 102; 255 51 51; 255 0 0; 204 0 0; 152 0 0; 102 0 0;  51 0 0]/255);
     
     %%% ---------- Visualization: FVA Similarity per reaction histogramm
 
     plots.fvaSim.hist = FVASimValuesHist(fvaSimRxns, modelList);
     
     %%% ---------- Visualization: FVA Similarity per reaction - enrichment
-    %%%            for low fva similarity scores per pathway in the model
+    %%% for low fva similarity scores per pathway in the model
 
-    resEnrichment = getEnrichmentTable(project,modelList, fvaSimRxns, referenceModel,[]);
+    resEnrichment = getEnrichmentTable(project, modelList, fvaSimRxns, referenceModel, []);
     % put the results of FDR and NES in one matrix each
 
     comparisons = fieldnames(resEnrichment);
@@ -100,25 +99,22 @@ function plots = functionalComparison(project, comparisonName)
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
 
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
-    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel, replacementValue);
+    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns", replacementValue);
     
     % compute Fluxsum 
 
-    [idxPathways, names_pathways] = getDefaultSubsystems(project, referenceModel);                                 
+    [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel);                                 
 
-    [fluxsumSets,plots.fba.heatmapRxnFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
-                                                                     names_pathways,...
-                                                                     "heatmap", true, true, "orderedFba", "reactions",...
-                                                                      referenceModel, "off");
+    [~, plots.fba.heatmapRxnFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways, ...
+                                                                     namesPathways, "heatmap", true, true, ...
+                                                                     "orderedFba", "reactions", referenceModel, "off");
     
-    
-    plots.fba.heatmapRxnActivityFba = getNetworkActivity(project, comparisonName, idxPathways, names_pathways);
+    plots.fba.heatmapRxnActivityFba = getNetworkActivity(project, comparisonName, idxPathways, namesPathways);
 
 
-    [fluxsumSets,plots.fba.heatmapMetsFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
-                                                                      names_pathways,...
-                                                                      "heatmap", true, true, "orderedFba", "incoming",...
-                                                                      referenceModel, "off");
+    [~, plots.fba.heatmapMetsFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
+                                                                      namesPathways, "heatmap", true, true, ...
+                                                                      "orderedFba", "incoming", referenceModel, "off");
 
     %%% -> show the top 20 most variant metabolites excluding known cofactors 
     % cofactorNames = ["atp", "adp", "amp", "nad", "nadh", "nadp", "nadph", ...
@@ -149,26 +145,27 @@ function plots = functionalComparison(project, comparisonName)
                 end
             end
         end
+        
         modelPairs2x2 = getLowerTriangleBlock(modelPairs);
         
         [nRows, nCols] = size(fvaLower2x2);
         
-        fig = figure('Color','w','Visible','off','Position', [100 100 2000*3 2000]);
+        fig = figure('Color', 'w', 'Visible', 'off', 'Position', [100 100 2000*3 2000]);
         % Create tiled layout
-        t = tiledlayout(fig,nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
+        t = tiledlayout(fig, nRows, nCols, 'TileSpacing', 'compact', 'Padding', 'compact');
         
         for i = 1:nRows
             for j = 1:nCols
                 nexttile((i-1)*nCols + j)
         
-                data = fvaLower2x2{i,j};
+                data = fvaLower2x2{i, j};
     
                 if ~isempty(data)
                     data = data(data ~= 1);  % remove trivial values
                 end
             
                 if ~isempty(data)
-                    histogram(data,100)
+                    histogram(data, 100)
                     set(gca, 'FontSize', 18)
                 else
                     axis off  % empty tile
@@ -177,10 +174,10 @@ function plots = functionalComparison(project, comparisonName)
                 % Label axes
                 if ~isempty(data)
                     if i ~= 1
-                        xlabel(modelPairs2x2{i,j}{1,2}, 'Interpreter','none')
+                        xlabel(modelPairs2x2{i, j}{1, 2}, 'Interpreter','none')
                     end
                     if j == 1
-                        ylabel(modelPairs2x2{i,j}{1,1}, 'Interpreter','none')
+                        ylabel(modelPairs2x2{i, j}{1, 1}, 'Interpreter','none')
                     end
                 end
                 box on
@@ -192,11 +189,10 @@ function plots = functionalComparison(project, comparisonName)
     end
 
     function Results = getEnrichmentTable(project, modelList, fvaSimRxns, referenceModel, subSystems)
-        % This function visualizes the enrichment results in a dotplot!!
-        % #TODO: better documentation of the function1!!!
+        % This function visualizes the enrichment results in a dotplot.
+        % #TODO: better documentation of the function
     
-        [~,rxnMapping] = getOrderedFeatureMatrix(project, modelList, "rxns", referenceModel);
-    
+        [~, rxnMapping] = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns");
     
         if isempty(subSystems)
             subSystems = string(project.models.(referenceModel).model.subSystems); 
@@ -228,18 +224,17 @@ function plots = functionalComparison(project, comparisonName)
             for j = 1:numel(modelList)
                 modelPairs{i,j} = {};
                 if i ~= j
-                    modelPairs{i,j} = {modelList{i}, modelList{j}};
+                    modelPairs{i, j} = {modelList{i}, modelList{j}};
                 end
             end
         end
         modelPairs2x2 = getLowerTriangleBlock(modelPairs);
         
-        
-        Results    = struct();
+        Results = struct();
         for k = 1:numel(fvaSim)
     
             x = fvaSim{k};
-            y = strjoin(modelPairs2x2{k},'_');
+            y = strjoin(modelPairs2x2{k}, '_');
     
             model1idx = modelIndex{k}(1);
             model2idx = modelIndex{k}(2);
@@ -256,7 +251,6 @@ function plots = functionalComparison(project, comparisonName)
     
         end
     
-    
         function results = pathwayEnrichment(sets, metricMatrix, featureNames)
         % This function performs pathway enrichment on the fva similarity
         % values. In the context of metabolic modelling the enrichment in this
@@ -271,16 +265,14 @@ function plots = functionalComparison(project, comparisonName)
         % with the rnxs that have the same rank, there should be a group fo
         % rxns that have the same rxn FVA similarity -> does this effect the
         % enrichment -> since the sorting with the same value is then kind of
-        % arbitraty !!!! 
-    
+        % arbitrary !!!! 
     
         [metricSorted, sortIdx] = sort(metricMatrix, 'descend');
         rxnsSorted = featureNames(sortIdx);
         N = numel(featureNames);
-        nPerm = 1000;   % permutations
-        p = 1;          % weight exponent (0 = unweighted)
+        nPerm = 1000; % permutations
+        p = 1; % weight exponent (0 = unweighted)
         weights = abs(metricSorted).^p;
-    
     
         subNames = fieldnames(sets);
         nSets = numel(subNames);
@@ -293,7 +285,7 @@ function plots = functionalComparison(project, comparisonName)
         for s = 1:nSets
         
             subField = subNames{s};
-            subRxns  = sets.(subField).rxns;
+            subRxns = sets.(subField).rxns;
             setSize(s) = numel(subRxns);
         
             % Skip very small subsystems
@@ -307,8 +299,8 @@ function plots = functionalComparison(project, comparisonName)
         
             % ----- observed enrichment score -----
             Phit  = weights .* hits;
-            Phit  = Phit / sum(Phit);
-            Pmiss = (~hits) / (N - Ns);
+            Phit  = Phit/sum(Phit);
+            Pmiss = (~hits)/(N - Ns);
         
             runningSum = cumsum(Phit - Pmiss);
         
@@ -321,9 +313,10 @@ function plots = functionalComparison(project, comparisonName)
             for k = 1:nPerm
                 permHits = hits(randperm(N));
         
-                Phit_p  = weights .* permHits;
-                Phit_p  = Phit_p / sum(Phit_p);
-                Pmiss_p = (~permHits) / (N - Ns);
+                % Phit_p  = weights *permHits;
+                Phit_p  = weights .*permHits;
+                Phit_p  = Phit_p/sum(Phit_p);
+                Pmiss_p = (~permHits)/(N - Ns);
         
                 rs_p = cumsum(Phit_p - Pmiss_p);
                 ESnull(k) = max(abs(rs_p));
@@ -333,19 +326,16 @@ function plots = functionalComparison(project, comparisonName)
             pval(s) = mean(abs(ESnull) >= abs(ES(s)));
         
             % normalized enrichment score
-            NES(s) = ES(s) / mean(abs(ESnull));
+            NES(s) = ES(s)/mean(abs(ESnull));
         end
     
         qval = mafdr(pval, 'BHFDR', true);
-        results = table( ...
-        subNames, setSize, ES, NES, pval, qval, ...
-        'VariableNames', {'Subsystem', 'Size', 'ES', 'NES', 'pValue', 'FDR'} );
+        results = table(subNames, setSize, ES, NES, pval, qval, ...
+            'VariableNames', {'Subsystem', 'Size', 'ES', 'NES', 'pValue', 'FDR'});
     
         results = sortrows(results, 'NES', 'descend');
     
-    
         %results = results(results.FDR < 0.05, :);
-    
     
         % Choose subsystem to plot
         % subField = 'HeparanSulfateDegradation'; 
@@ -381,111 +371,114 @@ function plots = functionalComparison(project, comparisonName)
         % grid on
     
     
+        end
+    
+    end   
+    
+    function fig = dotplot(NESTbl, FDRTbl)
+        % #TODO better documentation of the function!!
+        
+        % --- Sort pathways by overall NES magnitude ---
+        [~, sortedIdx] = sort(sum(abs(NESTbl{:,:}), 2), 'descend');
+        NESTbl = NESTbl(sortedIdx, :);
+        FDRTbl = FDRTbl(sortedIdx, :);
+        
+        % --- Handle zeros in FDR and transform ---
+        lowValues = 1e-10;
+        FDRTbl{:,:}(FDRTbl{:,:} == 0) = lowValues;
+        FDRTbl{:,:} = -log10(FDRTbl{:,:});
+        
+        % --- Extract labels ---
+        pathways = regexprep(string(NESTbl.Properties.RowNames), "_", " ");
+        comparisons = string(NESTbl.Properties.VariableNames);
+        
+        % --- Extract numeric matrices ---
+        NES = NESTbl{:,:};
+        FDR = FDRTbl{:,:};
+        
+        nP = numel(pathways);
+        nC = numel(comparisons);
+        
+        % --- Create grid for scatter ---
+        [X, Y] = meshgrid(1:nC, 1:nP);
+        x = X(:);
+        y = Y(:);
+        
+        nesVals = NES(:);
+        fdrVals = FDR(:);
+        
+        % --- Prepare FDR for coloring ---
+        cVals = fdrVals;              
+        cVals(cVals < -log10(0.05)) = NaN;  % values >0.05 will be grey
+    
+        % --- Dot size proportional to |NES| with enhanced visual difference ---
+        scatterMin = 10;    % smallest dot area (points^2)
+        scatterMax = 500;  % largest dot area (points^2)
+    
+        nes = nesVals(~isnan(cVals));
+        
+        absNESNorm = (abs(nes) - min(abs(nes))) / (max(abs(nes)) - min(abs(nes))); % normalize 0-1
+        dotSize = scatterMin + (absNESNorm.^0.5) * (scatterMax - scatterMin);  % power 0.5 emphasizes large values
+        
+        
+        % --- Create figure ---
+        fig = figure('Color', 'w', 'Position', [100 100 1000 1000], "Visible","off");
+        hold on
+        
+        % Scatter plot for significant FDR (≤ 0.05)
+        scatter(x(~isnan(cVals)), y(~isnan(cVals)), dotSize, cVals(~isnan(cVals)), 'filled')
+        hold on
+        
+        % --- Size legend for |NES| with min, percentiles, max ---
+        sizeVals = [min(abs(nes)), ...
+                     prctile(abs(nes), 25), ...
+                     prctile(abs(nes), 50), ...
+                     prctile(abs(nes), 75), ...
+                     max(abs(nes))];
+        
+        sizeScaled = [min(dotSize), ...
+                     prctile(dotSize, 25), ...
+                     prctile(dotSize, 50), ...
+                     prctile(dotSize, 75), ...
+                     max(dotSize)];
+       
+        % Custom "legend" inside axes
+        legendSizes = sizeScaled;      % sizeData
+        legendLabels = string(round(sizeVals, 2));
+        legendX = max(x) + 1;  % x position outside plot
+        legendY = y(1:length(legendSizes)) ;        % y positions
+        
+        for i = 1:length(legendSizes)
+            scatter(legendX, legendY(i), legendSizes(i), 'k', 'filled')
+            text(legendX+0.2, legendY(i), legendLabels{i}, 'FontSize', 12, 'VerticalAlignment','middle')
+        end
+        % --- Axes formatting ---
+        xticks(1:nC)
+        xticklabels(regexprep(comparisons, "_", " vs "))
+        yticks(1:nP)
+        yticklabels(pathways)
+        
+        xlabel('Model comparison')
+        ylabel('Pathway')
+        
+        xlim([0.5, nC + 1.5])
+        ylim([0.5, nP + 0.5])
+        set(gca, 'YDir', 'reverse', 'FontSize', 18)
+        title("Pathway enrichment (dot size = |NES|, color = FDR)")
+        
+        % --- Colorbar ---
+        nColors = 256;
+        cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0, 1 , nColors)']; 
+        colormap(cmap)        % red (low) -> blue (high)
+        % clim([-log10(0.05) - log10(lowValues)]);
+        clim([-log10(0.05), -log10(lowValues)]);       
+        cb = colorbar;
+        cb.Label.String = '-log10(FDR)';
+        cb.FontSize = 14;
+        
     end
- end   
-function fig = dotplot(NESTbl, FDRTbl)
-    % #TODO better documentation of the function!!
     
-    % --- Sort pathways by overall NES magnitude ---
-    [~, sortedIdx] = sort(sum(abs(NESTbl{:,:}), 2), 'descend');
-    NESTbl = NESTbl(sortedIdx, :);
-    FDRTbl = FDRTbl(sortedIdx, :);
-    
-    % --- Handle zeros in FDR and transform ---
-    lowValues = 1e-10;
-    FDRTbl{:,:}(FDRTbl{:,:} == 0) = lowValues;
-    FDRTbl{:,:} = -log10(FDRTbl{:,:});
-    
-    % --- Extract labels ---
-    pathways = regexprep(string(NESTbl.Properties.RowNames), "_", " ");
-    comparisons = string(NESTbl.Properties.VariableNames);
-    
-    % --- Extract numeric matrices ---
-    NES = NESTbl{:,:};
-    FDR = FDRTbl{:,:};
-    
-    nP = numel(pathways);
-    nC = numel(comparisons);
-    
-    % --- Create grid for scatter ---
-    [X, Y] = meshgrid(1:nC, 1:nP);
-    x = X(:);
-    y = Y(:);
-    
-    nesVals = NES(:);
-    fdrVals = FDR(:);
-    
-    % --- Prepare FDR for coloring ---
-    cVals = fdrVals;              
-    cVals(cVals < -log10(0.05)) = NaN;  % values >0.05 will be grey
-
-    % --- Dot size proportional to |NES| with enhanced visual difference ---
-    scatterMin = 10;    % smallest dot area (points^2)
-    scatterMax = 500;  % largest dot area (points^2)
-
-    nes = nesVals(~isnan(cVals));
-    
-    absNESNorm = (abs(nes) - min(abs(nes))) / (max(abs(nes)) - min(abs(nes))); % normalize 0-1
-    dotSize = scatterMin + (absNESNorm.^0.5) * (scatterMax - scatterMin);  % power 0.5 emphasizes large values
-    
-    
-    % --- Create figure ---
-    fig = figure('Color', 'w', 'Position', [100 100 1000 1000], "Visible","off");
-    hold on
-    
-    % Scatter plot for significant FDR (≤ 0.05)
-    scatter(x(~isnan(cVals)), y(~isnan(cVals)), dotSize, cVals(~isnan(cVals)), 'filled')
-    hold on
-    
-    % --- Size legend for |NES| with min, percentiles, max ---
-    sizeVals = [min(abs(nes)), ...
-                 prctile(abs(nes), 25), ...
-                 prctile(abs(nes), 50), ...
-                 prctile(abs(nes), 75), ...
-                 max(abs(nes))];
-    
-    sizeScaled = [min(dotSize), ...
-                 prctile(dotSize, 25), ...
-                 prctile(dotSize, 50), ...
-                 prctile(dotSize, 75), ...
-                 max(dotSize)];
-   
-    % Custom "legend" inside axes
-    legendSizes = sizeScaled;      % sizeData
-    legendLabels = string(round(sizeVals, 2));
-    legendX = max(x) + 1;  % x position outside plot
-    legendY = y(1:length(legendSizes)) ;        % y positions
-    
-    for i = 1:length(legendSizes)
-        scatter(legendX, legendY(i), legendSizes(i), 'k', 'filled')
-        text(legendX+0.2, legendY(i), legendLabels{i}, 'FontSize', 12, 'VerticalAlignment','middle')
-    end
-    % --- Axes formatting ---
-    xticks(1:nC)
-    xticklabels(regexprep(comparisons, "_", " vs "))
-    yticks(1:nP)
-    yticklabels(pathways)
-    
-    xlabel('Model comparison')
-    ylabel('Pathway')
-    
-    xlim([0.5, nC + 1.5])
-    ylim([0.5, nP + 0.5])
-    set(gca, 'YDir', 'reverse', 'FontSize', 18)
-    title("Pathway enrichment (dot size = |NES|, color = FDR)")
-    
-    % --- Colorbar ---
-    nColors = 256;
-    cmap = [linspace(1,0,nColors)' linspace(0,0,nColors)' linspace(0, 1 , nColors)']; 
-    colormap(cmap)        % red (low) -> blue (high)
-    clim([-log10(0.05) - log10(lowValues)])       
-    cb = colorbar;
-    cb.Label.String = '-log10(FDR)';
-    cb.FontSize = 14;
-    
-end
-
-function fvaFower = getLowerTriangleBlock(fvaSimRxns)
+    function fvaFower = getLowerTriangleBlock(fvaSimRxns)
         % This function gets the lower part of a similarity matrix. 
         % Written because we are looking at pairwise distances/similarities in
         % the figures, but to not have repetitive plots it is useful to only
@@ -511,6 +504,6 @@ function fvaFower = getLowerTriangleBlock(fvaSimRxns)
     
         % Take the lower-triangle block
         fvaFower = fvaSimRxns(rowsToKeep, colsToKeep);
-end
+    end
 
 end
