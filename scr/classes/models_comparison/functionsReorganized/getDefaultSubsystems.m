@@ -1,26 +1,27 @@
-function [idx_pathways,names_pathways] = getDefaultSubsystems(project, reference_model)
-                gly = find(matches(string(project.models.(reference_model).model.subSystems),"Glycolysis/gluconeogenesis"));
-                tca = find(matches(string(project.models.(reference_model).model.subSystems),"Citric acid cycle"));
-                PPP = find(matches(string(project.models.(reference_model).model.subSystems),"Pentose phosphate pathway"));
-                ex = find(matches(string(project.models.(reference_model).model.subSystems),"Exchange/demand reaction"));
-                pyr = find(matches(string(project.models.(reference_model).model.subSystems),"Pyruvate metabolism"));
-                purine = find(contains(string(project.models.(reference_model).model.subSystems),"Purine "));
+function [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel)
+                gly = find(matches(string(project.models.(referenceModel).model.subSystems), "Glycolysis/gluconeogenesis"));
+                tca = find(matches(string(project.models.(referenceModel).model.subSystems), "Citric acid cycle"));
+                PPP = find(matches(string(project.models.(referenceModel).model.subSystems), "Pentose phosphate pathway"));
+                ex = find(matches(string(project.models.(referenceModel).model.subSystems), "Exchange/demand reaction"));
+                pyr = find(matches(string(project.models.(referenceModel).model.subSystems), "Pyruvate metabolism"));
+                purine = find(contains(string(project.models.(referenceModel).model.subSystems), "Purine "));
             
-                pyrimidine =find(contains(string(project.models.(reference_model).model.subSystems),"Pyrimidine "));
+                pyrimidine = find(contains(string(project.models.(referenceModel).model.subSystems), "Pyrimidine "));
             
-                nuc = find(matches(string(project.models.(reference_model).model.subSystems),"Nucleotide interconversion"));
-                glut = find(matches(string(project.models.(reference_model).model.subSystems),"Glutamate metabolism"));
-                Urea_cycle = find(matches(string(project.models.(reference_model).model.subSystems),"Urea cycle"));
+                nuc = find(matches(string(project.models.(referenceModel).model.subSystems), "Nucleotide interconversion"));
+                glut = find(matches(string(project.models.(referenceModel).model.subSystems), "Glutamate metabolism"));
+                ureaCycle = find(matches(string(project.models.(referenceModel).model.subSystems), "Urea cycle"));
                 
-                proline = find(matches(string(project.models.(reference_model).model.subSystems),"Arginine and proline metabolism"));
+                proline = find(matches(string(project.models.(referenceModel).model.subSystems), "Arginine and proline metabolism"));
                 
                 % pick amino acids and lipids as one system
-                subs = string(project.models.(reference_model).model.subSystems);
+                subs = string(project.models.(referenceModel).model.subSystems);
                 mask = contains(lower(subs), ...
-                    ["alanine","glycine","valine","leucine","isoleucine","serine","threonine","cysteine","methionine","aspartate","asparagine","glutamate","glutamine","arginine","proline","histidine","phenylalanine","tyrosine","tryptophan"]);
-                AA = find(mask);
+                    ["alanine", "glycine", "valine", "leucine", "isoleucine", "serine", "threonine", "cysteine", "methionine", ...
+                    "aspartate", "asparagine", "glutamate", "glutamine", "arginine", "proline", "histidine", "phenylalanine", "tyrosine", "tryptophan"]);
+                AA = find(mask); % not used anymore ???
                 
-                lipid_subsystems = [
+                lipidSubsystems = [
                     "Fatty acid oxidation"
                     "Fatty acid synthesis"
                     "Glycerophospholipid metabolism"
@@ -28,11 +29,11 @@ function [idx_pathways,names_pathways] = getDefaultSubsystems(project, reference
                     "Cholesterol metabolism"
                 ];
                 
-                mask = ismember(subs, lipid_subsystems);
-                Lipids = find(mask);
+                mask = ismember(subs, lipidSubsystems);
+                lipids = find(mask);
             
-                idx_pathways = {gly,tca,PPP,ex, pyr,purine, pyrimidine,nuc,glut,Urea_cycle,proline,Lipids};
-                names_pathways = ["Glycolysis/gluconeogenesis","Citric acid cycle","Pentose phosphate pathway","Exchange/demand reaction","Pyruvate metabolism",...
-                                  "Purine metabolism", "Pyrimidine metabolism", "Nucleotide interconversion", "Glutamate metabolism","Urea cycle",...
-                                  "Arginine and proline metabolism","Lipid metabolism"];
+                idxPathways = {gly, tca, PPP, ex, pyr, purine, pyrimidine, nuc, glut, ureaCycle, proline, lipids};
+                namesPathways = ["Glycolysis/gluconeogenesis", "Citric acid cycle", "Pentose phosphate pathway", "Exchange/demand reaction", "Pyruvate metabolism",...
+                                  "Purine metabolism", "Pyrimidine metabolism", "Nucleotide interconversion", "Glutamate metabolism", "Urea cycle",...
+                                  "Arginine and proline metabolism", "Lipid metabolism"];
 end

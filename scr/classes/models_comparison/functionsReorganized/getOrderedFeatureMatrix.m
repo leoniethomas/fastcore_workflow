@@ -3,7 +3,7 @@ function [orderedFeatureMatrix, orderedRxnMatrixIdx, columnLabels] = getOrderedF
     % or 1)) into the same order than the reference model specified. 
     % Input: 
     % - project:                project object which is the output of
-    %                           single_model_analysis script
+    %                           singleModelAnalysis script
     % - modelList:              names from models from which to get the
     %                           feature precence
     % - fieldToInvestigate:   feature presence of interest as string
@@ -13,7 +13,7 @@ function [orderedFeatureMatrix, orderedRxnMatrixIdx, columnLabels] = getOrderedF
     % - replacementValue:      which value to put into the matrix. Just a
     %                           1 indicating that the given feature is present 
     %                           or not (0) in each of the choosen models, 
-    %                           or the actuall values of sampling,fba, or fva ?  
+    %                           or the actuall values of sampling, fba, or fva ?  
     % 
     % Output: 
     % - orderedFeatureMatrix: Matrix storing the wanted features 
