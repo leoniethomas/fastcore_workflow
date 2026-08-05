@@ -16,7 +16,8 @@ load('defaultParametersAnalysis.csv'); % can be modified according to the user
 
 %% COMPUTING THE COMPARISON
 modelsToCompare = {"Control", "StageIV", "StageI"};
-[BRCAProjectBis, analysisIDs] = chooseActiveAnalysis(BRCAProjectBis, modelsToCompare); % by default, the most recent analyses will be chosen 
+[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare); % by default, the most recent analyses will be chosen 
+
 % analysisToChoose = {'analysis_20260717_1704', 'analysis_20260717_1757', 'analysis_20260717_1841'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
 
@@ -27,10 +28,9 @@ comparisonList = ["structuralComparison",...
     "functionalComparison", ...
     "samplingComparison"];
 compID = "tutorialComparison_20260728"; 
-[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
-% [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, ...
-%                                              referenceModel, compID, comparisonList);
 
+%[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
+[BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 %% GENERATING FIGURES ON DEMAND
 
