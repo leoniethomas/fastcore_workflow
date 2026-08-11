@@ -8,15 +8,12 @@ function project = samplingComparison(project, comparisonName)
     % run structural model comparison
     replacementValue = "analysis.active.sampling.samples"; % get the fba solution values
     project.comparisons.(comparisonName).samplingComparison = struct();
-    [project.comparisons.(comparisonName).samplingComparison.orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
-    project.comparisons.(comparisonName).samplingComparison.sampleModelLabels = sampleLabels;
+    [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+    project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
 
     % Normalize: divide each column (sample) by its biomass flux value
     % objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns, "biomass_reaction"));
     % project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
-
-    replacementValue = "analysis.active.FBA.v"; % get the fba solution values
-    project.comparisons.(comparisonName).samplingComparison.orderedFba = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
 
     [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel); 
 

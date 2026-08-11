@@ -179,7 +179,7 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
         % this case is an exception
         % in this case we just visualize the flux values - no fluxsum
         % calculation needed 
-        fbaValues = project.comparisons.(comparisonName).samplingComparison.(slot);
+        fbaValues = project.comparisons.(comparisonName).(slot);
         fluxsumSets = cellfun(@(x) fbaValues(x,:), ...
                            rxnIdx, 'UniformOutput', false);
     else
@@ -188,7 +188,7 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
     end
 
     if slot ~= "orderedFba"
-        samplesCat = cellstr(project.comparisons.(comparisonName).samplingComparison.sampleModelLabels);
+        samplesCat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
     else
         samplesCat = cellstr(project.comparisons.(comparisonName).modelNames);
     end

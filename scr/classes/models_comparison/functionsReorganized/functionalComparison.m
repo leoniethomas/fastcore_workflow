@@ -1,4 +1,4 @@
-function plots = functionalComparison(project, comparisonName)
+function project = functionalComparison(project, comparisonName)
     % This function runs the functional model comparison. 
     % The models are compared on basis of the FBA & FVA results from the singleModelAnalysis. 
     % So the functional capacity the model has in context of the defined
@@ -115,6 +115,7 @@ function plots = functionalComparison(project, comparisonName)
     [~, plots.fba.heatmapMetsFluxsum] = visualizeFluxsum(project, comparisonName, [], idxPathways,...
                                                                       namesPathways, "heatmap", true, true, ...
                                                                       "orderedFba", "incoming", referenceModel, "off");
+    project.comparisons.(comparisonName).functionalComparison.plots = plots;
 
     %%% -> show the top 20 most variant metabolites excluding known cofactors 
     % cofactorNames = ["atp", "adp", "amp", "nad", "nadh", "nadp", "nadph", ...

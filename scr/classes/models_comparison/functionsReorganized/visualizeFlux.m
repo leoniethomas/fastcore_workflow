@@ -79,7 +79,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
             rxnsNames = rxnsNames(idx);
         end
 
-        samplesCat = project.comparisons.(comparisonName).samplingComparison.sampleModelLabels;
+        samplesCat = project.comparisons.(comparisonName).sampleModelLabels;
         groups = unique(samplesCat, 'stable');       
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
@@ -226,7 +226,7 @@ function fluxCell = getFlux(project, comparisonName, rxnIdx)
         rxnIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
 
-    samples = project.comparisons.(comparisonName).samplingComparison.orderedSamples;
+    samples = project.comparisons.(comparisonName).orderedSamples;
     
     fluxCell = cellfun(@(x) samples(x, :), ...
                            rxnIdx, 'UniformOutput', false);

@@ -152,7 +152,7 @@ function project = runAllComparisons(project, modelListOrdered, referenceModel, 
     % Functional comparison
     if any(matches(analyses, "functionalComparison"))
         disp("Running functional comparison.");
-        project.comparisons.(comparisonName).functionalComparison.plots = functionalComparison(project, comparisonName);
+        project = functionalComparison(project, comparisonName);
     end
     
     % Sampling comparison

@@ -9,7 +9,7 @@ function fluxsumCell = getFluxsum(project, comparisonName, metIdx, rxnIdx, slot,
     end
     
     reference = project.comparisons.(comparisonName).referenceModel;
-    samples = project.comparisons.(comparisonName).samplingComparison.(slot);
+    samples = project.comparisons.(comparisonName).(slot);
     fullS = project.models.(reference).model.S;
 
     if isempty(rxnIdx)
