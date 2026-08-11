@@ -12,7 +12,7 @@ function rxnGeneRule = getRxnSymbolRule(model, rxnName)
     geneTable = model.settings.dico;
 
     % --- Extract gene IDs with isoform suffix (e.g. 1234.1) ---
-    idsWithPostfix = regexp(geneAssociation, '\d+\.\d+', 'match');
+    idsWithPostfix = regexp(geneAssociation, '\d+(?=\.)', 'match');
 
     % No gene IDs in this reaction: return as-is
     if isempty(idsWithPostfix)
@@ -54,7 +54,7 @@ function rxnGeneRule = getRxnSymbolRule(model, rxnName)
     for k = 1:numel(idsWithPostfix)
         if strlength(symbols(k)) > 0
             geneAssocOut = regexprep(geneAssocOut, ...
-                ['\<' idsWithPostfix{k} '\>'], char(symbols(k)));
+                ['\<' idsWithPostfix{k} '\.\d{1,2}\>'], char(symbols(k)));
         else
             warning('ID %s not found in geneIdsInModel; keeping original ID.', ...
                 idsWithPostfix{k});
