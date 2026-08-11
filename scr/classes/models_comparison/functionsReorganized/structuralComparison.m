@@ -365,7 +365,7 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
         tiledlayout(2, 2, 'TileSpacing', 'compact', 'Padding', 'compact')
     
         % --- first barplot
-        % ax1 = nexttile(1);
+        ax1 = nexttile(1);
         bar(upperData', 'stacked')
     
     
@@ -396,8 +396,8 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
     
          % --- second barplot
          data = data(1:2, :);  % only core vs non-core counts
-        % ax2 = nexttile(2);
-        % hb = bar(data', 'stacked');
+        ax2 = nexttile(2);
+        hb = bar(data', 'stacked');
     
         % Labels
         set(gca, 'XTickLabel', categories, 'FontSize', 14)
