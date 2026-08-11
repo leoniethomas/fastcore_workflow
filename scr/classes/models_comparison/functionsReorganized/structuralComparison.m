@@ -197,19 +197,23 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
             tot = sum(counts, 1);
             pct = 100 * counts ./ tot;
             pct = round(pct);
-        
+            
+            % only put the percentages there only if it is a reasonable
+            % amount of samples
             % write percentages inside bars
-            for i = 1:size(counts, 2)
-                y0 = 0;
-                for j = 1:size(counts, 1)
-                    if counts(j, i) > 0
-                        text(i, y0 + counts(j, i)/2, ...
-                            sprintf('%g%%', pct(j, i)), ...
-                            'HorizontalAlignment', 'center', ...
-                            'VerticalAlignment', 'middle', ...
-                            'FontSize', 13, 'Color', 'w', 'FontWeight', 'bold');
+            if size(counts,2) < 20
+                for i = 1:size(counts, 2)
+                    y0 = 0;
+                    for j = 1:size(counts, 1)
+                        if counts(j, i) > 0
+                            text(i, y0 + counts(j, i)/2, ...
+                                sprintf('%g%%', pct(j, i)), ...
+                                'HorizontalAlignment', 'center', ...
+                                'VerticalAlignment', 'middle', ...
+                                'FontSize', 13, 'Color', 'w', 'FontWeight', 'bold');
+                        end
+                        y0 = y0 + counts(j, i);
                     end
-                    y0 = y0 + counts(j, i);
                 end
             end
         
@@ -219,8 +223,10 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
             ylabel(ylabelPlot, 'FontSize', 16)
             title(titlePlot, 'FontSize', 18)
         
-            xticks(1:length(xtickPlot))
-            xticklabels(regexprep(xtickPlot, "_", "-"))
+            if size(counts,2) < 20
+                xticks(1:length(xtickPlot))
+                xticklabels(regexprep(xtickPlot, "_", "-"))
+            end
         end
         
         % Single legend for the whole figure
@@ -280,7 +286,7 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
         %%%%%%%%%%
     
         plt = figure('Color', 'w', 'Position', [20 20 700 300], 'Visible', 'off');
-        tiledlayout(1, 4, ...
+        tiledlayout(1, 2, ...
             'TileSpacing', 'compact', ...
             'Padding', 'compact')
     
@@ -305,7 +311,7 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
     
         % ---- Heatmap (RIGHT, spanning 2 tiles) ----
         % z-scaling of the data -> so that the colorod
-        ax2 = nexttile(2, [1 3]);
+        ax2 = nexttile(2);
     
         imagesc(data)
         % cmap = getColorPallette();
@@ -332,11 +338,16 @@ function structuralAnalysis = structuralComparison(project, modelList, reference
                 % You want absolute numbers, not relative counts, so use pathway_counts
                 % (or multiply relative_counts by referenceModel if needed)
                 value = pathwayCounts{i, j}; % +1 because first column is referenceModel
+                if data(i,j) < 0.3
+                    backgroundValue = 'w';
+                else
+                    backgroundValue = 'k';
+                end
                 % Place text at the center of the tile
                 text(ax2, j, i, num2str(value), ...
                     'HorizontalAlignment', 'center', ...
                     'VerticalAlignment', 'middle', ...
-                    'Color', 'k', ...          % black text
+                    'Color', backgroundValue, ...          % black text
                     'FontSize', 10)
             end
         end
