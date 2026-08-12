@@ -8,6 +8,8 @@ function tbl = readInParamTable(filePath)
     opts.VariableTypes = {'string','string', 'string'}; % making sure that the last column with the values is read in as a character 
     % Ensure all rows are read (no early stopping)
     opts.DataLines = [2 Inf];
-    tbl = readtable(filePath, opts)
-
+    tbl = readtable(filePath, opts);
+    colNames = tbl.Properties.VariableNames;
+    tbl = varfun(@cellstr, tbl);
+    tbl.Properties.VariableNames = colNames;
 end
