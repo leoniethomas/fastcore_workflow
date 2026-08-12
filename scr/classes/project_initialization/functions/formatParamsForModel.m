@@ -65,12 +65,13 @@ if length(fieldnames(paramsForModel)) > 2
         % Mapping of the discretized reactions for all samples
         modelShortcut.mappedDiscretizedRxnsAllSamples = int8(mappingDisc); % previously mappedDiscRxns_sample
 
-        if isfield(modelShortcut.settings.scriptParameters, "consensusProportion")
+        if isfield(paramsForModel, "consensusProportion")
+            consProp = paramsForModel.consensusProportion;
             numberOfSamples = size(mappingDisc, 2);
             % definition of initialCore reactions
-            modelShortcut.mappedDiscretizedRxns = sum(mappingDisc == 1, 2) >= (modelShortcut.settings.scriptParameters.consensusProportion * numberOfSamples);
+            modelShortcut.mappedDiscretizedRxns = sum(mappingDisc == 1, 2) >= (consProp * numberOfSamples);
             % definition of the notExpressed genes
-            notExpressed = find(sum(mappingDisc == -1, 2) >= (modelShortcut.settings.scriptParameters.consensusProportion * numberOfSamples));
+            notExpressed = find(sum(mappingDisc == -1, 2) >= (consProp * numberOfSamples));
             modelShortcut.mappedDiscretizedRxns = int32(modelShortcut.mappedDiscretizedRxns);
             modelShortcut.mappedDiscretizedRxns(notExpressed) = -1;
             modelShortcut.mappedDiscretizedRxns = int8(modelShortcut.mappedDiscretizedRxns); % needs less storage
@@ -112,7 +113,7 @@ if length(fieldnames(paramsForModel)) > 2
             end
         end
     end
-
+    
     % --- consensusProportion ---
     if isfield(paramsForModel, 'consensusProportion')
         modelShortcut.settings.scriptParameters.consensusProportion = paramsForModel.consensusProportion;
