@@ -183,27 +183,12 @@ end
 % get rid of the thermodynamically infeasible loops using cycleFreeFlux
 if any(strcmp(toPerform, 'loopless'))
     params = tableToParamsStruct(parameterTable, 'loopless', model);
-    % get rid of the thermodynamically infeasible loops using cycleFreeFlux
-    if isfield(params, 'loopless') && params.loopless
+    
+    analysisIdSampling = params.samplingToUse;
+            
+    project.models.(modelName).analysis.(id).sampling = project.models.(modelName).analysis.(analysisIdSampling).sampling;
+    samples = double(project.models.(modelName).analysis.(analysisIdSampling).sampling.samples);     
 
-        % if an id was given then the sampling from this analysis id will be used 
-        % check if there are as many ids as there are models given
-        try
-            analysisID = split(string(params.samplingToUse),"/");
-            assert(length(analysisID) == length(modelList));
-            [~,modelidx] = ismember(modelName, modelList);
-            analysisIdSampling = analysisID(modelidx);
-            assert(isfield(project.models.(modelName).analysis,(analysisIdSampling)));
-            project.models.(modelName).analysis.(id).sampling = project.models.(modelName).analysis.(analysisIdSampling).sampling;
-            samples = double(project.models.(modelName).analysis.(analysisIdSampling).sampling.samples);     
-        catch
-            analysis = project.models.(modelName).analysis.(id);
-            if isfield(analysis,"sampling")
-                samples = double(project.models.(modelName).analysis.(id).sampling.samples);  
-            else
-                error("You did not give an analysis id (or not as many ids as you have models in modelList, or you did not use the separator / between the model names ?) to use to pull the samples from that should be processed to be loopfree, and also did not execute sampling! Either give the analysis ids for every model that you specified in modelList or also put the sampling into your list of analysis to perform!")
-            end
-        end
         
         samples = double(samples);
         evalc('initCobraToolbox()');% otherwise cycleFreeFlux function is not found
@@ -243,7 +228,7 @@ if any(strcmp(toPerform, 'loopless'))
         project.models.(modelName).analysis.(id).sampling.cycleFreeFlux.sampleStatusAfterCorrection = uint8(thermoStatusMatrix);
         project.models.(modelName).analysis.(id).sampling.cycleFreeFlux.neededAttempts = uint8(neededAttempts);
         project.models.(modelName).analysis.(id).sampling.cycleFreeFlux.looplessStatus = uint8(looplessStatus);
-    end
+    
 
     
 end

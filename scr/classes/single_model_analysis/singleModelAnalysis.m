@@ -47,6 +47,28 @@ else
     toPerform = analyses(isImplemented);
 end
 
+% check that the loopless ID given are valid analysisIDs 
+% check that the given analysis IDs for the loopless are actually
+% available in the corresponding models 
+if any("loopless" == analyses)
+    % check that we have as many samplingIDs given as models
+    analysisIDSampling = parameterTable.Value{parameterTable.Parameter == "samplingToUse" & parameterTable.Analysis == "loopless"};
+    analysisID = split(string(analysisIDSampling),"/");
+    assert(length(analysisID) == length(modelList));
+    % check that the sampling analysisIDs are in the same order as the
+    % models
+    for m = 1:numel(modelList)
+        mod = string(modelList(m));
+        anaID = analysisID(m);
+        if isfield(project.models.(mod),"analysis")
+            if ~ismember(anaID, fieldnames(project.models.(mod).analysis))
+                error("The analysisID (%s) for model %s can not be found! Check again the analysis IDs (samplingToUse parameter) you specified in the defaultParametersAnalysis.csv. The analysisIDs should be in the same order as their corresponding models are given in the modelList.",...
+                      anaID,mod)
+            end
+        end
+    end
+end
+
 % Checkpoint: optionally resume from last saved model
 checkpointFile = 'singleModelAnalysis_checkpoint.mat';
 startIdx = 1;
@@ -73,7 +95,13 @@ for i = startIdx:numel(modelList)
     % Analysis id
     id = ['analysis_' char(datetime("now", "Format", "yyyyMMdd_HHmm"))];
     project.models.(name).analysis.(id) = struct();
-
+    
+    % select analysisID used for sampling in case loopless is run 
+    if any("loopless" == analyses) & ~any("sampling" == analyses)
+        parameterTable.Value{parameterTable.Parameter == "samplingToUse" & parameterTable.Analysis == "loopless"} = analysisID(i);
+    else % if the sampling is run in the same analysis run, that sampling will be automatically used for the loopless sampling
+        parameterTable.Value{parameterTable.Parameter == "samplingToUse" & parameterTable.Analysis == "loopless"} = id;
+    end
     % Store the settings
     project.models.(name).analysis.(id).parameters = parameterTable;
 
