@@ -24,7 +24,7 @@ feature astheightlimit 2000;
 
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
 load('BRCAProject.mat');
-load('defaultParametersAnalysis.csv'); % can be modified according to the user, needs to contain text
+defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
