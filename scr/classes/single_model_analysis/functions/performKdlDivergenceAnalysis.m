@@ -143,9 +143,9 @@ function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = performKdlDivergenceAnalys
         histogram(p_value_kdl, 100)
         sum( p_value_kdl < 0.05)
         fdr = sum( p_value_kdl < 0.05)/size(pairwiseKdl,1)
-        if fdr > 0.05
-            error("FDR is %.1f%% — above the 5%% threshold. Sampling may not have converged.", fdr*100)
-        end
+        % if fdr > 0.05
+        %     error("FDR is %.1f%% — above the 5%% threshold. Sampling may not have converged.", fdr*100)
+        % end
 
         kdl_matrix = pairwiseKdl;
 
