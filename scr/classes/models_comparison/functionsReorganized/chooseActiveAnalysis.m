@@ -1,4 +1,4 @@
-function [project, analysisIDs] = chooseActiveAnalysis(project, modelList, analysisIDs, overwriteActive)
+function [project, activeAnalysisTable] = chooseActiveAnalysis(project, modelList, analysisIDs, overwriteActive)
     % This function needs to be run in preparation for the modelsComparison
     % function. For the loaded project object, multiple analysis with a
     % different set of parameters can be performed. Before going into the
@@ -197,5 +197,8 @@ function [project, analysisIDs] = chooseActiveAnalysis(project, modelList, analy
         % Write back to project (MATLAB structs are pass-by-value)
         project.models.(modelList(m)) = modelShortcut;
     end
-
+    
+    activeAnalysisTable = getActiveAnalysisIDTable(project,modelList);
+      
 end
+

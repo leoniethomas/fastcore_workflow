@@ -131,6 +131,10 @@ else
     project = runAllComparisons(project, modelListOrdered, referenceModel, comparisonName, analyses);
 end
 
+    % get the IDs for each of the analysis
+    project.comparisons.(comparisonName).comparedAnalysisID = getActiveAnalysisIDTable(project,modelList);
+
+
 end
 
 
