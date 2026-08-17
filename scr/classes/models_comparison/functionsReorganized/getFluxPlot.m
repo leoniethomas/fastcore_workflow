@@ -16,10 +16,7 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
     % - idxToVis:             positions of the rxns to be displayed in the
     %                           choosen reference model
     % - options:                - FVA = true (default false) to display the FVA boundaries
-    %                             around the FBA solution as a grey box.
-    %                           - reducedCost = true (default false) to display the reduced
-    %                             cost values for every reaction as the color
-    %                             of the FBA dot.
+    %                             around the FBA solution as a grey box.                        
     %                           - thresholdFlux= wether to apply an upper
     %                             lower ,no upper or lower or to include 
     %                             also the fba =0 reactions(all) to the selected
@@ -33,7 +30,7 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
         comparisonName (1,1) string
         idxToVis
         options.FVA  (1,1) logical = false
-        options.reducedCost (1,1) logical = false
+        %options.reducedCost (1,1) logical = false
         options.thresholdFlux (1,1) string {mustBeMember(options.thresholdFlux, ["lower", "upper", "none", "all"])} = "none" 
         options.titlePlots = ""
         options.visiblePlots = "on"
@@ -88,28 +85,28 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
             orderedMappingRxnMatrixEx = orderedMappingRxnMatrixEx(idxFVAVar, :);
         end
         
-        if options.reducedCost
-
-            models = rmfield(project.models,setdiff(fieldnames(project.models), modelList));
-            
-            if all(structfun(@(x) isfield(x.analysis.active.FBA, "w"), models)) && all(structfun(@(x) ismember('one', x.analysis.active.parameters.Value(x.analysis.active.parameters.Analysis == "FBA")), models))
-                
-                for m = modelList'
-                    nRxns = length(project.models.(m).model.rxns);
-                    w = project.models.(m).analysis.active.FBA.w;  % 7350×1
-                    project.models.(m).analysis.active.FBA.reducedCost = w(2*nRxns+1 : 3*nRxns);    % net flux variables ← use this one
-                end
-
-                replacementValue = "analysis.active.FBA.reducedCost"; % get the fba solution values
-                orderedReducedCostMatrix = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns", replacementValue);
-                orderedReducedCostMatrixEx = orderedReducedCostMatrix(getExchangeRxnsIdx, :);
-                if options.thresholdFlux == "all"
-                    orderedReducedCostMatrixEx = orderedReducedCostMatrixEx(idxFVAVar, :);
-                end
-            else
-                error("The reduced costs could not be found in the .w slot of the FBA analysis. In case you did not use the 'one' minNorm parameter for the FBA, shadowprices might be stored elsewere.")
-            end
-        end
+        % if options.reducedCost
+        % 
+        %     models = rmfield(project.models,setdiff(fieldnames(project.models), modelList));
+        % 
+        %     if all(structfun(@(x) isfield(x.analysis.active.FBA, "w"), models)) && all(structfun(@(x) ismember('one', x.analysis.active.parameters.Value(x.analysis.active.parameters.Analysis == "FBA")), models))
+        % 
+        %         for m = modelList'
+        %             nRxns = length(project.models.(m).model.rxns);
+        %             w = project.models.(m).analysis.active.FBA.w;  % 7350×1
+        %             project.models.(m).analysis.active.FBA.reducedCost = w(2*nRxns+1 : 3*nRxns);    % net flux variables ← use this one
+        %         end
+        % 
+        %         replacementValue = "analysis.active.FBA.reducedCost"; % get the fba solution values
+        %         orderedReducedCostMatrix = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns", replacementValue);
+        %         orderedReducedCostMatrixEx = orderedReducedCostMatrix(getExchangeRxnsIdx, :);
+        %         if options.thresholdFlux == "all"
+        %             orderedReducedCostMatrixEx = orderedReducedCostMatrixEx(idxFVAVar, :);
+        %         end
+        %     else
+        %         error("The reduced costs could not be found in the .w slot of the FBA analysis. In case you did not use the 'one' minNorm parameter for the FBA, shadowprices might be stored elsewere.")
+        %     end
+        % end
         
     end
  
@@ -227,7 +224,7 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
         'GridColor', [.8 .8 .8], ...
         'GridAlpha', .5);
     
-    if ~options.FVA && ~options.reducedCost % specify which of the fields need to be true and false!!!
+    if ~options.FVA %&& ~options.reducedCost % specify which of the fields need to be true and false!!!
         % in the case that only the FBA solution should be visualized we
         % use a grouped horizontal barplot to do so
 
@@ -319,44 +316,44 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
         % =========================
         % Check if reduced cost coloring is enabled
         % =========================
-        addColorLegend = options.reducedCost;
+        %addColorLegend = options.reducedCost;
         
-        if addColorLegend
-            cmap = colormap('cool');  % N colors
-            N = size(cmap, 1);
-        
-            % Split reduced cost into high and low
-            reducedCostLow  = orderedReducedCostMatrixEx(isLow, :);
-            reducedCostHigh = orderedReducedCostMatrixEx(isHigh, :);
-        
-            % Helper function to scale matrix to colormap indices
-            scaleToCmap = @(mat, valMin, valMax) round((mat - valMin) / (valMax - valMin) * (N-1)) + 1;
-            
-            % Get global min/max from full matrix
-            valMin = min(orderedReducedCostMatrixEx(:));
-            valMax = max(orderedReducedCostMatrixEx(:));
-            
-            if valMin == valMax
-                % Entire matrix has one unique value — all same color
-                scaledIdxLow = ones(size(reducedCostLow));
-                scaledIdxHigh = ones(size(reducedCostHigh));
-            else
-                % Check each subset individually
-                if length(unique(reducedCostLow(:))) == 1
-                    scaledIdxLow = ones(size(reducedCostLow));
-                else
-                    scaledIdxLow = scaleToCmap(reducedCostLow, valMin, valMax);
-                end
-            
-                if length(unique(reducedCostHigh(:))) == 1
-                    scaledIdxHigh = ones(size(reducedCostHigh));
-                else
-                    scaledIdxHigh = scaleToCmap(reducedCostHigh, valMin, valMax);
-                end
-            end
-        else
-            addColorLegend = 0;
-        end
+        % if addColorLegend
+        %     cmap = colormap('cool');  % N colors
+        %     N = size(cmap, 1);
+        % 
+        %     % Split reduced cost into high and low
+        %     reducedCostLow  = orderedReducedCostMatrixEx(isLow, :);
+        %     reducedCostHigh = orderedReducedCostMatrixEx(isHigh, :);
+        % 
+        %     % Helper function to scale matrix to colormap indices
+        %     scaleToCmap = @(mat, valMin, valMax) round((mat - valMin) / (valMax - valMin) * (N-1)) + 1;
+        % 
+        %     % Get global min/max from full matrix
+        %     valMin = min(orderedReducedCostMatrixEx(:));
+        %     valMax = max(orderedReducedCostMatrixEx(:));
+        % 
+        %     if valMin == valMax
+        %         % Entire matrix has one unique value — all same color
+        %         scaledIdxLow = ones(size(reducedCostLow));
+        %         scaledIdxHigh = ones(size(reducedCostHigh));
+        %     else
+        %         % Check each subset individually
+        %         if length(unique(reducedCostLow(:))) == 1
+        %             scaledIdxLow = ones(size(reducedCostLow));
+        %         else
+        %             scaledIdxLow = scaleToCmap(reducedCostLow, valMin, valMax);
+        %         end
+        % 
+        %         if length(unique(reducedCostHigh(:))) == 1
+        %             scaledIdxHigh = ones(size(reducedCostHigh));
+        %         else
+        %             scaledIdxHigh = scaleToCmap(reducedCostHigh, valMin, valMax);
+        %         end
+        %     end
+        % else
+        %     addColorLegend = 0;
+        % end
 
        %%
         
@@ -389,14 +386,14 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
                     rectangle(axTop, 'Position', [Q1_high(i,j), yBase+offset-boxHeight/2, Q3_high(i,j)-Q1_high(i,j), boxHeight],...
                               'FaceColor', greyRGBs(j, :), 'EdgeColor', 'none');
                     % Median dot
-                    if addColorLegend
-                        plot(axTop, MED_high(i, j), yBase+offset, 'o', ...
-                        'MarkerSize', 5, ...
-                        'MarkerFaceColor', cmap(scaledIdxHigh(i, j), :), ...
-                        'MarkerEdgeColor', cmap(scaledIdxHigh(i, j), :));
-                    else
+                    % if addColorLegend
+                    %     plot(axTop, MED_high(i, j), yBase+offset, 'o', ...
+                    %     'MarkerSize', 5, ...
+                    %     'MarkerFaceColor', cmap(scaledIdxHigh(i, j), :), ...
+                    %     'MarkerEdgeColor', cmap(scaledIdxHigh(i, j), :));
+                    % else
                         plot(axTop, MED_high(i, j), yBase+offset, 'o', 'MarkerSize', 5, 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k')
-                    end
+                    %end
                 end
             end
         
@@ -434,14 +431,14 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
                     rectangle(axBottom, 'Position', [Q1_low(i,j), yBase+offset-boxHeight/2, Q3_low(i,j)-Q1_low(i,j), boxHeight], ...
                               'FaceColor', greyRGBs(j,:), 'EdgeColor', 'none');
                     % Median dot
-                    if addColorLegend
-                        plot(axBottom, MED_low(i,j), yBase+offset, 'o', ...
-                        'MarkerSize', 5, ...
-                        'MarkerFaceColor', cmap(scaledIdxLow(i, j), :), ...
-                        'MarkerEdgeColor', cmap(scaledIdxLow(i, j), :));
-                    else
+                    % if addColorLegend
+                    %     plot(axBottom, MED_low(i,j), yBase+offset, 'o', ...
+                    %     'MarkerSize', 5, ...
+                    %     'MarkerFaceColor', cmap(scaledIdxLow(i, j), :), ...
+                    %     'MarkerEdgeColor', cmap(scaledIdxLow(i, j), :));
+                    % else
                         plot(axBottom, MED_low(i, j), yBase+offset, 'o', 'MarkerSize', 5, 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k')
-                    end
+                %     end
                 end
             end
 
@@ -485,27 +482,27 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
         end
         
         % --- Add colorbar if needed
-        if addColorLegend
-            % Choose axTop if it exists, else axBottom
-            if exist('axTop', 'var')
-                cbAx = axTop;
-            else
-                cbAx = axBottom;
-            end
-            
-            colormap(cbAx, cmap);          % Set colormap for chosen axis
-            % --- Set caxis safely
-            if valMin == valMax
-                caxis(cbAx, [valMin-0.5, valMax+0.5]);  % small padding if single value
-            else
-                caxis(cbAx, [valMin, valMax]);
-            end
-
-            cb = colorbar(cbAx);           % Attach colorbar
-            cb.Label.String = ...
-               'Reduced Cost';
-            cb.FontSize = 14;
-        end
+        % if addColorLegend
+        %     % Choose axTop if it exists, else axBottom
+        %     if exist('axTop', 'var')
+        %         cbAx = axTop;
+        %     else
+        %         cbAx = axBottom;
+        %     end
+        % 
+        %     colormap(cbAx, cmap);          % Set colormap for chosen axis
+        %     % --- Set caxis safely
+        %     if valMin == valMax
+        %         caxis(cbAx, [valMin-0.5, valMax+0.5]);  % small padding if single value
+        %     else
+        %         caxis(cbAx, [valMin, valMax]);
+        %     end
+        % 
+        %     cb = colorbar(cbAx);           % Attach colorbar
+        %     cb.Label.String = ...
+        %        'Reduced Cost';
+        %     cb.FontSize = 14;
+        % end
         
         % --- Grey patches legend (for models)
         % Choose axTop if it exists, else axBottom
