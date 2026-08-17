@@ -17,8 +17,8 @@ load('BRCAProjectNewFormat_0508.mat');
 parametersAnalysis = readtable('defaultParametersAnalysis.csv', 'TextType', 'string');
 
 %% COMPUTING THE COMPARISON
-modelsToCompare = {"Control", "StageIV", "StageI"};
-[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProjectBis, modelsToCompare); % by default, the most recent analyses will be chosen 
+modelsToCompare = {"StageI", "Control"};
+[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare); % by default, the most recent analyses will be chosen 
 
 % analysisToChoose = {'analysis_20260717_1704', 'analysis_20260717_1757', 'analysis_20260717_1841'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
@@ -26,37 +26,35 @@ modelsToCompare = {"Control", "StageIV", "StageI"};
 %% VISUALIZING AUTOMATICALLY GENERATED FIGURES
 
 referenceModel = "consistentMediumConstrainedModel"; 
-comparisonList = ["structuralComparison",...
-    "functionalComparison", ...
-    "samplingComparison"];
-compID = "tutorialComparison_20260728aa"; 
+comparisonList = ["samplingComparison"];
+compID = "test_funcComp"; 
 
 %[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 %% Showing the Default figures generated during comparison 
-
+compName = "Control_vs_StageI__test_funcComp";
 
 % --- Structural Analysis Plots
 
 % how similar are the models to one another 
 % jaccard similarity over the model structure, meaning are rxns included in
 % the model
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.jaccardDist.rxns)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.jaccardDist.rxns)
 % most reactions are shared between the models, which is to be expected 
 % what can also be observed is that the cancer models are more similar than
 % to the normal model
 
 % lets check out the size and overlap of the models, in terms of genes,
 % metabolites and reactions
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.intersections.genes)
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.intersections.mets)
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.intersections.rxns)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.intersections.genes)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.intersections.mets)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.intersections.rxns)
 % in these venn diagramms we see in absolute numbers what is indicated by
 % the jaccard similarity heatmap
 
 % how were the genes in the model discretized ? 
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.dataDiscretization)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.dataDiscretization)
 % this is more a QC measure, can be observed that roughly 1/3 of all genes
 % which are in the model where discretized to be active
 % this gives us an indication on how many of the genes,rxns are actually
@@ -68,7 +66,7 @@ showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialCompari
 % - how many of the reactions which were in the core made it into the model
 % (theoretically we would like 100 percent) but in practice we are around
 % 70/80 percent, this can be adjusted by setting differen thresholds 
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.coreReactions)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.coreReactions)
 % the next question then is how many of those core reactions are specific
 % or are the all shared ? 
 % The models share a large amount of core reactions, which makes sense but we also see that the control samples have the highest number of specific rxns, 
@@ -77,7 +75,7 @@ showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialCompari
 % reactions
 
 % where do those core reactions come from, pathway wise 
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.coreReactionsIntersections)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.coreReactionsIntersections)
 % the important observation here is that the differences in core reaction
 % is not only due to Transport or exchangers, but there is also other rxns
 % that make up the model specific core reactions
@@ -86,21 +84,77 @@ showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialCompari
 
 %the next question is where do the differences between the models come from
 %in terms of rxns presecence, so structural difference
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.structuralComparison.plots.reactionPathwayPresence)
+showFigure(BRCAProject.comparisons.(compName).structuralComparison.plots.reactionPathwayPresence)
 
 
 %%
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.functionalComparison.plots.import)
 
-showFigure(BRCAProject.comparisons.Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa.functionalComparison.plots.export)
+% Is there a difference in growth between the models ? 
 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.objValue)
+
+% Is there a difference in what the models consume and how much ? 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.import)
+
+% Is there a difference in what the models export and how much ? 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.export)
+
+% How similar are the models in terms of FVA boundaries ? 
+% TODO: go through the functions, check what I did, are those plots usefull ? 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.overall)
+
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.hist)
+
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.hist)
+
+
+% How much is a given pathway used in our FBA 
+
+% used in terms of Rxn activity 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fba.heatmapRxnFluxsum)
+
+% used in terms of metabolite usage 
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fba.heatmapMetsFluxsum)
+
+% how is the cardinality in different subsystems ? 
+
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fba.heatmapRxnActivityFba)
+
+
+%% sampling comparison
+
+% how much are metabolites used in a specific subsystem in sampling (average over samples)
+showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapMetsFluxSum)
+% is this trend consistent within the model, or highly variable between samples ? 
+showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapMetsFluxSumSamples)
+
+% how active are rxns in the different subsystem
+showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapRxnFluxSum)
+% is this trend consistent within the model, or highly variable between samples ? 
+showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapRxnFluxSumSamples)
 
 %% GENERATING FIGURES ON DEMAND
 
 referenceModel = "consistentMediumConstrainedModel"
+
+% Questions to be answered by plotting data using the functions + getting to know the behaviour of the models in detail
+% - How active is a given set of rxns in the fba solution or the sampling solutions ?
+% - How much is a given set of metabolites used in the fba solution or the sampling solutions ?
+% - How much can the values of a given set of rxns be pushed ? 
+% - What is the rxn flux value under the minimal solution for a given set of rxns ? 
+% - How do the rxn flux values vary in the sampling? 
+
 [rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "Glycolysis.* & g6p[c");
-[fluxsumSets,plot1] = visualizeFlux(BRCAProject, "Control_vs_StageI_vs_StageIV__tutorialComparison_20260728aa",{rxnsMetId },...
-                                                                     ["Lactate and glucos glutamine export"],"all");
+[fluxsumSets,plot1] = visualizeFlux(BRCAProject, compName,{rxnsMetId },...
+                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"all");
+
+
+[fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["f6p", "dadp", "adp", "atp" ],{rxnsMetId },...
+                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"violin",false,false,"orderedSamples","incoming");
+
+
+
+getFluxPlot(BRCAProject, compName, rxnsMetId,"FVA",true,"thresholdFlux","none")
 
 
 %%
