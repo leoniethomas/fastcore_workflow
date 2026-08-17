@@ -82,6 +82,10 @@ function [fluxsumSets, fig] = visualizeFluxsum(project, comparisonName, metIdx, 
     if isempty(metIdx)
         metIdx = find(ones(length(project.models.(reference).model.mets),1));
     end
+
+    if isstring(metIdx)
+        metIdx = find(cellfun(@(m) any(strcmp(regexp(m, '[^\[]+', 'match', 'once'), cellstr(string(metIdx)))), project.models.(reference).model.mets));
+    end
     
     if plotType == "heatmapSample" & slot == "orderedFba"
         % if you choose to plot the fba solutions, the heatmapSample
@@ -427,7 +431,7 @@ function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, r
         zeroFluxSumMetabolites = find(any(data ~= 0, 2)); % filter for metabolites which have zero fluxsum overall samples, overall models
         data = data(zeroFluxSumMetabolites, :);
         metNames = metNames(zeroFluxSumMetabolites);
-        samplesCat = cellstr(project.comparisons.(comparisonName).samplingComparison.sampleModelLabels);
+        samplesCat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
         % remove the compartment specification to compute the totall
         % fluxsum of a metabolite, and add them up overall compartments
         if ignoreCompartment
@@ -551,6 +555,14 @@ function T_display = getRxnOverviewTable(project, comparisonName, models, refere
         
         ref = fieldnames(models);
         ref = models.(ref{1,1}).settings.medium;
+
+        if all(~ismember(metNames, referenceModel.mets))
+            % this happens when we ignore the compartment, cause then the
+            % metabolites are without their compartment specification [c] 
+            % in this case we search for biggest overlap
+            metNamesIdx = find(cellfun(@(m) any(strcmp(regexp(m, '[^\[]+', 'match', 'once'), cellstr(string(metNames)))), referenceModel.mets));
+            metNames = string(referenceModel.mets(metNamesIdx));
+        end
         
         % get rxnIdx
         [rxnNames] = findRxnsFromMets(referenceModel, string(metNames));
@@ -558,7 +570,7 @@ function T_display = getRxnOverviewTable(project, comparisonName, models, refere
          
         % get rxnIdx formulas + filter out rxns that have zero in all
         % samples
-        samples = project.comparisons.(comparisonName).samplingComparison.orderedSamples;
+        samples = project.comparisons.(comparisonName).orderedSamples;
         zeroRxns = find(sum(samples == 0, 2) == size(samples, 2));
         rxnIds = setdiff(rxnIds, zeroRxns);
         rxnNames = referenceModel.rxns(rxnIds);
@@ -566,7 +578,7 @@ function T_display = getRxnOverviewTable(project, comparisonName, models, refere
         % get lower and upper bound for every rxns 
         orderedLb = getOrderedFeatureMatrix(project, modelNameFluxBoundaries, reference, "rxns", "model.lb");
         orderedUb = getOrderedFeatureMatrix(project, modelNameFluxBoundaries, reference, "rxns", "model.ub");
-        orderedMappingRxnMatrix = getOrderedFeatureMatrix(project, modelNames, reference, "rxns", "mappedDiscRxns");
+        orderedMappingRxnMatrix = getOrderedFeatureMatrix(project, modelNames, reference, "rxns", "mappedDiscretizedRxns");
     
         % check with samplings are not zero 
         mediumConstrained = ismember(rxnNames, ref.mediumComposition.ExRxns_Recon3D); % | ...
