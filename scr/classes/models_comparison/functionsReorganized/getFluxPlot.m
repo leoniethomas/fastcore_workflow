@@ -122,9 +122,24 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
     mediumIsEqualBetweenModels = all(arrayfun(@(x) isequaln(x, ref), mediaForModels));
 
     if mediumIsEqualBetweenModels
-        mediumConstrained = ismember(rxnNames, ref.mediumComposition.ExRxns_Recon3D);% | ...
-                         %ismember(rxn_names, ref.manual_set_boundaries.unwanted_export) | ...
-                         %ismember(rxn_names, ref.manual_set_boundaries.unwanted_import);
+        if isfield(ref,'mediumComposition') %in case there is no medium defined
+            rxnNames = string(rxnNames);
+            % checking which column of the medium composition table entails
+            % the rxn names -> just checking for the column with most
+            % overlap
+            isText = varfun(@(x) iscell(x) || isstring(x) || ischar(x), ...
+                            ref.mediumComposition, ...
+                            "OutputFormat", "uniform");
+
+            textTable = ref.mediumComposition(:, isText);
+            nMatches = varfun(@(x) sum(ismember(string(x), rxnNames)), textTable);
+            [maxMatches, bestColumn] = max(nMatches{:,:});
+            bestColumnName = ref.mediumComposition.Properties.VariableNames{bestColumn};
+
+            mediumConstrained = ismember(rxnNames, ref.mediumComposition.(bestColumn)); %| ...
+                             % ismember(rxns_names, ref.manual_set_boundaries.unwanted_export) | ...
+                             % ismember(rxns_names, ref.manual_set_boundaries.unwanted_import);
+        end
 
         orderedLb = getOrderedFeatureMatrix(project, referenceModel, ...
                                              referenceModel, "rxns", "model.lb");

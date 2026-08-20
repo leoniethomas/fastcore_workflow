@@ -200,10 +200,24 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         orderedMappingRxnMatrix = getOrderedFeatureMatrix(project, modelNames, reference, "rxns", "mappedDiscretizedRxns");
     
         % check with samplings are not zero 
+        if isfield(ref,'mediumComposition') %in case there is no medium defined
+            rxnsNames = string(rxnsNames);
+            % checking which column of the medium composition table entails
+            % the rxn names -> just checking for the column with most
+            % overlap
+            isText = varfun(@(x) iscell(x) || isstring(x) || ischar(x), ...
+                            ref.mediumComposition, ...
+                            "OutputFormat", "uniform");
 
-        mediumConstrained = ismember(rxnsNames, ref.mediumComposition.ExRxns_Recon3D); %| ...
-                         % ismember(rxns_names, ref.manual_set_boundaries.unwanted_export) | ...
-                         % ismember(rxns_names, ref.manual_set_boundaries.unwanted_import);
+            textTable = ref.mediumComposition(:, isText);
+            nMatches = varfun(@(x) sum(ismember(string(x), rxnsNames)), textTable);
+            [maxMatches, bestColumn] = max(nMatches{:,:});
+            bestColumnName = ref.mediumComposition.Properties.VariableNames{bestColumn};
+
+            mediumConstrained = ismember(rxnsNames, ref.mediumComposition.(bestColumn)); %| ...
+                             % ismember(rxns_names, ref.manual_set_boundaries.unwanted_export) | ...
+                             % ismember(rxns_names, ref.manual_set_boundaries.unwanted_import);
+        end
 
         orderedUb = orderedUb(rxnIds, :);
         orderedLb = orderedLb(rxnIds, :);
