@@ -1,7 +1,19 @@
 function project = samplingComparison(project, comparisonName)
 
+
     listModelNames = strsplit(comparisonName, "__"); 
     listModelNames = strsplit(listModelNames(1), "_vs_");
+
+    models = rmfield(project.models, setdiff(fieldnames(project.models), listModelNames));
+    % check that all models have a sampling /  loopless sampling
+    statusSampling = structfun(@(x) ismember("sampling",string(fieldnames(x.analysis.active))), models,'UniformOutput',false);
+    statusllSampling = structfun(@(x) ismember("cycleFreeFlux",string(fieldnames(x.analysis.active.sampling))), models,'UniformOutput',false);
+
+    if ~all(struct2array(statusSampling))
+        error("Not all your models have a sampling slot, go back and check for which of them a sampling still needs to be performed!")
+    end
+
+    %
     % give the comparison the name of all models + a identifier choosen
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
@@ -11,10 +23,14 @@ function project = samplingComparison(project, comparisonName)
     [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
     
+    if all(struct2array(statusllSampling))
+        replacementValue = "analysis.active.sampling.cycleFreeFlux.samplesLl"; % get the fba solution values
+        [project.comparisons.(comparisonName).orderedllSamples, ~] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+    end
     % in case the kdl divergence was computed, compute it between the
     % models too
 
-    models = rmfield(project.models, setdiff(fieldnames(project.models), listModelNames));
+    
     modelKldPerformedStatus = structfun(@(x) ismember("kld",fieldnames(x.analysis.active)),models,'UniformOutput',false);
     if all(struct2array(modelKldPerformedStatus))
         replacementValue = "analysis.active.kld.samplingSets"; % get the fba solution values

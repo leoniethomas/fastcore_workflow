@@ -4,7 +4,7 @@ function fluxsumCell = getFluxsum(project, comparisonName, metIdx, rxnIdx, slot,
         comparisonName
         metIdx = []
         rxnIdx = []
-        slot (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples"])} = "orderedSamples" 
+        slot (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples", "orderedllSamples"])} = "orderedSamples" 
         fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming", "outgoing", "reactions"])} = "incoming" 
     end
     

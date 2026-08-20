@@ -1,9 +1,10 @@
-function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible,kld)
+function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSetLabels, slot, threshold, plotVisible,kld)
     arguments
         project
         comparisonName
         rxnIdx =[]
         rxnSetLabels = []
+        slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["all"] 
         plotVisible = "on"
         kld = 0
@@ -20,11 +21,11 @@ function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSe
         rxnIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
     
-    [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible,kld);
+    [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, slot, plotVisible,kld);
 
 end
 
-function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx, rxnSetLabels, threshold, plotVisible,kld)
+function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx, rxnSetLabels, threshold, slot,plotVisible,kld)
     
     arguments
         project
@@ -32,6 +33,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         rxnsIdx =[]
         rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["positive"] 
+        slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
         plotVisible = "on"
         kld = 0
     end
@@ -45,7 +47,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         rxnsIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
 
-    fluxSets = getFlux(project, comparisonName, rxnsIdx);
+    fluxSets = getFlux(project, comparisonName, rxnsIdx,slot);
 
     if kld
         KLD_sig = project.comparisons.(comparisonName).kld.intraModelKld(cell2mat(rxnsIdx),:); % get KLD values
@@ -265,12 +267,13 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
 
 end
 
-function fluxCell = getFlux(project, comparisonName, rxnIdx)
+function fluxCell = getFlux(project, comparisonName, rxnIdx,slot)
     
     arguments
         project
         comparisonName
         rxnIdx = []
+        slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
     end
     
     reference = project.comparisons.(comparisonName).referenceModel;
@@ -279,7 +282,7 @@ function fluxCell = getFlux(project, comparisonName, rxnIdx)
         rxnIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
 
-    samples = project.comparisons.(comparisonName).orderedSamples;
+    samples = project.comparisons.(comparisonName).(slot);
     
     fluxCell = cellfun(@(x) samples(x, :), ...
                            rxnIdx, 'UniformOutput', false);

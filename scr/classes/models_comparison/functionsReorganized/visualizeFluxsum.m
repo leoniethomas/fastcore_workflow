@@ -64,7 +64,7 @@ function [fluxsumSets, fig] = visualizeFluxsum(project, comparisonName, metIdx, 
         plotType {mustBeMember(plotType, ["violin", "heatmap", "heatmapSample", "heatmapSampleAllFeatures"])} = ["violin"] 
         excludeCoenzymes (1,1) logical = false
         ignoreCompartment (1,1) logical = true
-        slot  (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples"])} = "orderedSamples" 
+        slot  (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples","orderedllSamples"])} = "orderedSamples" 
         fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming", "outgoing", "reactions"])} = "incoming" 
         modelNameFluxBoundaries (1,1) string = "consistentMediumConstrainedModel"
         plotVisible ="on"
@@ -116,7 +116,7 @@ function [fluxsumSets, fig] = visualizeFluxsum(project, comparisonName, metIdx, 
     
     % depending on the choosen plot type different functions are executed
     if plotType == "violin"
-            [fluxsumSets, fig] = getViolinPlots(project, comparisonName, metIdx, rxnIdx, rxnSetLabels, ignoreCompartment, modelNameFluxBoundaries, "incoming", plotVisible);
+            [fluxsumSets, fig] = getViolinPlots(project, comparisonName, metIdx, rxnIdx, rxnSetLabels, ignoreCompartment, modelNameFluxBoundaries, "incoming",slot, plotVisible);
     else
             [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metIdx, rxnIdx, rxnSetLabels, plotType, slot, fluxSummedUp, plotVisible);
     end
@@ -164,7 +164,7 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
         rxnIdx
         rxnSetLabels (1,:) string 
         type {mustBeMember(type, ["heatmap", "heatmapSample", "heatmapSampleAllFeatures"])} = ["heatmap"] 
-        slot  (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples"])} = "orderedSamples" 
+        slot  (1,1) string {mustBeMember(slot, ["orderedFba", "orderedSamples", "orderedllSamples"])} = "orderedSamples" 
         fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming", "outgoing", "reactions"])} = "incoming" 
         plotVisible = "on"
     end
@@ -354,7 +354,7 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
 
 end
 
-function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, rxnIdx, rxnSetLabels, ignoreCompartment, modelNameFluxBoundaries, fluxSummedUp, plotVisible)
+function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, rxnIdx, rxnSetLabels, ignoreCompartment, modelNameFluxBoundaries, fluxSummedUp, slot, plotVisible)
     % This function visualizes the fluxsum distribution per metabolite and model 
     % over the specified rxn_id sets into a violin plot.
     % By getting the fluxsum for metabolites that are participating
@@ -399,6 +399,7 @@ function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, r
         ignoreCompartment (1,1) logical = true
         modelNameFluxBoundaries (1,1) string = "consistentMediumConstrainedModel"
         fluxSummedUp {mustBeMember(fluxSummedUp, ["incoming", "outgoing", "reactions"])} = "incoming" 
+        slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
         plotVisible = "on"
     end
 
@@ -415,7 +416,7 @@ function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, r
         metIdx = find(ones(length(referenceModel.mets), 1));
     end
 
-    fluxsumSets = getFluxsum(project, comparisonName, metIdx, rxnIdx, "orderedSamples", fluxSummedUp);
+    fluxsumSets = getFluxsum(project, comparisonName, metIdx, rxnIdx,slot, fluxSummedUp);
 
     % for every specified set in rxnIdx create one figure with all the
     % fluxsums of the metabolites participating in the rxns + being part of
