@@ -1,4 +1,4 @@
-function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible)
+function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible,kld)
     arguments
         project
         comparisonName
@@ -6,6 +6,7 @@ function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSe
         rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["all"] 
         plotVisible = "on"
+        kld = 0
     end
     
     %     plot_type  {mustBeMember(plot_type, ["violin","heatmap"])} =["violin"] 
@@ -19,11 +20,11 @@ function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSe
         rxnIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
     
-    [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible);
+    [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnIdx, rxnSetLabels, threshold, plotVisible,kld);
 
 end
 
-function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx, rxnSetLabels, threshold, plotVisible)
+function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx, rxnSetLabels, threshold, plotVisible,kld)
     
     arguments
         project
@@ -32,6 +33,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         rxnSetLabels = []
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["positive"] 
         plotVisible = "on"
+        kld = 0
     end
 
     reference = project.comparisons.(comparisonName).referenceModel;
@@ -44,7 +46,11 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
     end
 
     fluxSets = getFlux(project, comparisonName, rxnsIdx);
-    
+
+    if kld
+        KLD_sig = project.comparisons.(comparisonName).kld.intraModelKld(cell2mat(rxnsIdx),:); % get KLD values
+        KLD_sigLabels = project.comparisons.(comparisonName).kld.intraModelKldLabels;
+    end
     % when metIdx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
 
@@ -52,6 +58,9 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
 
     for subsystem = 1:numel(fluxSets)
         data = fluxSets{subsystem};
+        if kld
+            dataKLD = KLD_sig;
+        end
         titleFig = string(rxnSetLabels(subsystem));
         plotName = replace(titleFig, ["_", "-", "/"], "");
 
@@ -59,6 +68,9 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
 
         zeroFluxSumRxns = find(any(data ~= 0, 2));
         data = data(zeroFluxSumRxns, :);
+        if  kld
+            dataKLD = dataKLD(zeroFluxSumRxns, :);
+        end
         rxnsNames = rxnsNames(zeroFluxSumRxns);
 
         if threshold ~= "all"
@@ -76,6 +88,9 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
             end
 
             data = data(idx, :);
+            if kld
+                dataKLD = dataKLD(idx, :);
+            end
             rxnsNames = rxnsNames(idx);
         end
 
@@ -84,7 +99,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
         dataGrouped = cell(1, nGroups);
-    
+        
         for g = 1:nGroups
             idx = samplesCat == groups(g);   % logical index for this group
             dataGrouped{g} = data(:, idx);   % all metabolites, only this group
@@ -122,15 +137,39 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
                 hold(ax, 'on')
                 
                 dat = dataForPlot(m, :);
+                if kld
+                    datKLD = dataKLD(m, :);
+                end
                 % in order to be able to put it all in one matrix we need
                 % to make the sample count the same length, so we add NaNs
                 
                 maxLen = max(cellfun(@numel, dat));
                 dat = cell2mat(cellfun(@(x) [x, nan(1, maxLen-numel(x))], dat, 'UniformOutput', false));
                 dat = reshape(dat, maxLen, []);
-                
                 columnsToKeep = find(~all(dat == 0 | isnan(dat)));
                 evalc('violinplot(dat(:, columnsToKeep), groups(columnsToKeep), "ShowData", false);');
+
+                hold on
+                if kld
+                    datKLD = reorderKLDComparisons(groups(columnsToKeep), datKLD, KLD_sigLabels);
+                    yposition_text = max(max(dat(:, columnsToKeep)));
+                    addSignificanceBars(datKLD , KLD_sigLabels,groups(columnsToKeep),dat(:, columnsToKeep))
+                end
+                
+                % labels in plot
+                groups = ["Control", "StageI", "StageII"];
+
+                KLD_sigLabelsInPlot = strings(nchoosek(numel(groups), 2), 1);
+                
+                k = 1;
+                for i = 1:numel(groups)-1
+                    for j = i+1:numel(groups)
+                        KLD_sigLabelsInPlot(k) = groups(i) + "_vs_" + groups(j);
+                        k = k + 1;
+                    end
+                end
+
+                %reorder datKLD accordingly 
                 
                 ylabel(ax, 'Flux Value', 'FontSize', 18);
                 title(ax, rxnsNames{m}, 'Interpreter', 'none', 'FontSize', 14);
@@ -233,3 +272,107 @@ function fluxCell = getFlux(project, comparisonName, rxnIdx)
 
 end
 
+
+function datKLD_reordered = reorderKLDComparisons(groups, datKLD, datKLDlabels)
+
+    nGroups = numel(groups);
+    nComparisons = nchoosek(nGroups, 2);
+
+    % Expected comparison order from the violin plot
+    plotLabels = strings(nComparisons, 1);
+
+    k = 1;
+    for i = 1:nGroups-1
+        for j = i+1:nGroups
+            plotLabels(k) = groups(i) + "_vs_" + groups(j);
+            k = k + 1;
+        end
+    end
+
+    % Determine which input column belongs to each plot comparison
+    columnOrder = zeros(1, nComparisons);
+
+    for j = 1:nComparisons
+
+        plotParts = split(plotLabels(j), "_vs_");
+
+        for i = 1:numel(datKLDlabels)
+
+            parts = split(datKLDlabels(i), "_vs_");
+
+            % Match either direction
+            if (parts(1) == plotParts(1) && parts(2) == plotParts(2)) || ...
+               (parts(1) == plotParts(2) && parts(2) == plotParts(1))
+
+                columnOrder(j) = i;
+                break
+            end
+        end
+    end
+
+    % Reorder columns
+    datKLD_reordered = datKLD(:, columnOrder);
+
+end
+
+function addSignificanceBars(dat,comparisonLabels, groups,dataViolin)
+
+    % Data range
+    data = dat;
+
+    ymax = max(dataViolin, [], "all");
+    ymin = min(dataViolin, [], "all");
+    yrange = ymax - ymin;
+
+    % Loop over comparisons
+    nComparisons = numel(comparisonLabels);
+
+    for k = 1:nComparisons
+
+        % e.g. "Control_vs_StageI"
+        comparison = comparisonLabels(k);
+
+        % Split comparison into group names
+        parts = split(comparison, "_vs_");
+
+        group1 = parts(1);
+        group2 = parts(2);
+
+        % Find positions of groups on the violin plot
+        pos1 = find(groups == group1);
+        pos2 = find(groups == group2);
+
+        % Make sure both groups exist
+        if isempty(pos1) || isempty(pos2)
+            error("Could not find groups for comparison: %s", comparison);
+        end
+
+        % Statistical test
+        p = data(k);
+
+        % Height of significance bar
+        h = 0.02 * yrange;
+
+        % Draw bracket
+        plot([pos1 pos1 pos2 pos2], ...
+             [ymax ymax-h ymax-h ymax], ...
+             'k-', 'LineWidth', 1.5)
+
+        % p-value
+        text((pos1+pos2)/2, ymax+h+0.05*yrange, ...
+             sprintf('p = %.3f', p), ...
+             'HorizontalAlignment', 'center', ...
+             'VerticalAlignment', 'bottom');
+
+
+    end
+
+    % Add space above the significance annotations
+    currentYLim = ylim;
+    
+    ylim([ ...
+        currentYLim(1), ...
+        max(currentYLim(2), ymax + 0.15*yrange) ...
+    ]);
+
+end
