@@ -524,9 +524,9 @@ function validateAnalysisEntry(entry, path, nbRxns, entryName)
             error("%s.kld must be a struct.", path);
         end
         if isActive
-            allowedKld = {'analysisId', 'samplingSets', 'kldMatrix', 'pValueKld', 'fdr'};
+            allowedKld = {'analysisId', 'samplingSets', 'kldMatrix', 'pValueKld', 'fdr','setLabels'};
         else
-            allowedKld = {'samplingSets', 'kldMatrix', 'pValueKld', 'fdr'};
+            allowedKld = {'samplingSets', 'kldMatrix', 'pValueKld', 'fdr','setLabels'};
         end
         actualKld = fieldnames(entry.kld);
         extraKld = setdiff(actualKld, allowedKld);

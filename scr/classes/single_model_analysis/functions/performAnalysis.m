@@ -242,8 +242,8 @@ if any(strcmp(toPerform, 'kld'))
     
     % Loading parameters
     params = tableToParamsStruct(parameterTable, 'kld', model);
-    
-    if any(strcmp(toPerform, 'sampling'))
+
+    if isfield(project.models.(modelName).analysis.(id), 'sampling')
         % add the sampling to be one of the sets 
         samplingMatrix = project.models.(modelName).analysis.(id).sampling.samples;
     else 
@@ -262,10 +262,11 @@ if any(strcmp(toPerform, 'kld'))
     end
     
     [kldMatrix,...
-        pValueKld,samplingSets,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,...
+        pValueKld,samplingSets,setLabels,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,...
                                                  'nPointsReturned',params.nPointsReturned,'numberOfIndSamplings',params.numberOfIndSamplings);
     
     project.models.(modelName).analysis.(id).kld.samplingSets = samplingSets;
+    project.models.(modelName).analysis.(id).kld.setLabels = setLabels;
     project.models.(modelName).analysis.(id).kld.kldMatrix = kldMatrix;
     project.models.(modelName).analysis.(id).kld.pValueKld = pValueKld;
     project.models.(modelName).analysis.(id).kld.fdr = fdr;

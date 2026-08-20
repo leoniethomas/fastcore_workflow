@@ -10,12 +10,29 @@ function project = samplingComparison(project, comparisonName)
     project.comparisons.(comparisonName).samplingComparison = struct();
     [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
     project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
+    
+    % in case the kdl divergence was computed, compute it between the
+    % models too
+
+    models = rmfield(project.models, setdiff(fieldnames(project.models), listModelNames));
+    modelKldPerformedStatus = structfun(@(x) ismember("kld",fieldnames(x.analysis.active)),models,'UniformOutput',false);
+    if all(struct2array(modelKldPerformedStatus))
+        replacementValue = "analysis.active.kld.samplingSets"; % get the fba solution values
+        [project.comparisons.(comparisonName).kld.orderedkldSets, ~,project.comparisons.(comparisonName).kld.modelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        replacementValue = "analysis.active.kld.kldMatrix"; % get the fba solution values
+        [project.comparisons.(comparisonName).kld.interModelKld, ~,project.comparisons.(comparisonName).kld.interModelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        
+        S = struct2cell(structfun(@(x)x.analysis.active.kld.setLabels,models,"UniformOutput",false));
+        project.comparisons.(comparisonName).kld.orderedkldSetLabels = [S{:}];
+
+        project.comparisons.(comparisonName).kld = performKLDivergenceComparison(project.comparisons.(comparisonName).kld);
+    end
 
     % Normalize: divide each column (sample) by its biomass flux value
     % objectiveID = find(ismember(project.models.(project.comparisons.(comparisonName).referenceModel).model.rxns, "biomass_reaction"));
     % project.comparisons.(comparisonName).orderedSamples = project.comparisons.(comparisonName).orderedSamples ./ project.comparisons.(comparisonName).orderedSamples(objectiveID, :);
 
-    [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel); 
+   [idxPathways, namesPathways] = getDefaultSubsystems(project, referenceModel); 
 
     [~, project.comparisons.(comparisonName).samplingComparison.plots.heatmapRxnFluxSum] = visualizeFluxsum(project, comparisonName, [], idxPathways, ...
                                                                           namesPathways, "heatmap", true, true, ...
