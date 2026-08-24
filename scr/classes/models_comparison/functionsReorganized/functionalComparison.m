@@ -99,7 +99,7 @@ function project = functionalComparison(project, comparisonName)
     %%% ---------- Visualization: Fluxsum based on the FBA values ? 
 
     replacementValue = "analysis.active.FBA.v"; % get the fba solution values
-    project.comparisons.(comparisonName).orderedFba = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns", replacementValue);
+    project.comparisons.(comparisonName).functionalComparison.orderedFba = getOrderedFeatureMatrix(project, modelList, referenceModel, "rxns", replacementValue);
     
     % compute Fluxsum 
 

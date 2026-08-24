@@ -27,16 +27,16 @@ function fig_out = visualizeSamplingLandscape(project,comparison_name, rxn_to_vi
     end
     fig_out = struct();
     if options.num_clusters == 0
-        options.num_clusters = length(unique(project.comparisons.(comparison_name).sampleModelLabels));
+        options.num_clusters = length(unique(project.comparisons.(comparison_name).samplingComparison.sampleModelLabels));
     end
     reference_model = project.comparisons.(comparison_name).referenceModel;
     
-    sampleModelLabels = project.comparisons.(comparison_name).sampleModelLabels;
+    sampleModelLabels = project.comparisons.(comparison_name).samplingComparison.sampleModelLabels;
     if options.sampling_feature == "flux"
-        ordered_samples = project.comparisons.(comparison_name).orderedSamples;
+        ordered_samples = project.comparisons.(comparison_name).samplingComparison.orderedSamples;
         dim_names = project.models.(reference_model).model.rxns;
     elseif options.sampling_feature == "fluxsum"
-        ordered_samples = project.comparisons.(comparison_name).ordered_samples_fluxsum;
+        ordered_samples = project.comparisons.(comparison_name).samplingComparison.ordered_samples_fluxsum;
         dim_names = project.models.(reference_model).model.mets;
     else
         error("You choose a  non valid argument for the sampling feature! Choose flux or fluxsum, by default the flux per reaction will be portrayed!")

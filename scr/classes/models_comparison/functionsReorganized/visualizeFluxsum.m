@@ -183,7 +183,8 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
         % this case is an exception
         % in this case we just visualize the flux values - no fluxsum
         % calculation needed 
-        fbaValues = project.comparisons.(comparisonName).(slot);
+
+        [fbaValues, locationInStruct] = findFieldRecursive(project.comparisons.(comparisonName), slot);
         fluxsumSets = cellfun(@(x) fbaValues(x,:), ...
                            rxnIdx, 'UniformOutput', false);
     else
@@ -192,7 +193,7 @@ function [fluxsumSets, fig] = getComparisonHeatmap(project, comparisonName, metI
     end
 
     if slot ~= "orderedFba"
-        samplesCat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
+        samplesCat = cellstr(project.comparisons.(comparisonName).samplingComparison.sampleModelLabels);
     else
         samplesCat = cellstr(project.comparisons.(comparisonName).modelNames);
     end
@@ -432,7 +433,7 @@ function [fluxsumSets, figs] = getViolinPlots(project, comparisonName, metIdx, r
         zeroFluxSumMetabolites = find(any(data ~= 0, 2)); % filter for metabolites which have zero fluxsum overall samples, overall models
         data = data(zeroFluxSumMetabolites, :);
         metNames = metNames(zeroFluxSumMetabolites);
-        samplesCat = cellstr(project.comparisons.(comparisonName).sampleModelLabels);
+        samplesCat = cellstr(project.comparisons.(comparisonName).samplingComparison.sampleModelLabels);
         % remove the compartment specification to compute the totall
         % fluxsum of a metabolite, and add them up overall compartments
         if ignoreCompartment
@@ -571,7 +572,7 @@ function T_display = getRxnOverviewTable(project, comparisonName, models, refere
          
         % get rxnIdx formulas + filter out rxns that have zero in all
         % samples
-        samples = project.comparisons.(comparisonName).orderedSamples;
+        samples = project.comparisons.(comparisonName).samplingComparison.orderedSamples;
         zeroRxns = find(sum(samples == 0, 2) == size(samples, 2));
         rxnIds = setdiff(rxnIds, zeroRxns);
         rxnNames = referenceModel.rxns(rxnIds);

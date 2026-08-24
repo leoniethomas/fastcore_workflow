@@ -20,20 +20,21 @@ parametersAnalysis = readtable('defaultParametersAnalysis.csv', 'TextType', 'str
 modelsToCompare = {"StageI", "Control"};
 [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare); % by default, the most recent analyses will be chosen 
 
-% analysisToChoose = {'analysis_20260717_1704', 'analysis_20260717_1757', 'analysis_20260717_1841'};
+% analysisToChoose = {'analysis_20260812_2112','analysis_20260812_2130'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
-
+% 
 %% VISUALIZING AUTOMATICALLY GENERATED FIGURES
 
 referenceModel = "consistentMediumConstrainedModel"; 
 comparisonList = ["samplingComparison"];
-compID = "test_funcCompvis"; 
+compID = "testa"; 
 
 %[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
+
 %% Showing the Default figures generated during comparison 
-compName = "Control_vs_StageI__test_funcCompvis";
+compName = "Control_vs_StageI__testa";
 
 % --- Structural Analysis Plots
 
@@ -124,14 +125,14 @@ showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fba.hea
 %% sampling comparison
 
 % how much are metabolites used in a specific subsystem in sampling (average over samples)
-showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapMetsFluxSum)
+showFigure(BRCAProject.comparisons.(compName).samplingComparison.plots.heatmapMetsFluxSum)
 % is this trend consistent within the model, or highly variable between samples ? 
-showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapMetsFluxSumSamples)
+showFigure(BRCAProject.comparisons.(compName).samplingComparison.plots.heatmapMetsFluxSumSamples)
 
 % how active are rxns in the different subsystem
-showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapRxnFluxSum)
+showFigure(BRCAProject.comparisons.(compName).samplingComparison.plots.heatmapRxnFluxSum)
 % is this trend consistent within the model, or highly variable between samples ? 
-showFigure(BRCAProject.comparisons.Control_vs_StageI__test_funcComp.samplingComparison.plots.heatmapRxnFluxSumSamples)
+showFigure(BRCAProject.comparisons.(compName).samplingComparison.plots.heatmapRxnFluxSumSamples)
 
 %% GENERATING FIGURES ON DEMAND
 
@@ -146,7 +147,7 @@ referenceModel = "consistentMediumConstrainedModel"
 
 [rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "Glycolysis.*");
 [fluxsumSets,plot1] = visualizeFlux(BRCAProject, compName,{rxnsMetId },...
-                                                                     ["Rxns in Glycolysis consuming/producing g6p"], "orderedSamples","all");
+                                                                     ["Rxns in Glycolysis consuming/producing g6p"], "orderedSamples","all",'on',1);
 
 
 [fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["23dpg", "3pg", "fdp", "g1p", "nad","lac_L"],{rxnsMetId},...
@@ -160,7 +161,7 @@ referenceModel = "consistentMediumConstrainedModel"
 
 getFluxPlot(BRCAProject, compName, rxnsMetId,"FVA",true,"thresholdFlux","none")
 
-visualizeSamplingLandscape(BRCAProject, compName,rxnsMetId(1))
+visualizeSamplingLandscape(BRCAProject, compName, BRCAProject.models.(referenceModel).model.rxns(rxnsMetId(1)))
 
 %%
 

@@ -20,12 +20,12 @@ function project = samplingComparison(project, comparisonName)
     % run structural model comparison
     replacementValue = "analysis.active.sampling.samples"; % get the fba solution values
     project.comparisons.(comparisonName).samplingComparison = struct();
-    [project.comparisons.(comparisonName).orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
-    project.comparisons.(comparisonName).sampleModelLabels = sampleLabels;
+    [project.comparisons.(comparisonName).samplingComparison.orderedSamples, ~, sampleLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+    project.comparisons.(comparisonName).samplingComparison.sampleModelLabels = sampleLabels;
     
     if all(struct2array(statusllSampling))
         replacementValue = "analysis.active.sampling.cycleFreeFlux.samplesLl"; % get the fba solution values
-        [project.comparisons.(comparisonName).orderedllSamples, ~] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        [project.comparisons.(comparisonName).samplingComparison.orderedllSamples, ~] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
     end
     % in case the kdl divergence was computed, compute it between the
     % models too
@@ -34,14 +34,14 @@ function project = samplingComparison(project, comparisonName)
     modelKldPerformedStatus = structfun(@(x) ismember("kld",fieldnames(x.analysis.active)),models,'UniformOutput',false);
     if all(struct2array(modelKldPerformedStatus))
         replacementValue = "analysis.active.kld.samplingSets"; % get the fba solution values
-        [project.comparisons.(comparisonName).kld.orderedkldSets, ~,project.comparisons.(comparisonName).kld.modelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        [project.comparisons.(comparisonName).samplingComparison.kld.orderedkldSets, ~,project.comparisons.(comparisonName).kld.modelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
         replacementValue = "analysis.active.kld.kldMatrix"; % get the fba solution values
-        [project.comparisons.(comparisonName).kld.interModelKld, ~,project.comparisons.(comparisonName).kld.interModelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        [project.comparisons.(comparisonName).samplingComparison.kld.interModelKld, ~,project.comparisons.(comparisonName).kld.interModelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
         
         S = struct2cell(structfun(@(x)x.analysis.active.kld.setLabels,models,"UniformOutput",false));
-        project.comparisons.(comparisonName).kld.orderedkldSetLabels = [S{:}];
+        project.comparisons.(comparisonName).samplingComparison.kld.orderedkldSetLabels = [S{:}];
 
-        project.comparisons.(comparisonName).kld = performKLDivergenceComparison(project.comparisons.(comparisonName).kld);
+        project.comparisons.(comparisonName).samplingComparison.kld = performKLDivergenceComparison(project.comparisons.(comparisonName).samplingComparison.kld);
     end
 
     % Normalize: divide each column (sample) by its biomass flux value

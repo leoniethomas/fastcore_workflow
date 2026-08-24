@@ -50,8 +50,8 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
     fluxSets = getFlux(project, comparisonName, rxnsIdx,slot);
 
     if kld
-        KLD_sig = project.comparisons.(comparisonName).kld.intraModelKld(cell2mat(rxnsIdx),:); % get KLD values
-        KLD_sigLabels = project.comparisons.(comparisonName).kld.intraModelKldLabels;
+        KLD_sig = project.comparisons.(comparisonName).samplingComparison.kld.intraModelKld(cell2mat(rxnsIdx),:); % get KLD values
+        KLD_sigLabels = project.comparisons.(comparisonName).samplingComparison.kld.intraModelKldLabels;
     end
     % when metIdx is empyt, or over a specific number of mets -> over 50
     % then only display the top metabolites
@@ -96,7 +96,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
             rxnsNames = rxnsNames(idx);
         end
 
-        samplesCat = project.comparisons.(comparisonName).sampleModelLabels;
+        samplesCat = project.comparisons.(comparisonName).samplingComparison.sampleModelLabels;
         groups = unique(samplesCat, 'stable');       
         nGroups = numel(groups);
         [nMet, nSamples] = size(data);
@@ -192,7 +192,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
 
         rxnIds = find(matches(string(referenceModel.rxns), rxnsNames));
 
-        samples = project.comparisons.(comparisonName).orderedSamples;
+        samples = project.comparisons.(comparisonName).samplingComparison.orderedSamples;
         zeroRxns = find(sum(samples == 0, 2) == size(samples, 2));
         rxnIds = setdiff(rxnIds, zeroRxns);
         rxnsNames = referenceModel.rxns(rxnIds);
@@ -281,8 +281,8 @@ function fluxCell = getFlux(project, comparisonName, rxnIdx,slot)
     if isempty(rxnIdx)
         rxnIdx = {find(ones(length(project.models.(reference).model.rxns), 1))};
     end
-
-    samples = project.comparisons.(comparisonName).(slot);
+    
+    [samples, ~] = findFieldRecursive(project.comparisons.(comparisonName),slot);
     
     fluxCell = cellfun(@(x) samples(x, :), ...
                            rxnIdx, 'UniformOutput', false);
