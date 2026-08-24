@@ -1,4 +1,4 @@
-function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = performKLDivergenceAnalysis(model,samplingMatrix,options)
+function [kdl_matrix,p_value_kdl,sampling_sets,setLabels,fdr] = performKLDivergenceAnalysis(model,samplingMatrix,options)
         % This function performs an evaluation of the variability and
         % convergence of the estimated sampling distribution. This
         % estimation is meant to give a measure of how trustworthy the
@@ -93,7 +93,7 @@ function [kdl_matrix,p_value_kdl,sampling_sets,fdr] = performKLDivergenceAnalysi
 
         delete(gcp('nocreate'))
         parpool(options.numParallelWorkers);
-        parfor x=1:numel(pairCell)            
+        for x=1:numel(pairCell)            
             pairwiseKdl{x} = getKldValuePairs(sampling_sets{pairCell{x}(1),1},sampling_sets{pairCell{x}(2),1});                          
         end
         pairwiseKdl = cell2mat(pairwiseKdl)'; 

@@ -159,7 +159,7 @@ if any(strcmp(toPerform, 'sampling'))
             rng(strain);  % set seed based on loop inde
             [modelSampling, samp] = sampleCbModel(model, sampleFile, samplerName, options);
             samples = [samples, samp];  % vertical concatenation
-        end
+        end 
     % 
     % elseif params.samplerName == "ADSB" | params.samplerName == "ll_ACHRB" | params.sampler == "EDHRB"
     %     option.numSamples = params.options.nPointsReturned;
@@ -262,7 +262,7 @@ if any(strcmp(toPerform, 'kld'))
     end
     
     [kldMatrix,...
-        pValueKld,samplingSets,setLabels,fdr] = performKdlDivergenceAnalysis(model,samplingMatrix,...
+        pValueKld,samplingSets,setLabels,fdr] = performKLDivergenceAnalysis(model,samplingMatrix,...
                                                  'nPointsReturned',params.nPointsReturned,'numberOfIndSamplings',params.numberOfIndSamplings);
     
     project.models.(modelName).analysis.(id).kld.samplingSets = samplingSets;
