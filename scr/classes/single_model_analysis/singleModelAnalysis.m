@@ -50,7 +50,7 @@ end
 % check that the loopless ID given are valid analysisIDs 
 % check that the given analysis IDs for the loopless are actually
 % available in the corresponding models 
-if any("loopless" == analyses)
+if any("loopless" == analyses) && ~any("sampling" == analyses)
     % check that we have as many samplingIDs given as models
     analysisIDSampling = parameterTable.Value{parameterTable.Parameter == "samplingToUse" & parameterTable.Analysis == "loopless"};
     analysisID = split(string(analysisIDSampling),"/");
