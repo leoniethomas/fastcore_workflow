@@ -40,10 +40,10 @@ function project = functionalComparison(project, comparisonName)
     
     % Import
     plots.import = getFluxPlot(project, comparisonName, getExchangeRxnsIdx, ...
-                                    'thresholdFlux', 'upper', 'FVA', false, 'reducedCost', false, 'visiblePlots', "off");
+                                    'thresholdFlux', 'upper', 'FVA', false, 'visiblePlots', "off");
     % Export
     plots.export = getFluxPlot(project, comparisonName, getExchangeRxnsIdx,...
-                  'thresholdFlux', 'lower', 'FVA', false, 'reducedCost', false, 'visiblePlots', "off");
+                  'thresholdFlux', 'lower', 'FVA', false,  'visiblePlots', "off");
     
     %%% ---------- Visualization: FVA Similarity between Models
 

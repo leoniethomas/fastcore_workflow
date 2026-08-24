@@ -28,8 +28,8 @@ defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
-wantedAnalyses = {'FBA', 'FVA', 'sampling'};
-analyzedModels = {'Control', 'StageI', 'StageIV'};
+wantedAnalyses = {'sampling','kld'};
+analyzedModels = {'Control', 'StageI'};
 BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses);
 
 %% GENERATING A REPORT
@@ -42,7 +42,7 @@ writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260727_1852', ...
     'pathwaysOfInterest', pathwaysOfInterest, 'metsOfInterest', metsOfInterest);
 
 %% ADDING AN ANALYSIS TO AN EXISTING ONE
-BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'StageIV', 'singleGeneDeletion', 'analysis_20260727_1852');
+BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'Control', 'kld', 'analysis_20260812_2130');
 
 
 

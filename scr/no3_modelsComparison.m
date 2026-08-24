@@ -27,13 +27,13 @@ modelsToCompare = {"StageI", "Control"};
 
 referenceModel = "consistentMediumConstrainedModel"; 
 comparisonList = ["samplingComparison"];
-compID = "test_funcComp"; 
+compID = "test_funcCompvis"; 
 
 %[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 %% Showing the Default figures generated during comparison 
-compName = "Control_vs_StageI__test_funcComp";
+compName = "Control_vs_StageI__test_funcCompvis";
 
 % --- Structural Analysis Plots
 
@@ -144,9 +144,13 @@ referenceModel = "consistentMediumConstrainedModel"
 % - What is the rxn flux value under the minimal solution for a given set of rxns ? 
 % - How do the rxn flux values vary in the sampling? 
 
-[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "Glycolysis.* & g6p[c");
+[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "Glycolysis.*");
 [fluxsumSets,plot1] = visualizeFlux(BRCAProject, compName,{rxnsMetId },...
-                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"all");
+                                                                     ["Rxns in Glycolysis consuming/producing g6p"], "orderedSamples","all");
+
+
+[fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["23dpg", "3pg", "fdp", "g1p", "nad","lac_L"],{rxnsMetId},...
+                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"violin",false,true, "orderedSamples");
 
 
 [fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["f6p", "dadp", "adp", "atp" ],{rxnsMetId },...
@@ -156,6 +160,9 @@ referenceModel = "consistentMediumConstrainedModel"
 
 getFluxPlot(BRCAProject, compName, rxnsMetId,"FVA",true,"thresholdFlux","none")
 
+visualizeSamplingLandscape(BRCAProject, compName,rxnsMetId(1))
 
 %%
+
+[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "^Glucose");
 
