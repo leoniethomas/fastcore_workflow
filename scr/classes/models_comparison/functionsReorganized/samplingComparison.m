@@ -34,9 +34,11 @@ function project = samplingComparison(project, comparisonName)
     modelKldPerformedStatus = structfun(@(x) ismember("kld",fieldnames(x.analysis.active)),models,'UniformOutput',false);
     if all(struct2array(modelKldPerformedStatus))
         replacementValue = "analysis.active.kld.samplingSets"; % get the fba solution values
-        [project.comparisons.(comparisonName).samplingComparison.kld.orderedkldSets, ~,project.comparisons.(comparisonName).kld.modelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        [project.comparisons.(comparisonName).samplingComparison.kld.orderedkldSets, ~, ...
+            project.comparisons.(comparisonName).samplingComparison.kld.modelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
         replacementValue = "analysis.active.kld.kldMatrix"; % get the fba solution values
-        [project.comparisons.(comparisonName).samplingComparison.kld.interModelKld, ~,project.comparisons.(comparisonName).kld.interModelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
+        [project.comparisons.(comparisonName).samplingComparison.kld.interModelKld, ~, ...
+            project.comparisons.(comparisonName).samplingComparison.kld.interModelLabels] = getOrderedFeatureMatrix(project, listModelNames, referenceModel, "rxns", replacementValue);
         
         S = struct2cell(structfun(@(x)x.analysis.active.kld.setLabels,models,"UniformOutput",false));
         project.comparisons.(comparisonName).samplingComparison.kld.orderedkldSetLabels = [S{:}];

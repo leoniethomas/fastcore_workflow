@@ -13,12 +13,14 @@ feature astheightlimit 2000;
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
 load('BRCAProjectNewFormat_0508.mat');
 % load('defaultParametersAnalysis.csv'); % can be modified according to the
-% user % this does not work for me, throws an error 
-parametersAnalysis = readtable('defaultParametersAnalysis.csv', 'TextType', 'string');
+% user % this does not work for me, throws an error
+defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 
 %% COMPUTING THE COMPARISON
 modelsToCompare = {"StageI", "Control"};
-[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare); % by default, the most recent analyses will be chosen 
+[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare);
+% add the FVA from a different analysis
+[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare,{'analysis_20260812_2112','analysis_20260812_2130'},{'FVA'}); % by default, the most recent analyses will be chosen 
 
 % analysisToChoose = {'analysis_20260812_2112','analysis_20260812_2130'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
@@ -26,15 +28,18 @@ modelsToCompare = {"StageI", "Control"};
 %% VISUALIZING AUTOMATICALLY GENERATED FIGURES
 
 referenceModel = "consistentMediumConstrainedModel"; 
-comparisonList = ["samplingComparison"];
-compID = "testa"; 
+comparisonList = ["structuralComparison", "functionalComparison","samplingComparison"];
+compID = "full_test_finalObject"; 
 
 %[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 
+% save('20262508_finalComparisonStructure.mat', 'BRCAProject', '-v7.3');
+
+
 %% Showing the Default figures generated during comparison 
-compName = "Control_vs_StageI__testa";
+compName = "Control_vs_StageI__full_test_finalObject";
 
 % --- Structural Analysis Plots
 
@@ -102,11 +107,11 @@ showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.export)
 
 % How similar are the models in terms of FVA boundaries ? 
 % TODO: go through the functions, check what I did, are those plots usefull ? 
-showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.overall)
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.overall)
 
-showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.hist)
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.hist)
 
-showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.FVASim.hist)
+showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.hist)
 
 
 % How much is a given pathway used in our FBA 

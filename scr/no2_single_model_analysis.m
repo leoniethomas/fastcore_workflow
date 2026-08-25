@@ -29,10 +29,10 @@ defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
 wantedAnalyses = {'kld','sampling', 'FBA', 'FVA'};
-analyzedModels = {'Control', 'StageI','StageII'};
+analyzedModels = {'Control', 'StageI'};
 BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses,1,1);
 
-save 20260825_allSingleAnalysisLT.m BRCAProject
+save 20260825_allSingleAnalysisLT.mat BRCAProject
 
 %% GENERATING A REPORT
 % List of wanted pathways for the report
