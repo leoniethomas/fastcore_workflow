@@ -1,4 +1,4 @@
-function [kdl_matrix,p_value_kdl,sampling_sets,setLabels,fdr] = performKLDivergenceAnalysis(model,samplingMatrix,options)
+function [kdl_matrix,p_value_kdl,sampling_setsMatrix,setLabels,fdr] = performKLDivergenceAnalysis(model,samplingMatrix,options)
         % This function performs an evaluation of the variability and
         % convergence of the estimated sampling distribution. This
         % estimation is meant to give a measure of how trustworthy the
@@ -137,6 +137,13 @@ function [kdl_matrix,p_value_kdl,sampling_sets,setLabels,fdr] = performKLDiverge
         
         p_value_kdl = cell2mat(cellfun(@(rxn_idx) ranksum(train_data(rxn_idx(1),:),test_data(rxn_idx(1),:)),num2cell(1:size(pairwiseKdl, 1))',"UniformOutput",false));
         %p_adj_kdl = mafdr(p_value_kdl,'BHFDR', true);
+
+        sampling_setsMatrix = [sampling_sets{:}];
+
+        nSets = numel(sampling_sets);
+        nSamplesPerSet = cellfun(@(x) size(x, 2), sampling_sets);
+
+        setLabels = repelem("set" + (1:nSets), nSamplesPerSet);
         
         
         figure
