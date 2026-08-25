@@ -23,14 +23,16 @@ changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
-load('BRCAProject.mat');
+load('BRCAProject_kldresults18082026.mat');
 defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
-wantedAnalyses = {'sampling','kld'};
-analyzedModels = {'Control', 'StageI'};
-BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses);
+wantedAnalyses = {'kld','sampling', 'FBA', 'FVA'};
+analyzedModels = {'Control', 'StageI','StageII'};
+BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses,1,1);
+
+save 20260825_allSingleAnalysisLT.m BRCAProject
 
 %% GENERATING A REPORT
 % List of wanted pathways for the report
