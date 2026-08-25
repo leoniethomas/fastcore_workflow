@@ -360,28 +360,41 @@ function addSignificanceBars(dat,comparisonLabels, groups,dataViolin)
         pos2 = find(groups == group2);
 
         % Make sure both groups exist
-        if isempty(pos1) || isempty(pos2)
-            error("Could not find groups for comparison: %s", comparison);
+        if ~(isempty(pos1) || isempty(pos2))
+            
+    
+            % Statistical test
+            git p = data(k);
+    
+    
+            if p < 0.001
+                sig = "***";
+            elseif p < 0.005
+                sig = "**";
+            elseif p < 0.05
+                sig = "*";
+            else
+                sig = " ";
+            end
+            
+            if sig ~= " "
+                % Height of significance bar
+                h = 0.005 * yrange;
+        
+                % Draw bracket
+                plot([pos1 pos1 pos2 pos2], ...
+                     [ymax+5*(k-1)*h ymax+5*k*h ymax+5*k*h ymax+5*(k-1)*h], ...
+                     'k-', 'LineWidth', 1.5)
+        
+        
+        
+                % p-value
+                text((pos1+pos2)/2, ymax+h+0.05*yrange, ...
+                     sprintf(sig), ...
+                     'HorizontalAlignment', 'center', ...
+                     'VerticalAlignment', 'bottom');
+            end
         end
-
-        % Statistical test
-        p = data(k);
-
-        % Height of significance bar
-        h = 0.02 * yrange;
-
-        % Draw bracket
-        plot([pos1 pos1 pos2 pos2], ...
-             [ymax ymax-h ymax-h ymax], ...
-             'k-', 'LineWidth', 1.5)
-
-        % p-value
-        text((pos1+pos2)/2, ymax+h+0.05*yrange, ...
-             sprintf('p = %.3f', p), ...
-             'HorizontalAlignment', 'center', ...
-             'VerticalAlignment', 'bottom');
-
-
     end
 
     % Add space above the significance annotations
