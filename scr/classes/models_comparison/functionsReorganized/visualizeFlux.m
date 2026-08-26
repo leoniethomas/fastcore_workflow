@@ -153,13 +153,12 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
 
                 hold on
                 if kld
-                    datKLD = reorderKLDComparisons(groups(columnsToKeep), datKLD, KLD_sigLabels);
+                    [datKLD, KLD_sigLabels_filtered] = reorderKLDComparisons(groups(columnsToKeep), datKLD, KLD_sigLabels);
                     yposition_text = max(max(dat(:, columnsToKeep)));
-                    addSignificanceBars(datKLD , KLD_sigLabels,groups(columnsToKeep),dat(:, columnsToKeep))
+                    addSignificanceBars(datKLD , KLD_sigLabels_filtered,groups(columnsToKeep),dat(:, columnsToKeep))
                 end
                 
                 % labels in plot
-                groups = ["Control", "StageI", "StageII"];
 
                 KLD_sigLabelsInPlot = strings(nchoosek(numel(groups), 2), 1);
                 
@@ -290,7 +289,7 @@ function fluxCell = getFlux(project, comparisonName, rxnIdx,slot)
 end
 
 
-function datKLD_reordered = reorderKLDComparisons(groups, datKLD, datKLDlabels)
+function [datKLD_reordered,plotLabels] = reorderKLDComparisons(groups, datKLD, datKLDlabels)
 
     nGroups = numel(groups);
     nComparisons = nchoosek(nGroups, 2);
@@ -305,6 +304,12 @@ function datKLD_reordered = reorderKLDComparisons(groups, datKLD, datKLDlabels)
             k = k + 1;
         end
     end
+
+    % filter for the groups that will be portrayed in the violinplot
+
+    idxSamplesAvailable = ismember(datKLDlabels,plotLabels);
+    datKLD = datKLD(idxSamplesAvailable);
+    datKLDlabels = datKLDlabels(idxSamplesAvailable);
 
     % Determine which input column belongs to each plot comparison
     columnOrder = zeros(1, nComparisons);
@@ -340,6 +345,9 @@ function addSignificanceBars(dat,comparisonLabels, groups,dataViolin)
     ymax = max(dataViolin, [], "all");
     ymin = min(dataViolin, [], "all");
     yrange = ymax - ymin;
+    heightSigBars = 0.02 * yrange; 
+    yPosition = ymax + heightSigBars;
+    
 
     % Loop over comparisons
     nComparisons = numel(comparisonLabels);
@@ -364,7 +372,7 @@ function addSignificanceBars(dat,comparisonLabels, groups,dataViolin)
             
     
             % Statistical test
-            git p = data(k);
+            p = data(k);
     
     
             if p < 0.001
@@ -379,30 +387,31 @@ function addSignificanceBars(dat,comparisonLabels, groups,dataViolin)
             
             if sig ~= " "
                 % Height of significance bar
-                h = 0.005 * yrange;
+
         
                 % Draw bracket
                 plot([pos1 pos1 pos2 pos2], ...
-                     [ymax+5*(k-1)*h ymax+5*k*h ymax+5*k*h ymax+5*(k-1)*h], ...
+                     [yPosition yPosition+heightSigBars yPosition+heightSigBars yPosition], ...
                      'k-', 'LineWidth', 1.5)
         
-        
+                
         
                 % p-value
-                text((pos1+pos2)/2, ymax+h+0.05*yrange, ...
+                text((pos1+pos2)/2, yPosition+heightSigBars/4, ...
                      sprintf(sig), ...
                      'HorizontalAlignment', 'center', ...
                      'VerticalAlignment', 'bottom');
+                yPosition = yPosition + heightSigBars*4;
             end
         end
     end
 
     % Add space above the significance annotations
     currentYLim = ylim;
-    
+
     ylim([ ...
         currentYLim(1), ...
-        max(currentYLim(2), ymax + 0.15*yrange) ...
+        yPosition + heightSigBars ...
     ]);
 
 end
