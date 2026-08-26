@@ -152,7 +152,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
                 evalc('violinplot(dat(:, columnsToKeep), groups(columnsToKeep), "ShowData", false);');
 
                 hold on
-                if kld
+                if kld && length(groups(columnsToKeep))>1
                     [datKLD, KLD_sigLabels_filtered] = reorderKLDComparisons(groups(columnsToKeep), datKLD, KLD_sigLabels);
                     yposition_text = max(max(dat(:, columnsToKeep)));
                     addSignificanceBars(datKLD , KLD_sigLabels_filtered,groups(columnsToKeep),dat(:, columnsToKeep))
@@ -290,7 +290,8 @@ end
 
 
 function [datKLD_reordered,plotLabels] = reorderKLDComparisons(groups, datKLD, datKLDlabels)
-
+    
+    
     nGroups = numel(groups);
     nComparisons = nchoosek(nGroups, 2);
 
