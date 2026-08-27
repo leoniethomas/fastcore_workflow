@@ -7,7 +7,7 @@ function [fluxSets, figs] = visualizeFlux(project, comparisonName, rxnIdx, rxnSe
         slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["all"] 
         plotVisible = "on"
-        kld = 0
+        kld (1,1) logical = false
     end
     
     %     plot_type  {mustBeMember(plot_type, ["violin","heatmap"])} =["violin"] 
@@ -35,7 +35,7 @@ function [fluxSets, figs] = getViolinPlotsFlux(project, comparisonName, rxnsIdx,
         threshold {mustBeMember(threshold, ["all", "positive", "negative"])} = ["positive"] 
         slot (1,1) string {mustBeMember(slot, ["orderedSamples","orderedllSamples"])} = "orderedSamples" 
         plotVisible = "on"
-        kld = 0
+        kld (1,1) logical = false
     end
 
     reference = project.comparisons.(comparisonName).referenceModel;

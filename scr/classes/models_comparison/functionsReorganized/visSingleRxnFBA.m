@@ -1,5 +1,5 @@
-function fig = getFluxPlot(project, comparisonName, idxToVis, options)
-    % This function visualizes the values of FVA,FBA, and reduced Cost for
+function fig = visSingleRxnFBA(project, comparisonName, idxToVis, options)
+    % This function visualizes the values of FVA and FBA for
     % the choosen rxns_ids between different models.
     % As an input a singlemodelanalysis needs to be
     % given, the name of the comparison for which this plot is to be
@@ -28,7 +28,7 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
     arguments
         project
         comparisonName (1,1) string
-        idxToVis
+        idxToVis  (1,1) cell
         options.FVA  (1,1) logical = false
         %options.reducedCost (1,1) logical = false
         options.thresholdFlux (1,1) string {mustBeMember(options.thresholdFlux, ["lower", "upper", "none", "all"])} = "none" 
@@ -36,7 +36,7 @@ function fig = getFluxPlot(project, comparisonName, idxToVis, options)
         options.visiblePlots = "on"
     end
 
-
+    idxToVis = idxToVis{1};
     modelList = project.comparisons.(comparisonName).modelNames;
     referenceModel = project.comparisons.(comparisonName).referenceModel;
     
