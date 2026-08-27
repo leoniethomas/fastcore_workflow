@@ -1,4 +1,4 @@
-function [rxnID,producing,matched] = getRxnIDs(project,referenceModel, pattern)
+function [rxnID,producing,matchedAll] = getRxnIDs(project,referenceModel, pattern)
     % This function allow you to filter for reactions to visualize using a
     % pattern. You can give in the pattern for a subsystem/gene/rxns or
     % metabolite and the function will find the rxns that are associated
@@ -32,59 +32,67 @@ function [rxnID,producing,matched] = getRxnIDs(project,referenceModel, pattern)
     arguments
         project (1,1) struct
         referenceModel (1,1) string
-        pattern (1,1) string
+        pattern (1,:) string
     end
 
     model = project.models.(referenceModel).model;
     dict = project.models.(referenceModel).settings.dico;
+    rxnID = {};
+    producing = {};
+    matchedAll = {};
 
-    assert(~(contains(pattern, "|") & contains(pattern, "&")),...
-           'The pattern can not contain both & + |, this function is only written for either or !')
+    for n= 1:numel(pattern)
         
-    if contains(pattern, "|")
-        patCond =  strtrim(strsplit(pattern, "|"));
-    elseif contains(pattern, "&")
-        patCond =  strtrim(strsplit(pattern, "&"));  
-    else
-        patCond = strtrim(pattern);
-    end
-    
-    % filter out all fields that can not be matched to pattern 
-    fieldsToCheck = structfun(@(x) (ischar(x) || isstring(x) || iscell(x) ) ...
-                                    && ((size(x,2) == 1 && size(x,1) == size(model.mets,1) || size(x,1) == size(model.rxns,1)|| size(x,1) == size(model.genes,1))),...
-                              model);
-    namesToCheck = fieldnames(model);
-    namesToNotCheck = namesToCheck(~fieldsToCheck);
-    slotsCheck = rmfield(model,namesToNotCheck);
+        singlePat = pattern(n);
 
-    [rxnsIDsAll,producingMetAll,matched] = cellfun(@(pat) findPatternsInStruct(pat,slotsCheck,model,dict),...
-                                           patCond, 'UniformOutput', false);
-
-    if contains(pattern, "&")
-        commonRxns = rxnsIDsAll{1};
-        commonProd = producingMetAll{1};
-        for i = 2:numel(rxnsIDsAll)
-            [commonRxns, ia] = intersect(commonRxns, rxnsIDsAll{i});
-            commonProd = commonProd(ia);
+        assert(~(contains(singlePat, "|") & contains(singlePat, "&")),...
+               'The pattern can not contain both & + |, this function is only written for either or !')
+            
+        if contains(singlePat, "|")
+            patCond =  strtrim(strsplit(singlePat, "|"));
+        elseif contains(singlePat, "&")
+            patCond =  strtrim(strsplit(singlePat, "&"));  
+        else
+            patCond = strtrim(singlePat);
         end
-        resultRxns = commonRxns;
-        resultProd = commonProd;
         
-    elseif contains(pattern, "|")
-        allRxns = vertcat(rxnsIDsAll{:});
-        allProd = vertcat(producingMetAll{:});
-        [resultRxns, ia] = unique(allRxns, 'stable');
-        resultProd = allProd;
-    else
-        resultRxns = rxnsIDsAll{:,:};
-        resultProd = producingMetAll{:,:};
-        
-    end
+        % filter out all fields that can not be matched to pattern 
+        fieldsToCheck = structfun(@(x) (ischar(x) || isstring(x) || iscell(x) ) ...
+                                        && ((size(x,2) == 1 && size(x,1) == size(model.mets,1) || size(x,1) == size(model.rxns,1)|| size(x,1) == size(model.genes,1))),...
+                                  model);
+        namesToCheck = fieldnames(model);
+        namesToNotCheck = namesToCheck(~fieldsToCheck);
+        slotsCheck = rmfield(model,namesToNotCheck);
     
-    rxnID = resultRxns;
-    producing = resultProd;
-    matched = string(vertcat(matched{:}));
-    assert(~isempty(matched), 'No reactions were found! Check your pattern for spelling mistakes!')
+        [rxnsIDsAll,producingMetAll,matched] = cellfun(@(pat) findPatternsInStruct(pat,slotsCheck,model,dict),...
+                                               patCond, 'UniformOutput', false);
+    
+        if contains(singlePat, "&")
+            commonRxns = rxnsIDsAll{1};
+            commonProd = producingMetAll{1};
+            for i = 2:numel(rxnsIDsAll)
+                [commonRxns, ia] = intersect(commonRxns, rxnsIDsAll{i});
+                commonProd = commonProd(ia);
+            end
+            resultRxns = commonRxns;
+            resultProd = commonProd;
+            
+        elseif contains(singlePat, "|")
+            allRxns = vertcat(rxnsIDsAll{:});
+            allProd = vertcat(producingMetAll{:});
+            [resultRxns, ia] = unique(allRxns, 'stable');
+            resultProd = allProd;
+        else
+            resultRxns = rxnsIDsAll{:,:};
+            resultProd = producingMetAll{:,:};
+            
+        end
+        
+        rxnID{n} = resultRxns;
+        producing{n} = resultProd;
+        matchedAll{n} = string(vertcat(matched{:}));
+        assert(~isempty(matchedAll{n}), 'No reactions were found! Check your pattern for spelling mistakes!')
+    end
 end
 
 function [rxnIDs, producingMet,matched] = findPatternsInStruct(pattern,slotsCheck,model,dico)
