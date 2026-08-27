@@ -11,16 +11,16 @@ changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
-load('BRCAProjectNewFormat_0508.mat');
+load('20262608_bigComparisonStruct.mat');
 % load('defaultParametersAnalysis.csv'); % can be modified according to the
 % user % this does not work for me, throws an error
 defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
 
 %% COMPUTING THE COMPARISON
-modelsToCompare = {"StageI", "Control"};
+modelsToCompare = {"StageI", "Control","StageII", "StageIII"};
 [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare);
 % add the FVA from a different analysis
-[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare,{'analysis_20260812_2112','analysis_20260812_2130'},{'FVA'}); % by default, the most recent analyses will be chosen 
+%[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare,{'analysis_20260812_2112','analysis_20260812_2130'},{'FVA'}); % by default, the most recent analyses will be chosen 
 
 % analysisToChoose = {'analysis_20260812_2112','analysis_20260812_2130'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
@@ -29,17 +29,20 @@ modelsToCompare = {"StageI", "Control"};
 
 referenceModel = "consistentMediumConstrainedModel"; 
 comparisonList = ["structuralComparison", "functionalComparison","samplingComparison"];
-compID = "full_test_finalObject"; 
+compID = "test_displot"; 
 
 %[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 
-% save('20262508_finalComparisonStructure.mat', 'BRCAProject', '-v7.3');
+%save('20262608_bigComparisonStructComparison.mat', 'BRCAProject', '-v7.3');
 
 
 %% Showing the Default figures generated during comparison 
-compName = "Control_vs_StageI__full_test_finalObject";
+
+load('20262608_bigComparisonStructComparison.mat');
+
+compName = "Control_vs_StageI_vs_StageII_vs_StageIII__full_test_finalObject";
 
 % --- Structural Analysis Plots
 
@@ -111,7 +114,6 @@ showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.
 
 showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.hist)
 
-showFigure(BRCAProject.comparisons.(compName).functionalComparison.plots.fvaSim.hist)
 
 
 % How much is a given pathway used in our FBA 
@@ -150,25 +152,44 @@ referenceModel = "consistentMediumConstrainedModel"
 % - What is the rxn flux value under the minimal solution for a given set of rxns ? 
 % - How do the rxn flux values vary in the sampling? 
 
-[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "Glycolysis.*");
-[fluxsumSets,plot1] = visualizeFlux(BRCAProject, compName,{rxnsMetId },...
-                                                                     ["Rxns in Glycolysis consuming/producing g6p"], "orderedSamples","all",'on',1);
+% visualize with new functions 
+
+% heatmaps
+
+[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, ["Pentose.*"; "Glycolysis.*"]);
+
+visDiffRxnSetActivitySampling(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
 
 
-[fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["23dpg", "3pg", "fdp", "g1p", "nad","lac_L"],{rxnsMetId},...
-                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"violin",false,true, "orderedSamples");
+visDiffRxnSetActivityFBA(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
 
 
-[fluxsumSets,plot1] = visualizeFluxsum(BRCAProject, compName,["f6p", "dadp", "adp", "atp" ],{rxnsMetId },...
-                                                                     ["Rxns in Glycolysis consuming/producing g6p"],"violin",false,false,"orderedSamples","incoming");
+visDiffMetSetUsageSampling(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
 
 
+visDiffMetSetUsageFBA(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
 
-getFluxPlot(BRCAProject, compName, rxnsMetId,"FVA",true,"thresholdFlux","none")
 
-visualizeSamplingLandscape(BRCAProject, compName, BRCAProject.models.(referenceModel).model.rxns(rxnsMetId(1)))
+visRxnSetVariability(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
+
+
+visMetSetVariability(BRCAProject, compName, rxnsMetId, ["Pentose.* & g6p.*"; "Glycolysis.*"],referenceModel)
+
+% violins
+
+visSingleMetSamplingDistribution(BRCAProject, compName, rxnsMetId(1), ["Pentose.* & g6p.*"],referenceModel)
+
+visSingleRxnSamplingDistribution(BRCAProject, compName, rxnsMetId(1), ["Pentose.* & g6p.*"],referenceModel,true)
+
+% bar plots
+
+
+visSingleRxnFBA(BRCAProject, compName, rxnsMetId(1),"FVA",false,"thresholdFlux","none")
 
 %%
 
-[rxnsMetId,producingMet,matched] = getRxnIDs(BRCAProject,referenceModel, "^Glucose");
+
+
+visualizeSamplingLandscape(BRCAProject, compName, BRCAProject.models.(referenceModel).model.rxns(rxnsMetId(1)))
+
 
