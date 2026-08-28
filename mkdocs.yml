@@ -1,5 +1,5 @@
 site_name: TeckleMMe Documentation
-site_url: https://sysbiolux.github.io/TeckleMMe/
+site_url: https://sysbiolux.github.io/analysisPipelineLVT/
 theme:
   name: material
   #font:
@@ -50,20 +50,23 @@ plugins:
       default_handler: matlab
       handlers:
         matlab:
-          paths: [scr]
+          paths: [.]
           paths_recursive: true
           tree_sitter_logging_level: DEBUG
           options:
-            #show_source: true
-            #show_signature: true
+            show_source: true
+            show_signature: true
             show_root_heading: true
-            show_root_toc_entry: false
+            #show_root_toc_entry: false
             heading_level: 3
+            parse_arguments: true
+            docstring_style: google
+            docstring_section_style: table
 
 nav: 
   - Home: index.md
   - Installation: installation.md
-  - Documentation: documentation.md
+  - Documentation: references.md
   - Project Organization: project_layout.md
   - Project Initialization: project_init.md
   - Single Model Analysis: single_model_analysis.md

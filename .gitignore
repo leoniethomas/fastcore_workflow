@@ -1,5 +1,7 @@
+site/
+__pycache__/
+*.pyc
 .vscode/
-.gitignore
 Figures/
 analysis/
 context_specific_models/
