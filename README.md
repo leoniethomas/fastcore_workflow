@@ -10,6 +10,7 @@ This repository provides a workflow going from the preprocessing of the RNA-Seq 
   4. **Single-model analysis**
   5. **Models comparison**
 
+
 ## Storing of the data
 
 Everything is stored in a structure named `project`
