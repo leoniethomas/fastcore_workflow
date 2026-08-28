@@ -1,0 +1,70 @@
+site_name: TeckleMMe Documentation
+site_url: https://sysbiolux.github.io/TeckleMMe/
+theme:
+  name: material
+  #font:
+    #text: Merriweather Sans
+    #code: Red Hat Mono
+  palette:
+    # Dark Mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Dark mode
+      primary: green
+      accent: deep purple
+
+    # Light Mode
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Light mode
+      primary: indigo
+      accent: deep orange
+  features:
+    - navigation.tabs.sticky
+    - navigation.expand
+    - navigation.tabs
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+    - content.code.copy
+    - content.code.fold
+    - toc.integrate
+  #icon:
+    #logo: assets/logo.png # inside docs folder, create assets folder and put the png of the logo inside
+  #favicon: assets/favicon.ico # same here
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: matlab
+      handlers:
+        matlab:
+          paths: [scr]
+          paths_recursive: true
+          tree_sitter_logging_level: DEBUG
+          options:
+            #show_source: true
+            #show_signature: true
+            show_root_heading: true
+            show_root_toc_entry: false
+            heading_level: 3
+
+nav: 
+  - Home: index.md
+  - Installation: installation.md
+  - Documentation: documentation.md
+  - Project Organization: project_layout.md
+  - Project Initialization: project_init.md
+  - Single Model Analysis: single_model_analysis.md
+  - Models Comparison: models_comparison.md
