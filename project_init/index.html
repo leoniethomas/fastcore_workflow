@@ -23,7 +23,7 @@
     
     
       
-        <title>Project Initialization - TeckleMMe Documentation</title>
+        <title>Project Initialization - TackleMMe Documentation</title>
       
     
     
@@ -92,7 +92,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="TeckleMMe Documentation" class="md-header__button md-logo" aria-label="TeckleMMe Documentation" data-md-component="logo">
+    <a href=".." title="TackleMMe Documentation" class="md-header__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -106,7 +106,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            TeckleMMe Documentation
+            TackleMMe Documentation
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -366,13 +366,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="TeckleMMe Documentation" class="md-nav__button md-logo" aria-label="TeckleMMe Documentation" data-md-component="logo">
+    <a href=".." title="TackleMMe Documentation" class="md-nav__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    TeckleMMe Documentation
+    TackleMMe Documentation
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
@@ -1008,19 +1008,21 @@ in the COBRA model, which may use different naming conventions.</p>
 </div>
 <h2 id="minimal-example">Minimal example</h2>
 <p>The minimal input requires only a model name and a COBRA model:</p>
-<div class="highlight"><pre><span></span><code><span class="n">params</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
-<span class="n">params</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
 </code></pre></div>
 <p>A typical input with expression data:</p>
-<div class="highlight"><pre><span></span><code><span class="n">params</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
-<span class="n">params</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
-<span class="n">params</span><span class="p">.</span><span class="n">expressionData</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tpmMatrix</span><span class="p">;</span><span class="w">       </span><span class="c">% genes × samples (double)</span>
-<span class="n">params</span><span class="p">.</span><span class="n">geneIds</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">geneIdStrings</span><span class="p">;</span><span class="w">          </span><span class="c">% string array, one per row</span>
-<span class="n">params</span><span class="p">.</span><span class="n">dico</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dicoTable</span><span class="p">;</span><span class="w">                 </span><span class="c">% table with geneIdsInModel, geneIdsInData</span>
-<span class="n">params</span><span class="p">.</span><span class="n">sampleMetadata</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">sampleTable</span><span class="p">;</span><span class="w">     </span><span class="c">% sample info</span>
-<span class="n">params</span><span class="p">.</span><span class="n">sampleLabeling</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'condition'</span><span class="p">;</span><span class="w">     </span><span class="c">% column name in sampleMetadata</span>
-<span class="n">params</span><span class="p">.</span><span class="n">objFunction</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'biomass_reaction'</span><span class="p">;</span>
-<span class="n">params</span><span class="p">.</span><span class="n">consensusProportion</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.9</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">expressionData</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tpmMatrix</span><span class="p">;</span><span class="w">       </span><span class="c">% genes × samples (double)</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">geneIds</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">geneIdStrings</span><span class="p">;</span><span class="w">          </span><span class="c">% string array, one per row</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">dico</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dicoTable</span><span class="p">;</span><span class="w">                 </span><span class="c">% table with geneIdsInModel, geneIdsInData</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">sampleMetadata</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">sampleTable</span><span class="p">;</span><span class="w">     </span><span class="c">% sample info</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">sampleLabeling</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'condition'</span><span class="p">;</span><span class="w">     </span><span class="c">% column name in sampleMetadata</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">objFunction</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'biomass_reaction'</span><span class="p">;</span>
+<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">consensusProportion</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.9</span><span class="p">;</span>
+
+<span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">createProject</span><span class="p">(</span><span class="n">paramsForPipeline</span><span class="p">);</span>
 </code></pre></div>
 
 
