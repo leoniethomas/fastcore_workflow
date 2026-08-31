@@ -86,20 +86,22 @@ These fields are required only when expression or discretized data is provided.
 The minimal input requires only a model name and a COBRA model:
 
 ```matlab
-params.modelName = 'myModel';
-params.contextSpecificModel = myCobraModel;
+paramsForPipeline.modelName = 'myModel';
+paramsForPipeline.contextSpecificModel = myCobraModel;
 ```
 
 A typical input with expression data:
 
 ```matlab
-params.modelName = 'myModel';
-params.contextSpecificModel = myCobraModel;
-params.expressionData = tpmMatrix;       % genes × samples (double)
-params.geneIds = geneIdStrings;          % string array, one per row
-params.dico = dicoTable;                 % table with geneIdsInModel, geneIdsInData
-params.sampleMetadata = sampleTable;     % sample info
-params.sampleLabeling = 'condition';     % column name in sampleMetadata
-params.objFunction = 'biomass_reaction';
-params.consensusProportion = 0.9;
+paramsForPipeline.modelName = 'myModel';
+paramsForPipeline.contextSpecificModel = myCobraModel;
+paramsForPipeline.expressionData = tpmMatrix;       % genes × samples (double)
+paramsForPipeline.geneIds = geneIdStrings;          % string array, one per row
+paramsForPipeline.dico = dicoTable;                 % table with geneIdsInModel, geneIdsInData
+paramsForPipeline.sampleMetadata = sampleTable;     % sample info
+paramsForPipeline.sampleLabeling = 'condition';     % column name in sampleMetadata
+paramsForPipeline.objFunction = 'biomass_reaction';
+paramsForPipeline.consensusProportion = 0.9;
+
+project = createProject(paramsForPipeline);
 ```

@@ -1,14 +1,13 @@
-# Metabolic network analysis workflow
+# Tackling Metabolic Models Exploration
 
-TackleMMe is based on the creation of one unique MATLAB object, called `project`. A `project` is made to store everything, from model building, to model analysis and model comparison.
+TackleMMe is a pipeline developed in MATLAB and developed for tackling Metabolic Models exploration. It is based on the creation of one unique MATLAB object, called `project`. A `project` is made to store everything, from model building, to model analysis and model comparison.
 
 ## 3 steps of the pipeline
-  1. **Model building**
-  2. **Single-model analysis**
-  3. **Models comparison**
+  1. **Model building and Project Initialization**
+  2. **Single model analysis**
+  3. **Model comparison**
 
-Documentation: https://sysbiolux.github.io/analysisPipelineLVT/
-
+A documentation, including installation, project layout description and tutorials is available here: https://sysbiolux.github.io/analysisPipelineLVT/.
 
 ## Storing of the data
 
@@ -49,7 +48,9 @@ project
     └── modelA_vs_modelB
 ```
 
+## Running an example
 
+A running example is available in the BRCAexample folder. Associated data are provided in the data folder.
 
 
 
