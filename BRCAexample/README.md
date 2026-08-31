@@ -17,3 +17,9 @@ Project initialization should be done using the `createProject` function. New mo
 ### 2. Single Model Analysis
 
 ### 3. Model Comparison
+
+### Project overview
+
+## Project example
+
+A complete `project` can be downloaded here : https://zenodo.org/records/22209352?preview=1&token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjFmZDcxYzczLThkZmUtNDEzOC1iM2VhLTI3ZWZkZGE4ZjI2MiIsImRhdGEiOnt9LCJyYW5kb20iOiJkNzVkMjg5ZmJjMWExMTIwN2RkMDIxMThmYzE1NWU1MiJ9.6bOIsZ9qMHhVH76KO6F5b0tNX7AvwxR8-gtQcEn1c5cfNNsV9dC_YzCw5Dtoa3hgZ_IfOc6qJVQr1hTUlXW3vw.
