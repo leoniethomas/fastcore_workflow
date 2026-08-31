@@ -1,16 +1,13 @@
 # Metabolic network analysis workflow
 
-
-
-This repository provides a workflow going from the preprocessing of the RNA-Seq data to the analysis and comparison of the context specific metabolic models created by rFastcormics_v2. 
+TackleMMe is based on the creation of one unique MATLAB object, called project. A project is made to store everything, from model building, to model analysis and model comparison.
 
 ## 5 steps of the pipeline
-  1. RNA preprocessing
-  2. Quality control
-  3. **Model building**
-  4. **Single-model analysis**
-  5. **Models comparison**
+  1. **Model building**
+  2. **Single-model analysis**
+  3. **Models comparison**
 
+Documentation: https://sysbiolux.github.io/analysisPipelineLVT/
 
 ## Storing of the data
 
