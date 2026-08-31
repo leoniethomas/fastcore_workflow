@@ -8,9 +8,7 @@ context_specific_models/
 discretization/
 escher_visualization/
 slides/
-data/
 *.png
-*.csv
 scr/downloaded_functions/
 scr/inbox_code_to_integrate
 scr/fastcormics_module/.DS_Store*
