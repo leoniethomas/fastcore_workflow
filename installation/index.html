@@ -8,11 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://sysbiolux.github.io/analysisPipelineLVT/project_init/">
+        <link rel="canonical" href="https://sysbiolux.github.io/analysisPipelineLVT/installation/">
       
       
-        <link rel="prev" href="../project_layout/">
+        <link rel="prev" href="..">
       
+      
+        <link rel="next" href="../references/">
       
       
         
@@ -23,7 +25,7 @@
     
     
       
-        <title>Project Initialization - TackleMMe Documentation</title>
+        <title>Installation - TackleMMe Documentation</title>
       
     
     
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#input-data-format" class="md-skip">
+        <a href="#installation" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Project Initialization
+              Installation
             
           </span>
         </div>
@@ -224,9 +226,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../installation/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -281,11 +285,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../project_init/" class="md-tabs__link">
         
   
   
@@ -408,10 +410,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -427,6 +456,148 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#matlab-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MATLAB version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#required-toolboxes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required toolboxes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#umap-toolbox-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UMAP toolbox installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="UMAP toolbox installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-download" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Download
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-add-to-matlab-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Add to MATLAB path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-verify-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Verify installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#report-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Report generation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Report generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-models-with-rfastcormics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building models with rFastcormics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -489,37 +660,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Project Initialization
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../project_init/" class="md-nav__link">
         
   
   
@@ -535,131 +679,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#required-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Required fields
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional fields
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#conditional-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Conditional fields
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cross-field-validation-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cross-field validation rules
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sub-structures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Sub-structures
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Sub-structures">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#optionalsettings-struct" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        optionalSettings (struct)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#manuallysetboundaries-struct" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        manuallySetBoundaries (struct)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dico-table" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        dico (table)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#minimal-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Minimal example
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -735,295 +754,92 @@
 
 
 
-<h1 id="input-data-format">Input data format</h1>
-<p>To create a <code>project</code>, a <code>params</code> structure must be provided as input to the pipeline. The table below describes the expected format for each field.</p>
-<h2 id="required-fields">Required fields</h2>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Format</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>modelName</code></td>
-<td>char / string</td>
-<td>scalar</td>
-<td>Name of the model. Becomes the key in <code>project.models</code>.</td>
-</tr>
-<tr>
-<td><code>contextSpecificModel</code></td>
-<td>struct (COBRA)</td>
-<td>scalar</td>
-<td>Genome-scale metabolic model in COBRA format (<code>.S</code>, <code>.rxns</code>, <code>.genes</code>, <code>.rules</code>, <code>.lb</code>, <code>.ub</code>, etc.).</td>
-</tr>
-</tbody>
-</table>
-<h2 id="optional-fields">Optional fields</h2>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Format</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>objFunction</code></td>
-<td>char / string</td>
-<td>scalar</td>
-<td>Name of the objective reaction (e.g. biomass).</td>
-</tr>
-<tr>
-<td><code>referenceModel</code></td>
-<td>char / string</td>
-<td>scalar</td>
-<td>Name of the reference model for comparisons.</td>
-</tr>
-<tr>
-<td><code>consensusProportion</code></td>
-<td>numeric</td>
-<td>scalar, ≥ 0</td>
-<td>Proportion of samples that must express a gene for it to be included in a consensus model (default: 0.9).</td>
-</tr>
-<tr>
-<td><code>mediumComposition</code></td>
-<td>table</td>
-<td>—</td>
-<td>Medium composition (metabolites and exchange bounds).</td>
-</tr>
-<tr>
-<td><code>mapping</code></td>
-<td>double</td>
-<td>matrix (sparse or dense)</td>
-<td>Gene-to-reaction mapping matrix.</td>
-</tr>
-<tr>
-<td><code>coreReactions</code></td>
-<td>cell array</td>
-<td>vector or empty</td>
-<td>Cell array of core reaction identifiers.</td>
-</tr>
-<tr>
-<td><code>optionalSettings</code></td>
-<td>struct</td>
-<td>scalar</td>
-<td>Additional settings. See <a href="#optional-settings">optional settings</a> below.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="conditional-fields">Conditional fields</h2>
-<p>These fields are required only when expression or discretized data is provided.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Format</th>
-<th>Required when</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>discretizedData</code></td>
-<td>double</td>
-<td>2-D matrix (genes × samples)</td>
-<td>Optional, but if present triggers dependencies</td>
-<td>Discretized expression values (−1, 0, 1).</td>
-</tr>
-<tr>
-<td><code>expressionData</code></td>
-<td>double</td>
-<td>2-D matrix (genes × samples)</td>
-<td>Optional, but if present triggers dependencies</td>
-<td>Raw expression values (e.g. TPM or FPKM).</td>
-</tr>
-<tr>
-<td><code>geneIds</code></td>
-<td>string array</td>
-<td>column vector (char / cellstr accepted and auto-converted)</td>
-<td><strong>Required</strong> if <code>discretizedData</code> or <code>expressionData</code> is present</td>
-<td>Gene identifiers matching the rows of the expression data.</td>
-</tr>
-<tr>
-<td><code>dico</code></td>
-<td>table</td>
-<td>must contain columns <code>geneIdsInModel</code> and <code>geneIdsInData</code></td>
-<td><strong>Required</strong> if <code>discretizedData</code> or <code>expressionData</code> is present</td>
-<td>Mapping table between data gene IDs and model gene IDs.</td>
-</tr>
-<tr>
-<td><code>sampleMetadata</code></td>
-<td>table</td>
-<td>—</td>
-<td>Must be provided <strong>together with</strong> <code>sampleLabeling</code> (both or neither)</td>
-<td>Sample metadata (conditions, groups, etc.).</td>
-</tr>
-<tr>
-<td><code>sampleLabeling</code></td>
-<td>char / string</td>
-<td>scalar, must match a column name in <code>sampleMetadata</code></td>
-<td>Must be provided <strong>together with</strong> <code>sampleMetadata</code> (both or neither)</td>
-<td>Name of the column in <code>sampleMetadata</code> that defines sample groups.</td>
-</tr>
-<tr>
-<td><code>manuallySetBoundaries</code></td>
-<td>struct</td>
-<td>scalar</td>
-<td>Optional</td>
-<td>Manually defined exchange boundaries. See <a href="#manually-set-boundaries">manually set boundaries</a> below.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="cross-field-validation-rules">Cross-field validation rules</h2>
-<table>
-<thead>
-<tr>
-<th>Rule</th>
-<th>Condition</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>sampleMetadata</code> ↔ <code>sampleLabeling</code></td>
-<td>Must be provided together or both omitted. <code>sampleLabeling</code> must match a column name in <code>sampleMetadata</code>.</td>
-</tr>
-<tr>
-<td><code>geneIds</code> ↔ <code>discretizedData</code></td>
-<td><code>geneIds</code> must have the same number of rows as <code>discretizedData</code>.</td>
-</tr>
-<tr>
-<td><code>geneIds</code> ↔ <code>expressionData</code></td>
-<td><code>geneIds</code> must have the same number of rows as <code>expressionData</code>.</td>
-</tr>
-<tr>
-<td><code>discretizedData</code> ↔ <code>expressionData</code></td>
-<td>If both present, must have the same dimensions (rows = genes, columns = samples).</td>
-</tr>
-<tr>
-<td><code>dico.geneIdsInModel</code> ↔ <code>contextSpecificModel.genes</code></td>
-<td><code>dico.geneIdsInModel</code> must cover ≥ 5% of <code>contextSpecificModel.genes</code>. A warning is issued with the actual coverage percentage.</td>
-</tr>
-<tr>
-<td><code>dico.geneIdsInData</code> ↔ <code>geneIds</code></td>
-<td><code>dico.geneIdsInData</code> must cover ≥ 5% of <code>geneIds</code>. A warning is issued with the actual coverage percentage.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="sub-structures">Sub-structures</h2>
-<p><a id="optional-settings"></a></p>
-<h3 id="optionalsettings-struct"><code>optionalSettings</code> (struct)</h3>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>medium</code></td>
-<td>—</td>
-<td>Optional medium definition.</td>
-</tr>
-<tr>
-<td><code>notMediumConstrained</code></td>
-<td>—</td>
-<td>Reactions not constrained by the medium.</td>
-</tr>
-<tr>
-<td><code>func</code></td>
-<td>—</td>
-<td>Reaction(s) forced to carry a flux.</td>
-</tr>
-</tbody>
-</table>
-<p><a id="manually-set-boundaries"></a></p>
-<h3 id="manuallysetboundaries-struct"><code>manuallySetBoundaries</code> (struct)</h3>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>closedImports</code></td>
-<td>—</td>
-<td>Import reactions to close.</td>
-</tr>
-<tr>
-<td><code>closedExports</code></td>
-<td>—</td>
-<td>Export reactions to close.</td>
-</tr>
-<tr>
-<td><code>unconstrainedImports</code></td>
-<td>—</td>
-<td>Import reactions to leave unconstrained.</td>
-</tr>
-<tr>
-<td><code>unconstrainedExports</code></td>
-<td>—</td>
-<td>Export reactions to leave unconstrained.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="dico-table"><code>dico</code> (table)</h3>
-<table>
-<thead>
-<tr>
-<th>Column</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>geneIdsInModel</code></td>
-<td>string / char / cellstr</td>
-<td>Gene identifiers as they appear in <code>contextSpecificModel.genes</code>. Must cover ≥ 5% of model genes.</td>
-</tr>
-<tr>
-<td><code>geneIdsInData</code></td>
-<td>string / char / cellstr</td>
-<td>Gene identifiers as they appear in <code>geneIds</code> / expression data. Must cover ≥ 5% of data gene IDs.</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition tip">
-<p class="admonition-title">Building the dico table</p>
-<p>The <code>dico</code> table can be assembled using <a href="https://www.ensembl.org/biomart/martview">Ensembl BioMart</a>.
-It maps the gene identifiers from your expression data to the gene identifiers
-in the COBRA model, which may use different naming conventions.</p>
+<h1 id="installation">Installation</h1>
+<p>This page describes the software requirements and installation steps for the TackleMMe analysis pipeline.</p>
+<h2 id="matlab-version">MATLAB version</h2>
+<p>The pipeline requires <strong>MATLAB R2024a or R2024b</strong>.</p>
+<div class="admonition warning">
+<p class="admonition-title">MATLAB R2025 is not compatible</p>
+<p>The UMAP toolbox used by this pipeline relies on Java access to MATLAB figures, which is removed in MATLAB R2025. Use R2024b or earlier.</p>
 </div>
-<h2 id="minimal-example">Minimal example</h2>
-<p>The minimal input requires only a model name and a COBRA model:</p>
-<div class="highlight"><pre><span></span><code><span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
+<p>Check your MATLAB version in the command window:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">ver</span>
 </code></pre></div>
-<p>A typical input with expression data:</p>
-<div class="highlight"><pre><span></span><code><span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">modelName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'myModel'</span><span class="p">;</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">contextSpecificModel</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">myCobraModel</span><span class="p">;</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">expressionData</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tpmMatrix</span><span class="p">;</span><span class="w">       </span><span class="c">% genes × samples (double)</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">geneIds</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">geneIdStrings</span><span class="p">;</span><span class="w">          </span><span class="c">% string array, one per row</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">dico</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dicoTable</span><span class="p">;</span><span class="w">                 </span><span class="c">% table with geneIdsInModel, geneIdsInData</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">sampleMetadata</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">sampleTable</span><span class="p">;</span><span class="w">     </span><span class="c">% sample info</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">sampleLabeling</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'condition'</span><span class="p">;</span><span class="w">     </span><span class="c">% column name in sampleMetadata</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">objFunction</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'biomass_reaction'</span><span class="p">;</span>
-<span class="n">paramsForPipeline</span><span class="p">.</span><span class="n">consensusProportion</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.9</span><span class="p">;</span>
+<h2 id="required-toolboxes">Required toolboxes</h2>
+<p>The following MathWorks toolboxes must be installed. Install them via <strong>Home &gt; Add-Ons &gt; Get Add-Ons</strong> in MATLAB, or through your institution's license portal.</p>
+<table>
+<thead>
+<tr>
+<th>Toolbox</th>
+<th>Required for</th>
+<th>Minimum version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Statistics and Machine Learning Toolbox</td>
+<td>UMAP, statistical analysis</td>
+<td>R2024a</td>
+</tr>
+<tr>
+<td>MATLAB Report Generator</td>
+<td>Automated report generation</td>
+<td>R2024a</td>
+</tr>
+</tbody>
+</table>
+<p>Verify that all toolboxes are installed:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">ver</span>
+</code></pre></div>
+<p>The output should list both <code>Statistics and Machine Learning Toolbox</code> and <code>MATLAB Report Generator</code>.</p>
+<h2 id="umap-toolbox-installation">UMAP toolbox installation</h2>
+<p>The pipeline uses the MATLAB UMAP implementation by Meehan et al. [<a href="https://www.mathworks.com/matlabcentral/fileexchange/71902-uniform-manifold-approximation-and-projection-umap">File Exchange #71902</a>].</p>
+<h3 id="step-1-download">Step 1 — Download</h3>
+<p>Download the toolbox from <a href="https://www.mathworks.com/matlabcentral/fileexchange/71902-uniform-manifold-approximation-and-projection-umap">MATLAB File Exchange</a>.</p>
+<p>Alternatively, open it directly in MATLAB Online by clicking <strong>Open in MATLAB Online</strong> on the File Exchange page.</p>
+<h3 id="step-2-add-to-matlab-path">Step 2 — Add to MATLAB path</h3>
+<p>Unzip the downloaded archive to a permanent location (e.g. <code>C:\Tools\umap</code>), then add it to your MATLAB path:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">addpath</span><span class="p">(</span><span class="nb">genpath</span><span class="p">(</span><span class="s">'C:\Tools\umap'</span><span class="p">));</span>
+<span class="nb">savepath</span><span class="p">;</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Save the path</p>
+<p>Run <code>savepath</code> after <code>addpath</code> so the UMAP toolbox is available in future MATLAB sessions without re-adding it manually.</p>
+</div>
+<h3 id="step-4-verify-installation">Step 4 — Verify installation</h3>
+<div class="highlight"><pre><span></span><code><span class="c">% Should run without errors and produce a 2D scatter plot</span>
+<span class="n">X</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+<span class="n">Y</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">run_umap</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="s">'n_components'</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">scatter</span><span class="p">(</span><span class="n">Y</span><span class="p">(:,</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">(:,</span><span class="mi">2</span><span class="p">));</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Dependencies</p>
+<p>The UMAP toolbox requires the <strong>Statistics and Machine Learning Toolbox</strong> and the <strong>Financial Toolbox</strong>. Check with <code>ver</code> if you encounter missing function errors.</p>
+</div>
+<h2 id="report-generation">Report generation</h2>
+<p>The pipeline generates automated analysis reports using the <strong>MATLAB Report Generator</strong> toolbox. Reports are produced by the <code>writeAnalysisReport</code> function.</p>
+<h3 id="how-it-works">How it works</h3>
+<p>The report generator uses the Report API and Document Object Model (DOM) API to programmatically build documents from your analysis results. The pipeline captures tables, and text output from the single model analysis step and compiles them into a structured PDF report. The report file is saved to the working directory.</p>
+<h2 id="verification-checklist">Verification checklist</h2>
+<p>After completing all installation steps, verify your setup with the following commands in the MATLAB command window:</p>
+<div class="highlight"><pre><span></span><code><span class="c">% 1. Check MATLAB version (should be R2024a or R2024b)</span>
+<span class="nb">ver</span><span class="p">(</span><span class="s">'matlab'</span><span class="p">)</span>
 
-<span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">createProject</span><span class="p">(</span><span class="n">paramsForPipeline</span><span class="p">);</span>
+<span class="c">% 2. Check required toolboxes</span>
+<span class="nb">ver</span><span class="p">(</span><span class="s">'stats'</span><span class="p">)</span><span class="w">      </span><span class="c">% Statistics and Machine Learning Toolbox</span>
+<span class="nb">ver</span><span class="p">(</span><span class="s">'rptgen'</span><span class="p">)</span><span class="w">     </span><span class="c">% MATLAB Report Generator</span>
+
+<span class="c">% 3. Check UMAP installation</span>
+<span class="nb">which</span><span class="w"> </span><span class="n">run_umap</span><span class="w">    </span><span class="c">% Should return the path to run_umap.m</span>
+
+<span class="c">% 4. Test UMAP</span>
+<span class="n">Y</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">run_umap</span><span class="p">(</span><span class="nb">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">),</span><span class="w"> </span><span class="s">'n_components'</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">disp</span><span class="p">(</span><span class="nb">size</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span><span class="w">     </span><span class="c">% Should be [50, 2]</span>
 </code></pre></div>
+<p>If all commands execute without errors, your environment is ready for the pipeline.</p>
+<h2 id="building-models-with-rfastcormics">Building models with rFastcormics</h2>
+<p>rFASTCORMICS will be integrated into the next release of the COBRA Toolbox. In the meantime, if you want to build context-specific models using rFASTCORMICS before comparing them with TeckleMMe, follow the installation instructions on the <a href="https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2">rFASTCORMICS GitHub page</a>.</p>
+<p>A supplementary <code>rFastcormicsPipeline.m</code> script is provided in the <code>scr/</code> folder. It builds context-specific models and outputs a <code>params</code> structure that can be passed directly to <code>createProject.m</code>. For a usage example, see <code>no1_modelBuildingAndProjectInit.m</code> in the <code>BRCAexample</code> folder.</p>
 
 
 
