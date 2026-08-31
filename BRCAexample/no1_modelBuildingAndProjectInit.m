@@ -12,13 +12,12 @@ changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
 %% LOADING EXAMPLE WORKSPACE
-load('dataForTesting/data_no1.mat');
-% brca_matrix = readtable("dataForTesting/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-% samples_metadata = readtable("dataForTesting/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-% gene_metadata = readtable("dataForTesting/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-% origModel = load('Recon3D.mat', 'model').model;
-% dico = load('dico.mat').dico;
-% medium = readtable('RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
+% brca_matrix = readtable("data/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% samples_metadata = readtable("data/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% gene_metadata = readtable("data/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+% origModel = load('data/Recon3D.mat', 'model').model;
+% dico = load('data/dico.mat').dico;
+% medium = readtable('data/RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
 
 %% RENAMING DICO COLUMNS 
 dico.Properties.VariableNames{1} = 'geneIdsInModel';
