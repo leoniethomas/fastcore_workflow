@@ -1196,7 +1196,6 @@ default)
 Available analysis:
 FBA
 FVA
-Shadow prices % needs to be added
 Sampling
 Loopless sampling
 FDR correction for sampling
@@ -1344,8 +1343,7 @@ Arguments block</p>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">function</span><span class="w"> </span>project<span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">singleModelAnalysis</span><span class="p">(</span>project, parameterTable, modelList, analyses, saveCheckpoint, resumeFromCheckpoint<span class="p">)</span>
+<span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">function</span><span class="w"> </span>project<span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">singleModelAnalysis</span><span class="p">(</span>project, parameterTable, modelList, analyses, saveCheckpoint, resumeFromCheckpoint<span class="p">)</span>
 <span class="c">% This function runs the analysis on a model or a list or models and stores</span>
 <span class="c">% the results in a structure.</span>
 <span class="c">% Inputs: Project, Parameter Table (at least the default one), Names of the models, List of wanted analysis (all by</span>
@@ -1353,7 +1351,6 @@ Arguments block</p>
 <span class="c">% Available analysis:</span>
 <span class="c">% FBA</span>
 <span class="c">% FVA</span>
-<span class="c">% Shadow prices % needs to be added</span>
 <span class="c">% Sampling</span>
 <span class="c">% Loopless sampling</span>
 <span class="c">% FDR correction for sampling</span>

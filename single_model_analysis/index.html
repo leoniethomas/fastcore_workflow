@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#single-model-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -520,6 +525,26 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Model Analysis
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -537,6 +562,141 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-analyses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available analyses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#function-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function signature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Function signature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#analysis-ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysis IDs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loopless-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loopless sampling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checkpoint-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checkpoint system
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -586,9 +746,187 @@
 
 
 
-  <h1>Single Model Analysis</h1>
+<h1 id="single-model-analysis">Single Model Analysis</h1>
+<p>The <code>singleModelAnalysis</code> function runs one or more analyses on a model or a list of models and stores the results in the project structure.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<div class="admonition warning">
+<p class="admonition-title">Project format</p>
+<p>The <code>project</code> structure must follow the format described in the <a href="../project_layout/">Project Layout</a> page. Use <code>createProject</code> and <code>addModelsToProject</code> to build a valid project before running analyses.</p>
+</div>
+<h2 id="available-analyses">Available analyses</h2>
+<p>The following analyses are currently implemented:</p>
+<table>
+<thead>
+<tr>
+<th>Analysis</th>
+<th>Key</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flux Balance Analysis</td>
+<td><code>FBA</code></td>
+<td>Computes the optimal flux distribution maximizing a given objective function</td>
+</tr>
+<tr>
+<td>Flux Variability Analysis</td>
+<td><code>FVA</code></td>
+<td>Determines the range of feasible fluxes for each reaction under given constraints</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td><code>sampling</code></td>
+<td>Uniform random sampling of the feasible flux space</td>
+</tr>
+<tr>
+<td>Loopless sampling</td>
+<td><code>loopless</code></td>
+<td>Sampling with thermodynamic constraints eliminating internal loops</td>
+</tr>
+<tr>
+<td>KL divergence</td>
+<td><code>kld</code></td>
+<td>Computes Kullback-Leibler divergence between sampling distributions</td>
+</tr>
+<tr>
+<td>Single gene deletion</td>
+<td><code>singleGeneDeletion</code></td>
+<td>Evaluates the effect of individually knocking out each gene</td>
+</tr>
+<tr>
+<td>Double gene deletion</td>
+<td><code>doubleGeneDeletion</code></td>
+<td>Evaluates the effect of pairwise gene knockouts</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Upcoming analyses</p>
+<p>The list of available analyses is actively being expanded. The following are planned for integration:</p>
+<ul>
+<li><strong>Enrichment</strong> — pathway enrichment analysis on gene deletion results</li>
+</ul>
+<p>Check back for updates in future releases.</p>
+</div>
+<h2 id="function-signature">Function signature</h2>
+<div class="highlight"><pre><span></span><code><span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">singleModelAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">parameterTable</span><span class="p">,</span><span class="w"> </span><span class="n">modelList</span><span class="p">,</span><span class="w"> </span><span class="n">analyses</span><span class="p">,</span><span class="w"> </span><span class="n">saveCheckpoint</span><span class="p">,</span><span class="w"> </span><span class="n">resumeFromCheckpoint</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="input-arguments">Input arguments</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>Project structure following the format described in <a href="../project_layout/">Project Layout</a></td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>parameterTable</code></td>
+<td><code>table</code></td>
+<td>Parameter table defining analysis settings (at minimum the default one)</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>modelList</code></td>
+<td><code>string array</code></td>
+<td>Names of the models to analyze</td>
+<td><code>{}</code> (all models)</td>
+</tr>
+<tr>
+<td><code>analyses</code></td>
+<td><code>cell array</code></td>
+<td>List of analyses to perform</td>
+<td><code>{}</code> (all available)</td>
+</tr>
+<tr>
+<td><code>saveCheckpoint</code></td>
+<td><code>logical</code></td>
+<td>Whether to save a checkpoint after each model</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td><code>resumeFromCheckpoint</code></td>
+<td><code>logical</code></td>
+<td>Whether to resume from the last saved checkpoint</td>
+<td><code>false</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="output">Output</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>The input project with an <code>analysis</code> field added to each model</td>
+</tr>
+</tbody>
+</table>
+<h2 id="analysis-ids">Analysis IDs</h2>
+<p>Each analysis run is assigned a unique identifier based on the current timestamp:</p>
+<div class="highlight"><pre><span></span><code>analysis_20240815_1430
+</code></pre></div>
+<p>The format is <code>analysis_yyyyMMdd_HHmm</code>, where:</p>
+<ul>
+<li><code>yyyyMMdd</code> — date (year, month, day)</li>
+<li><code>HHmm</code> — time (hour, minute)</li>
+</ul>
+<p>This ID is used as a field name under <code>project.models.&lt;modelName&gt;.analysis.&lt;id&gt;</code> and allows multiple analysis runs to coexist on the same model without overwriting previous results. When comparing models later, you can reference a specific analysis by its ID.</p>
+<h2 id="parameter-storage">Parameter storage</h2>
+<p>For each analysis run, the parameter table used is stored alongside the results:</p>
+<div class="highlight"><pre><span></span><code><span class="n">project</span><span class="p">.</span><span class="n">models</span><span class="p">.</span><span class="o">&lt;</span><span class="n">modelName</span><span class="o">&gt;</span><span class="p">.</span><span class="n">analysis</span><span class="p">.</span><span class="o">&lt;</span><span class="n">id</span><span class="o">&gt;</span><span class="p">.</span><span class="n">parameters</span>
+</code></pre></div>
+<p>This ensures full traceability — you can always retrieve the exact settings that produced a given set of results, even if the parameter table was modified between runs.</p>
+<h2 id="loopless-sampling">Loopless sampling</h2>
+<p>Loopless sampling can be run in two ways:</p>
+<ol>
+<li>
+<p><strong>In the same run as sampling</strong> — if both <code>sampling</code> and <code>loopless</code> are requested, the sampling results from the current run are automatically used as input for the loopless analysis.</p>
+</li>
+<li>
+<p><strong>Using a previous sampling run</strong> — if only <code>loopless</code> is requested (without <code>sampling</code>), you must specify which existing sampling results to use via the <code>samplingToUse</code> parameter in the parameter table. This parameter should contain the analysis ID of a previously run sampling analysis, in the same order as the models in <code>modelList</code>.</p>
+</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Order matters</p>
+<p>When using <code>samplingToUse</code>, the analysis IDs must be listed in the same order as their corresponding models in <code>modelList</code>. Mismatched ordering will produce an error.</p>
+</div>
+<h2 id="checkpoint-system">Checkpoint system</h2>
+<p>The function includes a checkpoint mechanism to protect against crashes during long-running analyses:</p>
+<ul>
+<li><strong>Automatic save</strong> — after each model completes, the current project state and progress index are saved to <code>singleModelAnalysis_checkpoint.mat</code> (if <code>saveCheckpoint</code> is <code>true</code>).</li>
+<li><strong>Resume</strong> — set <code>resumeFromCheckpoint = true</code> to load the last checkpoint and continue from the next model. The function prints which model it is resuming from.</li>
+<li><strong>Error handling</strong> — if an error occurs during analysis of a model, the function catches it, prints the error message and stack trace, and returns the partial project. You can then relaunch with <code>resumeFromCheckpoint = true</code> to continue.</li>
+<li><strong>Cleanup</strong> — the checkpoint file is automatically deleted once all models have been successfully analyzed.</li>
+</ul>
+<h2 id="usage-example">Usage example</h2>
+<div class="highlight"><pre><span></span><code><span class="c">% Run all available analyses on all models</span>
+<span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">singleModelAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">parameterTable</span><span class="p">);</span>
 
+<span class="c">% Run only FBA and sampling on specific models</span>
+<span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">singleModelAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">parameterTable</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">],</span><span class="w"> </span><span class="p">{</span><span class="s">"FBA"</span><span class="p">,</span><span class="w"> </span><span class="s">"sampling"</span><span class="p">});</span>
 
+<span class="c">% Resume after a crash</span>
+<span class="n">project</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">singleModelAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">parameterTable</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="n">resumeFromCheckpoint</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+</code></pre></div>
 
 
 
