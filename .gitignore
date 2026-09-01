@@ -21,3 +21,5 @@ scr/fastcormics_module/discretize_FPKM.m
 scr/fastcormics_module/visualize_sampling.ipynb
 scr/test/*
 **/SamplingResults
+data/BRCAProjectNo1.mat
+data/workspaceTutoNo1.mat
