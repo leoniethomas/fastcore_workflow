@@ -6,7 +6,6 @@ function project = singleModelAnalysis(project, parameterTable, modelList, analy
 % Available analysis:
 % FBA
 % FVA
-% Shadow prices % needs to be added
 % Sampling
 % Loopless sampling
 % FDR correction for sampling
