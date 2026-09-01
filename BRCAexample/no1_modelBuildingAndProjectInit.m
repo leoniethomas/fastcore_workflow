@@ -209,5 +209,5 @@ paramsConsistentMediumConstrainedModel.dico = dico;
 paramsConsistentMediumConstrainedModel.mediumComposition = medium;
 BRCAProject = addModelsToProject(BRCAProject, {paramsConsistentMediumConstrainedModel});
 
-save('BRCAProject.mat', 'BRCAProject')
+save('data/BRCAProjectNo1.mat', 'BRCAProject')
 
