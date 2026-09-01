@@ -1,6 +1,9 @@
-# Project organization
+# Project layout
 
 A `project` is a MATLAB hierarchical structure. Click on each field to discover the associated subfields.
+
+!!! warning "Field format differences"
+    Field formats may differ between what is required to initialize a project and how they are stored downstream in the `project`. Before building the pipeline, check the [Project Initialization](project_init.md) page for field requirements.
 
 ???+ note "project (struct)"
 

@@ -67,7 +67,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Documentation: references.md
-  - Project Organization: project_layout.md
+  - Project Layout: project_layout.md
   - Project Initialization: project_init.md
   - Single Model Analysis: single_model_analysis.md
   - Models Comparison: models_comparison.md

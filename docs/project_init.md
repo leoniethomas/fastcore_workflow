@@ -2,6 +2,9 @@
 
 To create a `project`, a `params` structure must be provided as input to the pipeline. The table below describes the expected format for each field.
 
+!!! warning "Field format differences"
+    Field formats may differ between what is required to initialize a project and how they are stored downstream in the `project`. Check the [Project Layout](project_layout.md) page for field format in an already built `project`.
+
 ## Required fields
 
 | Field | Type | Format | Description |
@@ -54,9 +57,12 @@ These fields are required only when expression or discretized data is provided.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `medium` | — | Optional medium definition. |
-| `notMediumConstrained` | — | Reactions not constrained by the medium. |
-| `func` | — | Reaction(s) forced to carry a flux. |
+| `medium` | cell | Medium provided metabolites. |
+| `notMediumConstrained` | cell | Metabolites that should not be constrained. | 
+| `func` | cell | Reaction(s) that should be retained when running rFastcormics. |
+
+!!! note "rFastcormics related fields"
+    Supplementary documentation regarding rFastcormics related fields can be found on the github documentation of [rFastcormics](https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2).
 
 <a id="manually-set-boundaries"></a>
 
