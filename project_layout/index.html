@@ -601,6 +601,73 @@
 <p class="admonition-title">Field format differences</p>
 <p>Field formats may differ between what is required to initialize a project and how they are stored downstream in the <code>project</code>. Before building the pipeline, check the <a href="../project_init/">Project Initialization</a> page for field requirements.</p>
 </div>
+<details class="abstract" open="open">
+<summary>Project structure overview</summary>
+<div class="highlight"><pre><span></span><code>project
+├── models
+│   └── &lt;modelName&gt;
+│       ├── model                    (COBRA struct)
+│       ├── sampleMetadata
+│       ├── discretizedData
+│       ├── expressionData
+│       ├── mappedDiscretizedRxnsAllSamples
+│       ├── mappedDiscretizedRxns
+│       ├── coreReactions
+│       ├── settings
+│       │   ├── medium
+│       │   │   ├── mediumComposition
+│       │   │   └── manuallySetBoundaries
+│       │   │       ├── closedImports
+│       │   │       ├── closedExports
+│       │   │       ├── unconstrainedImports
+│       │   │       └── unconstrainedExports
+│       │   ├── scriptParameters
+│       │   │   ├── consensusProportion
+│       │   │   └── sampleLabeling
+│       │   ├── dico
+│       │   ├── objFunction
+│       │   ├── referenceModel
+│       │   ├── mapping
+│       │   └── optionalSettings
+│       │       ├── medium
+│       │       ├── notMediumConstrained
+│       │       └── func
+│       └── analysis
+│           ├── &lt;analysisId&gt;
+│           │   ├── parameters
+│           │   ├── FBA
+│           │   ├── FVA
+│           │   │   ├── minMaxFluxes
+│           │   │   └── loopStatus
+│           │   ├── singleGeneDeletion
+│           │   ├── doubleGeneDeletion
+│           │   ├── sampling
+│           │   │   ├── samples
+│           │   │   └── cycleFreeFlux
+│           │   │       ├── samplesLl
+│           │   │       ├── thermoFeas
+│           │   │       ├── sampleStatusAfterCorrection
+│           │   │       ├── neededAttempts
+│           │   │       └── looplessStatus
+│           │   └── kld
+│           └── active
+└── comparisons
+    └── &lt;Name1_vs_Name2__date&gt;
+        ├── modelNames
+        ├── referenceModel
+        ├── analysisIds
+        ├── structuralComparison
+        │   ├── rxnMappingTable
+        │   └── plots
+        ├── functionalComparison
+        │   └── plots
+        └── samplingComparison
+            ├── orderedSamples
+            ├── sampleModelLabels
+            ├── orderedFba
+            └── plots
+</code></pre></div>
+</details>
 <details class="note" open="open">
 <summary>project (struct)</summary>
 <table>
@@ -709,6 +776,7 @@
 </tr>
 </tbody>
 </table>
+</details>
 <details class="note">
 <summary>settings (struct)</summary>
 <table>
@@ -766,6 +834,7 @@
 </tbody>
 </table>
 <p><em>*Required if <code>discretizedData</code> or <code>expressionData</code> is present.</em></p>
+</details>
 <details class="note">
 <summary>settings.dico (table)</summary>
 <table>
@@ -813,6 +882,7 @@
 </tr>
 </tbody>
 </table>
+</details>
 <details class="note">
 <summary>medium.manuallySetBoundaries (struct)</summary>
 <table>
@@ -841,7 +911,6 @@
 </tr>
 </tbody>
 </table>
-</details>
 </details>
 <details class="note">
 <summary>settings.scriptParameters (struct)</summary>
@@ -891,7 +960,6 @@
 </tr>
 </tbody>
 </table>
-</details>
 </details>
 <details class="note">
 <summary>analysis (struct)</summary>
@@ -952,11 +1020,13 @@
 </tr>
 </tbody>
 </table>
+</details>
 <div class="admonition tip">
 <p class="admonition-title"><code>analysisId</code> field</p>
-<p>The <code>active</code> entry contains an additional <code>analysisId</code> (char) 
+<p>The <code>active</code> entry contains an additional <code>analysisId</code> (char)
 field in each sub-struct.</p>
 </div>
+</details>
 <details class="note">
 <summary>FVA (struct)</summary>
 <table>
@@ -1084,6 +1154,7 @@ field in each sub-struct.</p>
 </tr>
 </tbody>
 </table>
+</details>
 <details class="note">
 <summary>sampling.cycleFreeFlux (struct)</summary>
 <table>
@@ -1129,7 +1200,6 @@ field in each sub-struct.</p>
 </tbody>
 </table>
 </details>
-</details>
 <details class="note">
 <summary>kld (struct)</summary>
 <table>
@@ -1162,9 +1232,6 @@ field in each sub-struct.</p>
 </tr>
 </tbody>
 </table>
-</details>
-</details>
-</details>
 </details>
 </details>
 <details class="note">
@@ -1220,6 +1287,7 @@ field in each sub-struct.</p>
 </tr>
 </tbody>
 </table>
+</details>
 <details class="note">
 <summary>structuralComparison (struct)</summary>
 <table>
@@ -1246,6 +1314,7 @@ field in each sub-struct.</p>
 </tr>
 </tbody>
 </table>
+</details>
 <details class="note">
 <summary>structuralComparison.plots</summary>
 <table>
@@ -1258,31 +1327,46 @@ field in each sub-struct.</p>
 <tbody>
 <tr>
 <td><code>dataDiscretization</code></td>
-<td>Data discretization</td>
+<td>Nested barplot showing the discretization status (−1, 0, 1) of genes and reactions across models and samples, at three stages: after discretization, after GPR mapping, and after consensus proportion</td>
 </tr>
 <tr>
 <td><code>coreReactions</code></td>
-<td>Core reactions</td>
+<td>Stacked barplots showing core vs non-core reactions per model, percentage of core reactions included, and Venn/heatmap of core reaction presence across models</td>
 </tr>
 <tr>
 <td><code>coreReactionsIntersections</code></td>
-<td>Core reaction intersections</td>
+<td>Stacked bar chart of core reactions per pathway for each intersection/outersection between models (up to 4 models)</td>
 </tr>
 <tr>
-<td><code>intersections</code></td>
-<td>Global intersections</td>
+<td><code>intersections.genes</code></td>
+<td>Venn diagram or heatmap of gene presence across models</td>
 </tr>
 <tr>
-<td><code>jaccardDist</code></td>
-<td>Jaccard distance</td>
+<td><code>intersections.mets</code></td>
+<td>Venn diagram or heatmap of metabolite presence across models</td>
+</tr>
+<tr>
+<td><code>intersections.rxns</code></td>
+<td>Venn diagram or heatmap of reaction presence across models</td>
+</tr>
+<tr>
+<td><code>jaccardDist.genes</code></td>
+<td>Jaccard similarity heatmap of gene presence between models</td>
+</tr>
+<tr>
+<td><code>jaccardDist.mets</code></td>
+<td>Jaccard similarity heatmap of metabolite presence between models</td>
+</tr>
+<tr>
+<td><code>jaccardDist.rxns</code></td>
+<td>Jaccard similarity heatmap of reaction presence between models</td>
 </tr>
 <tr>
 <td><code>reactionPathwayPresence</code></td>
-<td>Reaction presence by pathway</td>
+<td>Heatmap of reaction presence per subsystem, relative to the reference model</td>
 </tr>
 </tbody>
 </table>
-</details>
 </details>
 <details class="note">
 <summary>functionalComparison (struct)</summary>
@@ -1296,39 +1380,39 @@ field in each sub-struct.</p>
 <tbody>
 <tr>
 <td><code>plots.objValue</code></td>
-<td>Objective value</td>
+<td>Bar plot of FBA objective function values per model</td>
 </tr>
 <tr>
 <td><code>plots.import</code></td>
-<td>Import fluxes</td>
+<td>FBA flux values for import exchange reactions (upper threshold)</td>
 </tr>
 <tr>
 <td><code>plots.export</code></td>
-<td>Export fluxes</td>
+<td>FBA flux values for export exchange reactions (lower threshold)</td>
 </tr>
 <tr>
 <td><code>plots.fvaSim.overall</code></td>
-<td>Overall FVA similarity</td>
+<td>Clustergram heatmap of overall FVA boundary similarity between models</td>
 </tr>
 <tr>
 <td><code>plots.fvaSim.hist</code></td>
-<td>FVA similarity histogram</td>
+<td>Histograms of per-reaction FVA similarity values for each model pair (lower triangle, values &lt; 1)</td>
 </tr>
 <tr>
 <td><code>plots.fvaSim.enrich</code></td>
-<td>FVA similarity enrichment</td>
+<td>Dot plot of pathway enrichment for low FVA similarity reactions (dot size = |NES|, color = −log10(FDR))</td>
 </tr>
 <tr>
 <td><code>plots.fba.heatmapRxnFluxsum</code></td>
-<td>Heatmap of flux sum per reaction</td>
+<td>Heatmap of flux sum per reaction, grouped by pathway (from FBA)</td>
 </tr>
 <tr>
-<td><code>plots.fba.heatmapRxnActivity</code></td>
-<td>Heatmap of reaction activity</td>
+<td><code>plots.fba.heatmapRxnActivityFba</code></td>
+<td>Heatmap of reaction network activity per pathway (from FBA)</td>
 </tr>
 <tr>
 <td><code>plots.fba.heatmapMetsFluxsum</code></td>
-<td>Heatmap of flux sum per metabolite</td>
+<td>Heatmap of flux sum per metabolite, grouped by pathway (from FBA)</td>
 </tr>
 </tbody>
 </table>
@@ -1349,7 +1433,7 @@ field in each sub-struct.</p>
 <td><code>orderedSamples</code></td>
 <td>double</td>
 <td>nbRxns × cumSamp</td>
-<td>Ordered samples</td>
+<td>Ordered sampling matrix across all models</td>
 </tr>
 <tr>
 <td><code>sampleModelLabels</code></td>
@@ -1358,10 +1442,22 @@ field in each sub-struct.</p>
 <td>Model label per sample</td>
 </tr>
 <tr>
+<td><code>orderedllSamples</code></td>
+<td>double</td>
+<td>nbRxns × cumSamp</td>
+<td>Ordered loopless sampling matrix (if available)</td>
+</tr>
+<tr>
 <td><code>orderedFba</code></td>
 <td>double</td>
 <td>nbRxns × nbModels</td>
 <td>Ordered FBA solutions</td>
+</tr>
+<tr>
+<td><code>kld</code></td>
+<td>struct</td>
+<td>—</td>
+<td>Inter-model KL divergence results (if KLD was performed)</td>
 </tr>
 <tr>
 <td><code>plots</code></td>
@@ -1371,6 +1467,46 @@ field in each sub-struct.</p>
 </tr>
 </tbody>
 </table>
+</details>
+<details class="note">
+<summary>samplingComparison.kld (struct)</summary>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>orderedkldSets</code></td>
+<td>double</td>
+<td>Ordered KLD sampling sets across models</td>
+</tr>
+<tr>
+<td><code>modelLabels</code></td>
+<td>string</td>
+<td>Model labels for KLD sets</td>
+</tr>
+<tr>
+<td><code>interModelKld</code></td>
+<td>double</td>
+<td>Inter-model KLD matrix</td>
+</tr>
+<tr>
+<td><code>interModelLabels</code></td>
+<td>string</td>
+<td>Labels for inter-model KLD</td>
+</tr>
+<tr>
+<td><code>orderedkldSetLabels</code></td>
+<td>string</td>
+<td>Set labels for ordered KLD</td>
+</tr>
+</tbody>
+</table>
+</details>
 <details class="note">
 <summary>samplingComparison.plots</summary>
 <table>
@@ -1383,24 +1519,22 @@ field in each sub-struct.</p>
 <tbody>
 <tr>
 <td><code>heatmapRxnFluxSum</code></td>
-<td>Heatmap of flux sum per reaction</td>
+<td>Heatmap of flux sum per reaction, grouped by pathway (from sampling)</td>
 </tr>
 <tr>
 <td><code>heatmapMetsFluxSum</code></td>
-<td>Heatmap of flux sum per metabolite</td>
+<td>Heatmap of flux sum per metabolite, grouped by pathway (from sampling)</td>
 </tr>
 <tr>
 <td><code>heatmapRxnFluxSumSamples</code></td>
-<td>Heatmap of flux sum per reaction (samples)</td>
+<td>Heatmap of flux sum per reaction per pathway, broken down by individual samples</td>
 </tr>
 <tr>
 <td><code>heatmapMetsFluxSumSamples</code></td>
-<td>Heatmap of flux sum per metabolite (samples)</td>
+<td>Heatmap of flux sum per metabolite per pathway, broken down by individual samples</td>
 </tr>
 </tbody>
 </table>
-</details>
-</details>
 </details>
 </details>
 

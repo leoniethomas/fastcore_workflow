@@ -614,6 +614,73 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#choosing-the-active-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing the active analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Choosing the active analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -640,7 +707,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#input-arguments" class="md-nav__link">
+  <a href="#input-arguments_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Input arguments
@@ -651,7 +718,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
+  <a href="#output_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Output
@@ -700,7 +767,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage-example" class="md-nav__link">
+  <a href="#usage-example_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Usage example
@@ -742,6 +809,91 @@
 <p class="admonition-title">Single model analysis required</p>
 <p><code>singleModelAnalysis</code> must have been run on all models included in the comparison, and the <strong>active analysis</strong> must have been set for each model using <code>chooseActiveAnalysisForComparison</code>. The active analysis provides the FBA, FVA, and sampling results used by the functional and sampling comparisons.</p>
 </div>
+<h3 id="choosing-the-active-analysis">Choosing the active analysis</h3>
+<p>Since multiple analysis runs (with different parameters) can coexist on the same model, the <code>chooseActiveAnalysis</code> function must be called before running <code>modelsComparison</code>. It designates which analysis run to use for each model in the comparison by copying it into an <code>active</code> slot under <code>project.models.&lt;modelName&gt;.analysis.active</code>. This way, downstream comparison functions can access results without needing to know the exact analysis ID for each model.</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">activeAnalysisTable</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">chooseActiveAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">modelList</span><span class="p">,</span><span class="w"> </span><span class="n">analysisIDs</span><span class="p">,</span><span class="w"> </span><span class="n">overwriteActive</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="input-arguments">Input arguments</h4>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>Project structure with completed single model analyses</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>modelList</code></td>
+<td><code>cell array</code></td>
+<td>Names of the models to define an active analysis for</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>analysisIDs</code></td>
+<td><code>cell array</code></td>
+<td>Analysis ID to set as active for each model (same order as <code>modelList</code>)</td>
+<td><code>{}</code> (most recent)</td>
+</tr>
+<tr>
+<td><code>overwriteActive</code></td>
+<td><code>cell array</code></td>
+<td>Fields to overwrite in the existing active slot, or <code>{'all'}</code> for full replacement</td>
+<td><code>{'all'}</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="output">Output</h4>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>Project with <code>active</code> analysis defined for each model</td>
+</tr>
+<tr>
+<td><code>activeAnalysisTable</code></td>
+<td><code>table</code></td>
+<td>Summary of the active analysis IDs used per model</td>
+</tr>
+</tbody>
+</table>
+<h4 id="behavior">Behavior</h4>
+<ul>
+<li><strong>No <code>analysisIDs</code> provided</strong> — the most recent analysis (by timestamp) is automatically selected for each model.</li>
+<li><strong><code>overwriteActive = {'all'}</code></strong> (default) — the entire <code>active</code> slot is replaced with the chosen analysis. All previous active results are discarded.</li>
+<li><strong><code>overwriteActive = {'FBA', 'FVA', ...}</code></strong> — only the specified fields are replaced in the active slot. Other fields (e.g. <code>sampling</code>) are preserved. The <code>parameters</code> table is automatically merged: rows corresponding to the overwritten analyses are replaced, while rows for other analyses are kept.</li>
+</ul>
+<div class="admonition tip">
+<p class="admonition-title">Selective overwrite</p>
+<p>If you want to update only the FBA results in the active analysis while keeping the existing sampling results, use <code>overwriteActive = {'FBA'}</code> instead of <code>{'all'}</code>. This avoids re-running the entire analysis pipeline.</p>
+</div>
+<h4 id="usage-example">Usage example</h4>
+<div class="highlight"><pre><span></span><code><span class="c">% Use the most recent analysis for each model</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">activeTable</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">chooseActiveAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">});</span>
+
+<span class="c">% Specify explicit analysis IDs</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">activeTable</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">chooseActiveAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">},</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">{</span><span class="s">"analysis_20240815_1430"</span><span class="p">,</span><span class="w"> </span><span class="s">"analysis_20240816_0900"</span><span class="p">});</span>
+
+<span class="c">% Selectively overwrite only FBA in the active slot</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">activeTable</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">chooseActiveAnalysis</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">"model1"</span><span class="p">},</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">{</span><span class="s">"analysis_20240815_1430"</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">'FBA'</span><span class="p">});</span>
+</code></pre></div>
 <h2 id="comparison-types">Comparison types</h2>
 <p>Three types of comparison are available, each investigating a different aspect of the models:</p>
 <table>
@@ -777,7 +929,7 @@
 <h2 id="function-signature">Function signature</h2>
 <div class="highlight"><pre><span></span><code><span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">comparisonName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">modelList</span><span class="p">,</span><span class="w"> </span><span class="n">referenceModel</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">analyses</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="input-arguments">Input arguments</h3>
+<h3 id="input-arguments_1">Input arguments</h3>
 <table>
 <thead>
 <tr>
@@ -820,7 +972,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="output">Output</h3>
+<h3 id="output_1">Output</h3>
 <table>
 <thead>
 <tr>
@@ -896,7 +1048,7 @@
 <li><strong>Same reference model</strong> and structural analysis already run — only the newly requested analyses are performed; the structural comparison is reused.</li>
 <li><strong>Different reference model</strong> — a warning is issued and the user is prompted to confirm overwriting. Answering <code>n</code> aborts the operation. To create a separate comparison instead, use a different <code>identifier</code>.</li>
 </ul>
-<h2 id="usage-example">Usage example</h2>
+<h2 id="usage-example_1">Usage example</h2>
 <div class="highlight"><pre><span></span><code><span class="c">% Run only the structural comparison (default)</span>
 <span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">compName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
 <span class="w">    </span><span class="p">[</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">,</span><span class="w"> </span><span class="s">"model3"</span><span class="p">],</span><span class="w"> </span><span class="s">"model1"</span><span class="p">);</span>
