@@ -7,6 +7,54 @@ The `modelsComparison` function compares multiple context-specific models built 
 !!! warning "Single model analysis required"
     `singleModelAnalysis` must have been run on all models included in the comparison, and the **active analysis** must have been set for each model using `chooseActiveAnalysisForComparison`. The active analysis provides the FBA, FVA, and sampling results used by the functional and sampling comparisons.
 
+### Choosing the active analysis
+
+Since multiple analysis runs (with different parameters) can coexist on the same model, the `chooseActiveAnalysis` function must be called before running `modelsComparison`. It designates which analysis run to use for each model in the comparison by copying it into an `active` slot under `project.models.<modelName>.analysis.active`. This way, downstream comparison functions can access results without needing to know the exact analysis ID for each model.
+
+```matlab
+[project, activeAnalysisTable] = chooseActiveAnalysis(project, modelList, analysisIDs, overwriteActive)
+```
+
+#### Input arguments
+
+| Name | Type | Description | Default |
+|---|---|---|---|
+| `project` | `struct` | Project structure with completed single model analyses | required |
+| `modelList` | `cell array` | Names of the models to define an active analysis for | required |
+| `analysisIDs` | `cell array` | Analysis ID to set as active for each model (same order as `modelList`) | `{}` (most recent) |
+| `overwriteActive` | `cell array` | Fields to overwrite in the existing active slot, or `{'all'}` for full replacement | `{'all'}` |
+
+#### Output
+
+| Name | Type | Description |
+|---|---|---|
+| `project` | `struct` | Project with `active` analysis defined for each model |
+| `activeAnalysisTable` | `table` | Summary of the active analysis IDs used per model |
+
+#### Behavior
+
+- **No `analysisIDs` provided** — the most recent analysis (by timestamp) is automatically selected for each model.
+- **`overwriteActive = {'all'}`** (default) — the entire `active` slot is replaced with the chosen analysis. All previous active results are discarded.
+- **`overwriteActive = {'FBA', 'FVA', ...}`** — only the specified fields are replaced in the active slot. Other fields (e.g. `sampling`) are preserved. The `parameters` table is automatically merged: rows corresponding to the overwritten analyses are replaced, while rows for other analyses are kept.
+
+!!! tip "Selective overwrite"
+    If you want to update only the FBA results in the active analysis while keeping the existing sampling results, use `overwriteActive = {'FBA'}` instead of `{'all'}`. This avoids re-running the entire analysis pipeline.
+
+#### Usage example
+
+```matlab
+% Use the most recent analysis for each model
+[project, activeTable] = chooseActiveAnalysis(project, {"model1", "model2"});
+
+% Specify explicit analysis IDs
+[project, activeTable] = chooseActiveAnalysis(project, {"model1", "model2"}, ...
+    {"analysis_20240815_1430", "analysis_20240816_0900"});
+
+% Selectively overwrite only FBA in the active slot
+[project, activeTable] = chooseActiveAnalysis(project, {"model1"}, ...
+    {"analysis_20240815_1430"}, {'FBA'});
+```
+
 ## Comparison types
 
 Three types of comparison are available, each investigating a different aspect of the models:
