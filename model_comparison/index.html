@@ -11,6 +11,8 @@
         <link rel="canonical" href="https://sysbiolux.github.io/analysisPipelineLVT/model_comparison/">
       
       
+        <link rel="prev" href="../single_model_analysis/">
+      
       
       
         
@@ -21,7 +23,7 @@
     
     
       
-        <title>Model comparison - TackleMMe Documentation</title>
+        <title>Model Comparison - TackleMMe Documentation</title>
       
     
     
@@ -73,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#model-comparison" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -105,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Model comparison
+              Model Comparison
             
           </span>
         </div>
@@ -312,15 +319,17 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../models_comparison.md" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
     
   
-  Models Comparison
+  Model Comparison
 
       </a>
     </li>
@@ -534,17 +543,44 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../models_comparison.md" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Comparison
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    Models Comparison
+    Model Comparison
   
 
     
@@ -553,6 +589,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#function-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function signature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Function signature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input arguments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison naming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overwriting-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overwriting behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -574,9 +735,190 @@
 
 
 
-  <h1>Model comparison</h1>
+<h1 id="model-comparison">Model Comparison</h1>
+<p>The <code>modelsComparison</code> function compares multiple context-specific models built from the same reference model. It runs a set of comparative analyses and stores the results under a dedicated <code>comparisons</code> field in the project structure.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<div class="admonition warning">
+<p class="admonition-title">Single model analysis required</p>
+<p><code>singleModelAnalysis</code> must have been run on all models included in the comparison, and the <strong>active analysis</strong> must have been set for each model using <code>chooseActiveAnalysisForComparison</code>. The active analysis provides the FBA, FVA, and sampling results used by the functional and sampling comparisons.</p>
+</div>
+<h2 id="comparison-types">Comparison types</h2>
+<p>Three types of comparison are available, each investigating a different aspect of the models:</p>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Key</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Structural</td>
+<td><code>structuralComparison</code></td>
+<td>Compares the presence or absence of reactions, metabolites, and genes across models. Includes Jaccard similarity, core reaction retention, and pathway-level reaction presence. Always run first — it is a prerequisite for the other two.</td>
+</tr>
+<tr>
+<td>Functional</td>
+<td><code>functionalComparison</code></td>
+<td>Compares the functional capacity of the models based on FBA and FVA results. Includes objective function values, exchange reaction fluxes, FVA similarity heatmaps, pathway enrichment for dissimilar reactions, and flux sum heatmaps per pathway.</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td><code>samplingComparison</code></td>
+<td>Compares the sampling solution spaces of the models. Includes ordered sample matrices, inter-model KL divergence (if available), and flux sum heatmaps from sampling distributions. Requires that sampling has been performed on all compared models.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Structural comparison is mandatory</p>
+<p>The structural comparison is always run, even if only <code>functionalComparison</code> or <code>samplingComparison</code> is requested. If a comparison with the same name and reference model already exists and the structural analysis has already been completed, it is not re-run — only the newly requested analyses are performed.</p>
+</div>
+<h2 id="function-signature">Function signature</h2>
+<div class="highlight"><pre><span></span><code><span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">comparisonName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">modelList</span><span class="p">,</span><span class="w"> </span><span class="n">referenceModel</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">analyses</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="input-arguments">Input arguments</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>Project structure with single model analyses completed</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>modelList</code></td>
+<td><code>string array</code></td>
+<td>Names of the models to compare</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>referenceModel</code></td>
+<td><code>string</code></td>
+<td>Name of the reference model used to compute relative reaction presence</td>
+<td>required</td>
+</tr>
+<tr>
+<td><code>identifier</code></td>
+<td><code>string</code></td>
+<td>Postfix appended to the comparison name</td>
+<td>current timestamp (<code>_yyyyMMdd_HHmmss</code>)</td>
+</tr>
+<tr>
+<td><code>analyses</code></td>
+<td><code>string array</code></td>
+<td>Analyses to perform (subset of <code>structuralComparison</code>, <code>functionalComparison</code>, <code>samplingComparison</code>, <code>IDAREoutput</code>)</td>
+<td><code>"structuralComparison"</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="output">Output</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project</code></td>
+<td><code>struct</code></td>
+<td>The input project with a <code>comparisons</code> field added</td>
+</tr>
+<tr>
+<td><code>comparisonName</code></td>
+<td><code>string</code></td>
+<td>Name of the created comparison</td>
+</tr>
+</tbody>
+</table>
+<h2 id="comparison-naming">Comparison naming</h2>
+<p>The comparison name is built from the ordered list of compared models joined by <code>_vs_</code>, followed by the identifier:</p>
+<div class="highlight"><pre><span></span><code>model1_vs_model2_vs_model3__20240815_1430
+</code></pre></div>
+<p>Models are ordered according to their order of appearance in <code>project.models</code>, not the order in which they are passed to the function. This ensures consistent naming regardless of the input order.</p>
+<h2 id="result-storage">Result storage</h2>
+<p>All comparison results are stored under:</p>
+<div class="highlight"><pre><span></span><code><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparisonName</span><span class="p">)</span>
+</code></pre></div>
+<p>The following fields are populated:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>modelNames</code></td>
+<td>Ordered list of compared model names</td>
+</tr>
+<tr>
+<td><code>referenceModel</code></td>
+<td>Name of the reference model used</td>
+</tr>
+<tr>
+<td><code>structuralComparison</code></td>
+<td>Structural comparison results and plots</td>
+</tr>
+<tr>
+<td><code>structuralAnalysisStatus</code></td>
+<td>Flag indicating whether structural analysis has been run (<code>1</code> = done)</td>
+</tr>
+<tr>
+<td><code>functionalComparison</code></td>
+<td>Functional comparison results and plots (if requested)</td>
+</tr>
+<tr>
+<td><code>samplingComparison</code></td>
+<td>Sampling comparison results and plots (if requested)</td>
+</tr>
+<tr>
+<td><code>comparedAnalysisID</code></td>
+<td>Table mapping each model to the analysis ID used for the comparison</td>
+</tr>
+</tbody>
+</table>
+<h2 id="overwriting-behavior">Overwriting behavior</h2>
+<p>If a comparison with the same name already exists:</p>
+<ul>
+<li><strong>Same reference model</strong> and structural analysis already run — only the newly requested analyses are performed; the structural comparison is reused.</li>
+<li><strong>Different reference model</strong> — a warning is issued and the user is prompted to confirm overwriting. Answering <code>n</code> aborts the operation. To create a separate comparison instead, use a different <code>identifier</code>.</li>
+</ul>
+<h2 id="usage-example">Usage example</h2>
+<div class="highlight"><pre><span></span><code><span class="c">% Run only the structural comparison (default)</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">compName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">,</span><span class="w"> </span><span class="s">"model3"</span><span class="p">],</span><span class="w"> </span><span class="s">"model1"</span><span class="p">);</span>
 
+<span class="c">% Run structural and functional comparisons with a custom identifier</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">compName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">],</span><span class="w"> </span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"batchA"</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"structuralComparison"</span><span class="p">,</span><span class="w"> </span><span class="s">"functionalComparison"</span><span class="p">]);</span>
 
+<span class="c">% Run all three comparisons</span>
+<span class="p">[</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="n">compName</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">modelsComparison</span><span class="p">(</span><span class="n">project</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"model2"</span><span class="p">,</span><span class="w"> </span><span class="s">"model3"</span><span class="p">],</span><span class="w"> </span><span class="s">"model1"</span><span class="p">,</span><span class="w"> </span><span class="s">"fullRun"</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">    </span><span class="p">[</span><span class="s">"structuralComparison"</span><span class="p">,</span><span class="w"> </span><span class="s">"functionalComparison"</span><span class="p">,</span><span class="w"> </span><span class="s">"samplingComparison"</span><span class="p">]);</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Upcoming features</p>
+<p>The following are planned for future integration:</p>
+<ul>
+<li><strong>IDARE output</strong> — generation of interactive pathway visualizations using the IDARE toolbox</li>
+<li><strong>Report generation</strong> — automated PDF report for model comparisons, similar to <code>writeAnalysisReport</code> for single model analysis</li>
+</ul>
+</div>
 
 
 
