@@ -181,7 +181,7 @@ project = addAnalysisToExistingOne(project, parameterTable, ...
 
 ## Analysis Reports
 
-The `writeAnalysisReport` function generates a PDF report summarizing the results of a single analysis run. It requires that **FBA and FVA** have been performed on the model — these are the minimum required analyses.
+The `writeAnalysisReport` function generates a PDF report summarizing the results of a single analysis run. It requires that **FBA and FVA** have been performed on the model — these are the minimum required analyses. An example of a report can be downloaded [:material-file-pdf-box: here](assets/report_example.pdf).
 
 ### Function signature
 
@@ -283,5 +283,4 @@ writeAnalysisReport(project, "model1", "analysis_20240815_1430", ...
 !!! note "Upcoming features"
     The following report sections are planned for future integration:
 
-    - **Shadow prices** — metabolite shadow price analysis
     - **Figures and plots** — embedded visualizations of flux distributions and sampling landscapes

@@ -28,7 +28,7 @@ defaultParametersAnalysis = readInParamTable('data/defaultParametersTable.csv');
 
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
-wantedAnalyses = {'FBA', 'FVA', 'singleGeneDeletion'};
+wantedAnalyses = {'FBA', 'FVA'};
 analyzedModels = {'Control', 'StageI', 'StageIV'};
 BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses, 1, 1);
 
@@ -40,11 +40,11 @@ pathwaysOfInterest = {'Citric acid cycle', 'Pyruvate metabolism', 'Glutamate met
 % List of metabolites
 metsOfInterest = {'glc_D', 'pyr', 'lac_L', 'lac_D', 'gln_L', 'glu_L', 'ala_L'};
 
-writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260727_1852', ...
+writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260902_1704', ...
     'pathwaysOfInterest', pathwaysOfInterest, 'metsOfInterest', metsOfInterest);
 
 %% ADDING AN ANALYSIS TO AN EXISTING ONE
-BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'Control', 'kld', 'analysis_20260812_2130');
+BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'StageI', 'singleGeneDeletion', 'analysis_20260902_1656');
 
 
 

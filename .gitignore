@@ -23,4 +23,7 @@ scr/test/*
 **/SamplingResults
 data/BRCAProjectNo1.mat
 data/workspaceTutoNo1.mat
+data/BRCAProjectNo2.mat
+data/workspaceTutoNo2.mat
 *_checkpoint.mat
+*_AnalysisReport_*
