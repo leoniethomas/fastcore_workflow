@@ -4,8 +4,8 @@ TackleMMe is a pipeline developed in MATLAB and developed for tackling Metabolic
 
 ## 3 steps of the pipeline
   1. **Model building and Project Initialization**
-  2. **Single model analysis**
-  3. **Model comparison**
+  2. **Single Model Analysis**
+  3. **Model Comparison**
 
 A documentation, including installation requirements, project layout description and functions documentation is available here: https://sysbiolux.github.io/analysisPipelineLVT/.
 
