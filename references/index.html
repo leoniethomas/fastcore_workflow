@@ -25,7 +25,7 @@
     
     
       
-        <title>Documentation - TackleMMe Documentation</title>
+        <title>Documentation - GEM-PATCH Documentation</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="TackleMMe Documentation" class="md-header__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
+    <a href=".." title="GEM-PATCH Documentation" class="md-header__button md-logo" aria-label="GEM-PATCH Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            TackleMMe Documentation
+            GEM-PATCH Documentation
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -368,13 +368,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="TackleMMe Documentation" class="md-nav__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
+    <a href=".." title="GEM-PATCH Documentation" class="md-nav__button md-logo" aria-label="GEM-PATCH Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    TackleMMe Documentation
+    GEM-PATCH Documentation
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
@@ -3759,7 +3759,7 @@ as the modelList given</li>
 </details>
 
             <details class="quote">
-              <summary>Source code in <code>scr/classes/models_comparison/functionsReorganized/showFigure.m</code></summary>
+              <summary>Source code in <code>scr/classes/models_comparison/functions/showFigure.m</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -3952,7 +3952,7 @@ OUTPUTS:
 
 
             <details class="quote">
-              <summary>Source code in <code>scr/classes/models_comparison/functionsReorganized/getRxnIDs.m</code></summary>
+              <summary>Source code in <code>scr/classes/models_comparison/functions/getRxnIDs.m</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -4040,15 +4040,7 @@ OUTPUTS:
 <span class="normal">85</span>
 <span class="normal">86</span>
 <span class="normal">87</span>
-<span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span>
-<span class="normal">94</span>
-<span class="normal">95</span>
-<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="p">[</span>rxnID,producing,matchedAll<span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">getRxnIDs</span><span class="p">(</span>project,referenceModel, pattern<span class="p">)</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="p">[</span>rxnID,producing,matched<span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">getRxnIDs</span><span class="p">(</span>project,referenceModel, pattern<span class="p">)</span>
 <span class="w">    </span><span class="c">% This function allow you to filter for reactions to visualize using a</span>
 <span class="w">    </span><span class="c">% pattern. You can give in the pattern for a subsystem/gene/rxns or</span>
 <span class="w">    </span><span class="c">% metabolite and the function will find the rxns that are associated</span>
@@ -4082,67 +4074,59 @@ OUTPUTS:
 <span class="w">    </span><span class="nb">arguments</span>
 <span class="w">        </span><span class="n">project</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="nb">struct</span>
 <span class="w">        </span><span class="n">referenceModel</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="nb">string</span>
-<span class="w">        </span><span class="nb">pattern</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,:)</span><span class="w"> </span><span class="nb">string</span>
+<span class="w">        </span><span class="nb">pattern</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="nb">string</span>
 <span class="w">    </span><span class="k">end</span>
 
 <span class="w">    </span><span class="n">model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">models</span><span class="p">.(</span><span class="n">referenceModel</span><span class="p">).</span><span class="n">model</span><span class="p">;</span>
 <span class="w">    </span><span class="n">dict</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">models</span><span class="p">.(</span><span class="n">referenceModel</span><span class="p">).</span><span class="n">settings</span><span class="p">.</span><span class="n">dico</span><span class="p">;</span>
-<span class="w">    </span><span class="n">rxnID</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">    </span><span class="n">producing</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">    </span><span class="n">matchedAll</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{};</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">n</span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="nb">numel</span><span class="p">(</span><span class="nb">pattern</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">assert</span><span class="p">(</span><span class="o">~</span><span class="p">(</span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)),</span><span class="k">...</span>
+<span class="w">           </span><span class="s">'The pattern can not contain both &amp; + |, this function is only written for either or !'</span><span class="p">)</span>
 
-<span class="w">        </span><span class="n">singlePat</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">pattern</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-
-<span class="w">        </span><span class="nb">assert</span><span class="p">(</span><span class="o">~</span><span class="p">(</span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)),</span><span class="k">...</span>
-<span class="w">               </span><span class="s">'The pattern can not contain both &amp; + |, this function is only written for either or !'</span><span class="p">)</span>
-
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span>
-<span class="w">            </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w">  </span><span class="nb">strtrim</span><span class="p">(</span><span class="nb">strsplit</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">));</span>
-<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)</span>
-<span class="w">            </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w">  </span><span class="nb">strtrim</span><span class="p">(</span><span class="nb">strsplit</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">));</span><span class="w">  </span>
-<span class="w">        </span><span class="k">else</span>
-<span class="w">            </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">strtrim</span><span class="p">(</span><span class="n">singlePat</span><span class="p">);</span>
-<span class="w">        </span><span class="k">end</span>
-
-<span class="w">        </span><span class="c">% filter out all fields that can not be matched to pattern </span>
-<span class="w">        </span><span class="n">fieldsToCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">structfun</span><span class="p">(@(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nb">ischar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">isstring</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">iscell</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="k">...</span>
-<span class="w">                                        </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">((</span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">mets</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">rxns</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">||</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">genes</span><span class="p">,</span><span class="mi">1</span><span class="p">))),</span><span class="k">...</span>
-<span class="w">                                  </span><span class="n">model</span><span class="p">);</span>
-<span class="w">        </span><span class="n">namesToCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">fieldnames</span><span class="p">(</span><span class="n">model</span><span class="p">);</span>
-<span class="w">        </span><span class="n">namesToNotCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">namesToCheck</span><span class="p">(</span><span class="o">~</span><span class="n">fieldsToCheck</span><span class="p">);</span>
-<span class="w">        </span><span class="n">slotsCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">rmfield</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">namesToNotCheck</span><span class="p">);</span>
-
-<span class="w">        </span><span class="p">[</span><span class="n">rxnsIDsAll</span><span class="p">,</span><span class="n">producingMetAll</span><span class="p">,</span><span class="n">matched</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">cellfun</span><span class="p">(@(</span><span class="n">pat</span><span class="p">)</span><span class="w"> </span><span class="n">findPatternsInStruct</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span><span class="n">slotsCheck</span><span class="p">,</span><span class="n">model</span><span class="p">,</span><span class="n">dict</span><span class="p">),</span><span class="k">...</span>
-<span class="w">                                               </span><span class="n">patCond</span><span class="p">,</span><span class="w"> </span><span class="s">'UniformOutput'</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
-
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)</span>
-<span class="w">            </span><span class="n">commonRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{</span><span class="mi">1</span><span class="p">};</span>
-<span class="w">            </span><span class="n">commonProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">producingMetAll</span><span class="p">{</span><span class="mi">1</span><span class="p">};</span>
-<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="nb">i</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="nb">numel</span><span class="p">(</span><span class="n">rxnsIDsAll</span><span class="p">)</span>
-<span class="w">                </span><span class="p">[</span><span class="n">commonRxns</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">intersect</span><span class="p">(</span><span class="n">commonRxns</span><span class="p">,</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{</span><span class="nb">i</span><span class="p">});</span>
-<span class="w">                </span><span class="n">commonProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonProd</span><span class="p">(</span><span class="n">ia</span><span class="p">);</span>
-<span class="w">            </span><span class="k">end</span>
-<span class="w">            </span><span class="n">resultRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonRxns</span><span class="p">;</span>
-<span class="w">            </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonProd</span><span class="p">;</span>
-
-<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="n">singlePat</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span>
-<span class="w">            </span><span class="n">allRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">vertcat</span><span class="p">(</span><span class="n">rxnsIDsAll</span><span class="p">{:});</span>
-<span class="w">            </span><span class="n">allProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">vertcat</span><span class="p">(</span><span class="n">producingMetAll</span><span class="p">{:});</span>
-<span class="w">            </span><span class="p">[</span><span class="n">resultRxns</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">unique</span><span class="p">(</span><span class="n">allRxns</span><span class="p">,</span><span class="w"> </span><span class="s">'stable'</span><span class="p">);</span>
-<span class="w">            </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">allProd</span><span class="p">;</span>
-<span class="w">        </span><span class="k">else</span>
-<span class="w">            </span><span class="n">resultRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{:,:};</span>
-<span class="w">            </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">producingMetAll</span><span class="p">{:,:};</span>
-
-<span class="w">        </span><span class="k">end</span>
-
-<span class="w">        </span><span class="n">rxnID</span><span class="p">{</span><span class="n">n</span><span class="p">}</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">resultRxns</span><span class="p">;</span>
-<span class="w">        </span><span class="n">producing</span><span class="p">{</span><span class="n">n</span><span class="p">}</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">resultProd</span><span class="p">;</span>
-<span class="w">        </span><span class="n">matchedAll</span><span class="p">{</span><span class="n">n</span><span class="p">}</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">string</span><span class="p">(</span><span class="nb">vertcat</span><span class="p">(</span><span class="n">matched</span><span class="p">{:}));</span>
-<span class="w">        </span><span class="nb">assert</span><span class="p">(</span><span class="o">~</span><span class="nb">isempty</span><span class="p">(</span><span class="n">matchedAll</span><span class="p">{</span><span class="n">n</span><span class="p">}),</span><span class="w"> </span><span class="s">'No reactions were found! Check your pattern for spelling mistakes!'</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w">  </span><span class="nb">strtrim</span><span class="p">(</span><span class="nb">strsplit</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">));</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w">  </span><span class="nb">strtrim</span><span class="p">(</span><span class="nb">strsplit</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">));</span><span class="w">  </span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="n">patCond</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">strtrim</span><span class="p">(</span><span class="nb">pattern</span><span class="p">);</span>
 <span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="c">% filter out all fields that can not be matched to pattern </span>
+<span class="w">    </span><span class="n">fieldsToCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">structfun</span><span class="p">(@(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nb">ischar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">isstring</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">iscell</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="k">...</span>
+<span class="w">                                    </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">((</span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">mets</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">rxns</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">||</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">size</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">genes</span><span class="p">,</span><span class="mi">1</span><span class="p">))),</span><span class="k">...</span>
+<span class="w">                              </span><span class="n">model</span><span class="p">);</span>
+<span class="w">    </span><span class="n">namesToCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">fieldnames</span><span class="p">(</span><span class="n">model</span><span class="p">);</span>
+<span class="w">    </span><span class="n">namesToNotCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">namesToCheck</span><span class="p">(</span><span class="o">~</span><span class="n">fieldsToCheck</span><span class="p">);</span>
+<span class="w">    </span><span class="n">slotsCheck</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">rmfield</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">namesToNotCheck</span><span class="p">);</span>
+
+<span class="w">    </span><span class="p">[</span><span class="n">rxnsIDsAll</span><span class="p">,</span><span class="n">producingMetAll</span><span class="p">,</span><span class="n">matched</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">cellfun</span><span class="p">(@(</span><span class="n">pat</span><span class="p">)</span><span class="w"> </span><span class="n">findPatternsInStruct</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span><span class="n">slotsCheck</span><span class="p">,</span><span class="n">model</span><span class="p">,</span><span class="n">dict</span><span class="p">),</span><span class="k">...</span>
+<span class="w">                                           </span><span class="n">patCond</span><span class="p">,</span><span class="w"> </span><span class="s">'UniformOutput'</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"&amp;"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">commonRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{</span><span class="mi">1</span><span class="p">};</span>
+<span class="w">        </span><span class="n">commonProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">producingMetAll</span><span class="p">{</span><span class="mi">1</span><span class="p">};</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nb">i</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="nb">numel</span><span class="p">(</span><span class="n">rxnsIDsAll</span><span class="p">)</span>
+<span class="w">            </span><span class="p">[</span><span class="n">commonRxns</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">intersect</span><span class="p">(</span><span class="n">commonRxns</span><span class="p">,</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{</span><span class="nb">i</span><span class="p">});</span>
+<span class="w">            </span><span class="n">commonProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonProd</span><span class="p">(</span><span class="n">ia</span><span class="p">);</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">        </span><span class="n">resultRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonRxns</span><span class="p">;</span>
+<span class="w">        </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">commonProd</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="nb">contains</span><span class="p">(</span><span class="nb">pattern</span><span class="p">,</span><span class="w"> </span><span class="s">"|"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">allRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">vertcat</span><span class="p">(</span><span class="n">rxnsIDsAll</span><span class="p">{:});</span>
+<span class="w">        </span><span class="n">allProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">vertcat</span><span class="p">(</span><span class="n">producingMetAll</span><span class="p">{:});</span>
+<span class="w">        </span><span class="p">[</span><span class="n">resultRxns</span><span class="p">,</span><span class="w"> </span><span class="n">ia</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">unique</span><span class="p">(</span><span class="n">allRxns</span><span class="p">,</span><span class="w"> </span><span class="s">'stable'</span><span class="p">);</span>
+<span class="w">        </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">allProd</span><span class="p">;</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="n">resultRxns</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">rxnsIDsAll</span><span class="p">{:,:};</span>
+<span class="w">        </span><span class="n">resultProd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">producingMetAll</span><span class="p">{:,:};</span>
+
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">rxnID</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">resultRxns</span><span class="p">;</span>
+<span class="w">    </span><span class="n">producing</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">resultProd</span><span class="p">;</span>
+<span class="w">    </span><span class="n">matched</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">string</span><span class="p">(</span><span class="nb">vertcat</span><span class="p">(</span><span class="n">matched</span><span class="p">{:}));</span>
+<span class="w">    </span><span class="nb">assert</span><span class="p">(</span><span class="o">~</span><span class="nb">isempty</span><span class="p">(</span><span class="n">matched</span><span class="p">),</span><span class="w"> </span><span class="s">'No reactions were found! Check your pattern for spelling mistakes!'</span><span class="p">)</span>
 <span class="k">end</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6853,7 +6837,7 @@ dimension reduced space. </p>
 </details>
 
             <details class="quote">
-              <summary>Source code in <code>scr/classes/models_comparison/functionsReorganized/visualizeSamplingLandscape.m</code></summary>
+              <summary>Source code in <code>scr/classes/models_comparison/functions/visualizeSamplingLandscape.m</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
 <span class="normal">  2</span>
 <span class="normal">  3</span>
@@ -7164,16 +7148,16 @@ dimension reduced space. </p>
 <span class="w">    </span><span class="k">end</span>
 <span class="w">    </span><span class="n">fig_out</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">struct</span><span class="p">();</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">num_clusters</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">        </span><span class="n">options</span><span class="p">.</span><span class="n">num_clusters</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">length</span><span class="p">(</span><span class="nb">unique</span><span class="p">(</span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">samplingComparison</span><span class="p">.</span><span class="n">sampleModelLabels</span><span class="p">));</span>
+<span class="w">        </span><span class="n">options</span><span class="p">.</span><span class="n">num_clusters</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">length</span><span class="p">(</span><span class="nb">unique</span><span class="p">(</span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">sampleModelLabels</span><span class="p">));</span>
 <span class="w">    </span><span class="k">end</span>
 <span class="w">    </span><span class="n">reference_model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">referenceModel</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">sampleModelLabels</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">samplingComparison</span><span class="p">.</span><span class="n">sampleModelLabels</span><span class="p">;</span>
+<span class="w">    </span><span class="n">sampleModelLabels</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">sampleModelLabels</span><span class="p">;</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">sampling_feature</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"flux"</span>
-<span class="w">        </span><span class="n">ordered_samples</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">samplingComparison</span><span class="p">.</span><span class="n">orderedSamples</span><span class="p">;</span>
+<span class="w">        </span><span class="n">ordered_samples</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">orderedSamples</span><span class="p">;</span>
 <span class="w">        </span><span class="n">dim_names</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">models</span><span class="p">.(</span><span class="n">reference_model</span><span class="p">).</span><span class="n">model</span><span class="p">.</span><span class="n">rxns</span><span class="p">;</span>
 <span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">sampling_feature</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"fluxsum"</span>
-<span class="w">        </span><span class="n">ordered_samples</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">samplingComparison</span><span class="p">.</span><span class="n">ordered_samples_fluxsum</span><span class="p">;</span>
+<span class="w">        </span><span class="n">ordered_samples</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">comparisons</span><span class="p">.(</span><span class="n">comparison_name</span><span class="p">).</span><span class="n">ordered_samples_fluxsum</span><span class="p">;</span>
 <span class="w">        </span><span class="n">dim_names</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">models</span><span class="p">.(</span><span class="n">reference_model</span><span class="p">).</span><span class="n">model</span><span class="p">.</span><span class="n">mets</span><span class="p">;</span>
 <span class="w">    </span><span class="k">else</span>
 <span class="w">        </span><span class="nb">error</span><span class="p">(</span><span class="s">"You choose a  non valid argument for the sampling feature! Choose flux or fluxsum, by default the flux per reaction will be portrayed!"</span><span class="p">)</span>
@@ -7436,7 +7420,7 @@ dimension reduced space. </p>
 
 
             <details class="quote">
-              <summary>Source code in <code>scr/classes/models_comparison/functionsReorganized/prepareDataForIDAREVisualization.m</code></summary>
+              <summary>Source code in <code>scr/classes/models_comparison/functions/prepareDataForIDAREVisualization.m</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>

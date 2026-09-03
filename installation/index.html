@@ -25,7 +25,7 @@
     
     
       
-        <title>Installation - TackleMMe Documentation</title>
+        <title>Installation - GEM-PATCH Documentation</title>
       
     
     
@@ -94,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="TackleMMe Documentation" class="md-header__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
+    <a href=".." title="GEM-PATCH Documentation" class="md-header__button md-logo" aria-label="GEM-PATCH Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +108,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            TackleMMe Documentation
+            GEM-PATCH Documentation
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -368,13 +368,13 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="TackleMMe Documentation" class="md-nav__button md-logo" aria-label="TackleMMe Documentation" data-md-component="logo">
+    <a href=".." title="GEM-PATCH Documentation" class="md-nav__button md-logo" aria-label="GEM-PATCH Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
     </a>
-    TackleMMe Documentation
+    GEM-PATCH Documentation
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
@@ -529,10 +529,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-verify-installation" class="md-nav__link">
+  <a href="#step-3-verify-installation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4 — Verify installation
+        Step 3 — Verify installation
       
     </span>
   </a>
@@ -755,7 +755,7 @@
 
 
 <h1 id="installation">Installation</h1>
-<p>This page describes the software requirements and installation steps for the TackleMMe analysis pipeline.</p>
+<p>This page describes the software requirements and installation steps for the GEM-PATCH analysis pipeline.</p>
 <h2 id="matlab-version">MATLAB version</h2>
 <p>The pipeline requires <strong>MATLAB R2024a or R2024b</strong>.</p>
 <div class="admonition warning">
@@ -806,7 +806,7 @@
 <p class="admonition-title">Save the path</p>
 <p>Run <code>savepath</code> after <code>addpath</code> so the UMAP toolbox is available in future MATLAB sessions without re-adding it manually.</p>
 </div>
-<h3 id="step-4-verify-installation">Step 4 — Verify installation</h3>
+<h3 id="step-3-verify-installation">Step 3 — Verify installation</h3>
 <div class="highlight"><pre><span></span><code><span class="c">% Should run without errors and produce a 2D scatter plot</span>
 <span class="n">X</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
 <span class="n">Y</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">run_umap</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="s">'n_components'</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
@@ -838,7 +838,7 @@
 </code></pre></div>
 <p>If all commands execute without errors, your environment is ready for the pipeline.</p>
 <h2 id="building-models-with-rfastcormics">Building models with rFastcormics</h2>
-<p>rFASTCORMICS will be integrated into the next release of the COBRA Toolbox. In the meantime, if you want to build context-specific models using rFASTCORMICS before comparing them with TeckleMMe, follow the installation instructions on the <a href="https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2">rFASTCORMICS GitHub page</a>.</p>
+<p>rFASTCORMICS will be integrated into the next release of the COBRA Toolbox. In the meantime, if you want to build context-specific models using rFASTCORMICS before comparing them with GEM-PATCH, follow the installation instructions on the <a href="https://github.com/sysbiolux/rFASTCORMICS/tree/master/rFASTCORMICS%20for%20RNA-seq%20data/rFASTCORMICS_v2">rFASTCORMICS GitHub page</a>.</p>
 <p>A supplementary <code>rFastcormicsPipeline.m</code> script is provided in the <code>scr/</code> folder. It builds context-specific models and outputs a <code>params</code> structure that can be passed directly to <code>createProject.m</code>. For a usage example, see <code>no1_modelBuildingAndProjectInit.m</code> in the <code>BRCAexample</code> folder.</p>
 
 
