@@ -1,6 +1,6 @@
 # Tackling Metabolic Models Exploration
 
-TackleMMe is a pipeline developed in MATLAB and developed for tackling Metabolic Models exploration. It is based on the creation of a unique MATLAB object, called `project`. A `project` is made to store everything, from model building, to model analysis and model comparison.
+**GEM-PATCH**, for **P**latform for **A**rchiving, **T**opological **Comparison** and **H**eterogeneity Analysis of **GE**nome-scale **M**etabolic **M**odels is a pipeline developed in MATLAB and developed for tackling Metabolic Models exploration. It is based on the creation of a unique MATLAB object, called `project`. A `project` is made to store everything, from model building, to model analysis and model comparison.
 
 ## 3 steps of the pipeline
   1. **Model building and Project Initialization**

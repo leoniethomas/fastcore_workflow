@@ -11,32 +11,24 @@ changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
-load('20262608_bigComparisonStruct.mat');
-% load('defaultParametersAnalysis.csv'); % can be modified according to the
-% user % this does not work for me, throws an error
-defaultParametersAnalysis = readInParamTable('defaultParametersAnalysis.csv');
+load('20262608_BRCAProject.mat'); % available on the zenodo link
+defaultParametersAnalysis = readInParamTable('data/defaultParametersTable.csv');
 
 %% COMPUTING THE COMPARISON
-modelsToCompare = {"StageI", "Control","StageII", "StageIII"};
-[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare);
-% add the FVA from a different analysis
-%[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare,{'analysis_20260812_2112','analysis_20260812_2130'},{'FVA'}); % by default, the most recent analyses will be chosen 
+modelsToCompare = {"Control", "StageI", "StageII", "StageIII"};
+[BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare); % by default, the most recent analyses will be chosen
 
-% analysisToChoose = {'analysis_20260812_2112','analysis_20260812_2130'};
+% choose a specific analysis
+% analysisToChoose = {'analysis_20260812_2130', 'analysis_20260812_2112', 'analysis_20260825_0901', 'analysis_20260825_1857'};
 % [BRCAProject, analysisIDs] = chooseActiveAnalysis(BRCAProject, modelsToCompare, analysisToChoose);
-% 
+
 %% VISUALIZING AUTOMATICALLY GENERATED FIGURES
 
 referenceModel = "consistentMediumConstrainedModel"; 
-comparisonList = ["structuralComparison", "functionalComparison","samplingComparison"];
-compID = "test_displot"; 
+comparisonList = ["structuralComparison", "functionalComparison", "samplingComparison"];
+compID = "test_tuto3"; 
 
-%[BRCAProjectBis, comparisonName] = modelsComparison(BRCAProjectBis, modelsToCompare, referenceModel, compID); % only structural comp
 [BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
-
-
-%save('20262608_bigComparisonStructComparison.mat', 'BRCAProject', '-v7.3');
-
 
 %% Showing the Default figures generated during comparison 
 
