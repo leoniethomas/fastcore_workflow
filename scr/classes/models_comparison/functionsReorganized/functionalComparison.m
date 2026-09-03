@@ -24,7 +24,7 @@ function project = functionalComparison(project, comparisonName)
     
     %%% ---------- Visualization: objective values per model
     fbaObjectiveValues = cell2mat(cellfun(@(x) project.models.(x).analysis.active.FBA.f(1, 1), modelList, "UniformOutput", false));
-    getExchangeRxnsIdx = find(findExcRxns(project.models.(referenceModel).model));    
+    getExchangeRxnsIdx{1} = find(findExcRxns(project.models.(referenceModel).model));    
 
     plots.objValue = figure('Color', 'w', 'Position', [20 20 700 300], 'Visible', 'off');
  
