@@ -15,7 +15,7 @@ feature astheightlimit 2000;
 brca_matrix = readtable("data/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 samples_metadata = readtable("data/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 gene_metadata = readtable("data/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-origModel = load('data/Recon3D.mat', 'Recon3D').Recon3D;
+origModel = load('data/Recon3D.mat').model;
 dico = load('data/dico.mat').dico;
 medium = readtable('data/RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
 
