@@ -33,7 +33,7 @@ Main functions are documented below.
 
 ::: chooseActiveAnalysis
 
-::: modelsComparison
+::: modelComparison
 
 ::: showFigure
 
