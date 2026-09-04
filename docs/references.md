@@ -1,6 +1,6 @@
 # Main Functions
 
-TackleMMe functions are sorted into three categories:
+GEM PATCH functions are sorted into three categories:
 
 1. **Model Building and Project Initialization**
 
