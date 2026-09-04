@@ -12,12 +12,16 @@ changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
 %% LOADING EXAMPLE WORKSPACE
+
 brca_matrix = readtable("data/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 samples_metadata = readtable("data/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 gene_metadata = readtable("data/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
 origModel = load('data/Recon3D.mat').model;
 dico = load('data/dico.mat').dico;
 medium = readtable('data/RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
+% in case any of these lines throw an error, ensure that the download was
+% succesful and check whether the issue can be resolved by pulling again
+% from the git repository/downloading the files again from zenodo
 
 %% RENAMING DICO COLUMNS 
 dico.Properties.VariableNames{1} = 'geneIdsInModel';

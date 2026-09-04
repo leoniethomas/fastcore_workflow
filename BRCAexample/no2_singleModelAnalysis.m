@@ -30,7 +30,14 @@ defaultParametersAnalysis = readInParamTable('data/defaultParametersTable.csv');
 % can take time depending on what's asked (especially (loopless) sampling))
 wantedAnalyses = {'FBA', 'FVA'};
 analyzedModels = {'Control', 'StageI', 'StageIV'};
+
+% this is the most time consuming function in this script, depending on
+% what you perform: FBA, FVA, sampling, + for how many models these are
+% calculated
+% for sampling, or loopless this can take hours (highly depending on how
+% many samples are drawn) 
 BRCAProject = singleModelAnalysis(BRCAProject, defaultParametersAnalysis, analyzedModels, wantedAnalyses, 1, 1);
+
 
 %save 20260825_allSingleAnalysisLT.mat BRCAProject
 
@@ -40,8 +47,11 @@ pathwaysOfInterest = {'Citric acid cycle', 'Pyruvate metabolism', 'Glutamate met
 % List of metabolites
 metsOfInterest = {'glc_D', 'pyr', 'lac_L', 'lac_D', 'gln_L', 'glu_L', 'ala_L'};
 
+
 writeAnalysisReport(BRCAProject, 'StageIV', 'analysis_20260902_1704', ...
     'pathwaysOfInterest', pathwaysOfInterest, 'metsOfInterest', metsOfInterest);
+% choose a different analysis name in case you do not want to overwrite the previous pdf generated
+
 
 %% ADDING AN ANALYSIS TO AN EXISTING ONE
 BRCAProject = addAnalysisToExistingOne(BRCAProject, defaultParametersAnalysis, 'StageI', 'singleGeneDeletion', 'analysis_20260902_1656');
