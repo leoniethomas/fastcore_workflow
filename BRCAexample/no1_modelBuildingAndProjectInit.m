@@ -11,14 +11,19 @@ initCobraToolbox();
 changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
+%% define data folder path and add it to the path variable
+
+dataPath = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille/data";
+addpath(genpath(dataPath))
+
 %% LOADING EXAMPLE WORKSPACE
 
-brca_matrix = readtable("data/brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-samples_metadata = readtable("data/samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-gene_metadata = readtable("data/gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
-origModel = load('data/Recon3D.mat').model;
-dico = load('data/dico.mat').dico;
-medium = readtable('data/RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
+brca_matrix = readtable("brca_matrix.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+samples_metadata = readtable("samples_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');
+gene_metadata = readtable("gene_metadata.csv", 'ReadRowNames', true, 'VariableNamingRule', 'preserve');x
+origModel = load('Recon3D.mat').model;
+dico = load('dico.mat').dico;
+medium = readtable('RPMI1640.tsv', 'FileType', 'text', 'Delimiter', '\t');
 % in case any of these lines throw an error, ensure that the download was
 % succesful and check whether the issue can be resolved by pulling again
 % from the git repository/downloading the files again from zenodo
@@ -139,13 +144,13 @@ fillingMediumFlag = 1;
 [modelStageIV, retainedRxnsStageIV, idxCoreReactionsStageIV, paramsForPipelineStageIV] = rFastcormicsPipeline(consistentMediumConstrainedModel, discretizedStageIV, rownames, dico, biomassRxn, ...
     consensusProportion, epsilon, optionalSettings, fillingMediumFlag, adaptiveScalingFlag); % Stage IV
 
-save('data/contextSpecificModelsBRCA.mat', 'modelControl', 'retainedRxnsControl', 'idxCoreReactionsControl', 'paramsForPipelineControl', ...
+save(dataPath + filesep + "contextSpecificModelsBRCA.mat", 'modelControl', 'retainedRxnsControl', 'idxCoreReactionsControl', 'paramsForPipelineControl', ...
     'modelStageI', 'retainedRxnsStageI', 'idxCoreReactionsStageI', 'paramsForPipelineStageI', ...
     'modelStageII', 'retainedRxnsStageII', 'idxCoreReactionsStageII', 'paramsForPipelineStageII', ...
     'modelStageIII', 'retainedRxnsStageIII', 'idxCoreReactionsStageIII', 'paramsForPipelineStageIII', ...
     'modelStageIV', 'retainedRxnsStageIV', 'idxCoreReactionsStageIV', 'paramsForPipelineStageIV');
 
-%load('data/contextSpecificModelsBRCA.mat');
+%load(dataPath + filesep + "contextSpecificModelsBRCA.mat");
 
 %% CREATE A STRUCTURE FOR PROJECT CREATION
 % Model Name
@@ -213,5 +218,5 @@ paramsConsistentMediumConstrainedModel.dico = dico;
 paramsConsistentMediumConstrainedModel.mediumComposition = medium;
 BRCAProject = addModelsToProject(BRCAProject, {paramsConsistentMediumConstrainedModel});
 
-save('data/BRCAProjectNo1.mat', 'BRCAProject')
+save(dataPath + filesep + "BRCAProjectNo1.mat", 'BRCAProject')
 

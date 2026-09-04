@@ -10,9 +10,14 @@ initCobraToolbox();
 changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
+%% define data folder path and add it to the path variable
+
+dataPath = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille";
+addpath(genpath(dataPath))
+
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
 load('20262608_BRCAProject.mat'); % available on the zenodo link
-defaultParametersAnalysis = readInParamTable('data/defaultParametersTable.csv');
+defaultParametersAnalysis = readInParamTable('defaultParametersTable.csv');
 
 %% COMPUTING THE COMPARISON
 modelsToCompare = {"Control", "StageI", "StageII", "StageIII"};

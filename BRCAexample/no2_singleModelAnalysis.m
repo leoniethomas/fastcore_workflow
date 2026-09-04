@@ -22,9 +22,14 @@ initCobraToolbox();
 changeCobraSolver('gurobi');
 feature astheightlimit 2000;
 
+%% define data folder path and add it to the path variable
+
+dataPath = "/Users/leonie.thomas/Documents/fastcore_workflow_with_vanille";
+addpath(genpath(dataPath))
+
 %% LOADING PROJECT AND PARAMETERS FOR ANALYSIS
-load('data/BRCAProjectNo1.mat');
-defaultParametersAnalysis = readInParamTable('data/defaultParametersTable.csv');
+load('BRCAProjectNo1.mat');
+defaultParametersAnalysis = readInParamTable('defaultParametersTable.csv');
 
 %% PERFORMING ANALYSIS
 % can take time depending on what's asked (especially (loopless) sampling))
