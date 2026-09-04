@@ -28,7 +28,7 @@ referenceModel = "consistentMediumConstrainedModel";
 comparisonList = ["structuralComparison", "functionalComparison", "samplingComparison"];
 compID = "test_tuto3"; 
 
-[BRCAProject, comparisonName] = modelsComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
+[BRCAProject, comparisonName] = modelComparison(BRCAProject, modelsToCompare, referenceModel, compID, comparisonList);
 
 %% Showing the Default figures generated during comparison 
 
